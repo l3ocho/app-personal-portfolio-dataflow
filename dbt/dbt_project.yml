@@ -1,0 +1,33 @@
+name: 'portfolio'
+config-version: 2
+
+profile: 'portfolio'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  portfolio:
+    shared:
+      +materialized: view
+      +schema: shared
+    staging:
+      toronto:
+        +materialized: view
+        +schema: stg_toronto
+    intermediate:
+      toronto:
+        +materialized: view
+        +schema: int_toronto
+    marts:
+      toronto:
+        +materialized: table
+        +schema: mart_toronto

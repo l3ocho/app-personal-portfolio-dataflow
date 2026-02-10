@@ -1,0 +1,44 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Staging Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            cd ~/apps/personal-portfolio
+
+            echo "Pulling latest changes..."
+            git fetch origin staging
+            git reset --hard origin/staging
+
+            echo "Activating virtual environment..."
+            source .venv/bin/activate
+
+            echo "Installing dependencies..."
+            pip install -r requirements.txt --quiet
+
+            echo "Running dbt models..."
+            cd dbt && dbt run --profiles-dir . && cd ..
+
+            echo "Restarting application..."
+            docker compose down
+            docker compose up -d
+
+            echo "Waiting for health check..."
+            sleep 10
+            curl -f http://localhost:8050/health || exit 1
+
+            echo "Staging deployment complete!"

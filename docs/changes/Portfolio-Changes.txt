@@ -1,0 +1,520 @@
+# Leo Miranda — Portfolio Website Blueprint
+
+Structure, navigation, and complete page content
+
+---
+
+## Site Architecture
+
+```
+leodata.science
+├── Home (Landing)
+├── About
+├── Projects (Overview + Status)
+│   └── [Side Navbar]
+│       ├── → Toronto Housing Market Dashboard (live)
+│       ├── → US Retail Energy Price Predictor (coming soon)
+│       └── → DataFlow Platform (Phase 3)
+├── Lab (Bandit Labs / Experiments)
+├── Blog
+│   └── [Articles]
+├── Resume (downloadable + inline)
+└── Contact
+```
+
+---
+
+## Navigation Structure
+
+Primary Nav: Home | Projects | Lab | Blog | About | Resume
+
+Footer: LinkedIn | GitHub | Email | “Built with Dash & too much coffee”
+
+---
+
+# PAGE CONTENT
+
+---
+
+## 1. HOME (Landing Page)
+
+### Hero Section
+
+Headline:
+
+> I turn messy data into systems that actually work.
+
+Subhead:
+
+> Data Engineer & Analytics Specialist. 8 years building pipelines, dashboards, and the infrastructure nobody sees but everyone depends on. Based in Toronto.
+
+CTA Buttons:
+
+- View Projects → /projects
+- Get In Touch → /contact
+
+---
+
+### Quick Impact Strip (Optional — 3-4 stats)
+
+| 1B+                                             | 40%                                | 5 Years                     |
+|-------------------------------------------------|------------------------------------|-----------------------------|
+| Rows processed daily across enterprise platform | Efficiency gain through automation | Building DataFlow from zero |
+
+---
+
+### Featured Project Card
+
+Toronto Housing Market Dashboard
+
+> Real-time analytics on Toronto’s housing trends. dbt-powered ETL, Python scraping, Plotly visualization.
+> \[View Dashboard\] \[View Repository\]
+
+---
+
+### Brief Intro (2-3 sentences)
+
+I’m a data engineer who’s spent the last 8 years in the trenches—building the infrastructure that feeds dashboards, automates the boring stuff, and makes data actually usable. Most of my work has been in contact center operations and energy, where I’ve had to be scrappy: one-person data teams, legacy systems, stakeholders who need answers yesterday.
+
+I like solving real problems, not theoretical ones.
+
+---
+
+## 2. ABOUT PAGE
+
+### Opening
+
+I didn’t start in data. I started in project management—CAPM certified, ITIL trained, the whole corporate playbook. Then I realized I liked building systems more than managing timelines, and I was better at automating reports than attending meetings about them.
+
+That pivot led me to where I am now: 8 years deep in data engineering, analytics, and the messy reality of turning raw information into something people can actually use.
+
+---
+
+### What I Actually Do
+
+The short version: I build data infrastructure. Pipelines, warehouses, dashboards, automation—the invisible machinery that makes businesses run on data instead of gut feelings.
+
+The longer version: At Summitt Energy, I’ve been the sole data professional supporting 150+ employees across 9 markets (Canada and US). I inherited nothing—no data warehouse, no reporting infrastructure, no documentation. Over 5 years, I built DataFlow: an enterprise platform processing 1B+ rows, integrating contact center data, CRM systems, and legacy tools that definitely weren’t designed to talk to each other.
+
+That meant learning to be a generalist. I’ve done ETL pipeline development (Python, SQLAlchemy), dimensional modeling, dashboard design (Power BI, Plotly-Dash), API integration, and more stakeholder management than I’d like to admit. When you’re the only data person, you learn to wear every hat.
+
+---
+
+### How I Think About Data
+
+I’m not interested in data for data’s sake. The question I always start with: What decision does this help someone make?
+
+Most of my work has been in operations-heavy environments—contact centers, energy retail, logistics. These aren’t glamorous domains, but they’re where data can have massive impact. A 30% improvement in abandon rate isn’t just a metric; it’s thousands of customers who didn’t hang up frustrated. A 40% reduction in reporting time means managers can actually manage instead of wrestling with spreadsheets.
+
+I care about outcomes, not technology stacks.
+
+---
+
+### The Technical Stuff (For Those Who Want It)
+
+Languages: Python (Pandas, SQLAlchemy, FastAPI), SQL (MSSQL, PostgreSQL), R, VBA
+
+Data Engineering: ETL/ELT pipelines, dimensional modeling (star schema), dbt patterns, batch processing, API integration, web scraping (Selenium)
+
+Visualization: Plotly/Dash, Power BI, Tableau
+
+Platforms: Genesys Cloud, Five9, Zoho, Azure DevOps
+
+Currently Learning: Cloud certification (Azure DP-203), Airflow, Snowflake
+
+---
+
+### Outside Work
+
+I’m a Brazilian-Canadian based in Toronto. I speak Portuguese (native), English (fluent), and enough Spanish to survive.
+
+When I’m not staring at SQL, I’m usually:
+
+- Building automation tools for small businesses through Bandit Labs (my side project)
+- Contributing to open source (MCP servers, Claude Code plugins)
+- Trying to explain to my kid why Daddy’s job involves “making computers talk to each other”
+
+---
+
+### What I’m Looking For
+
+I’m currently exploring Senior Data Analyst and Data Engineer roles in the Toronto area (or remote). I’m most interested in:
+
+- Companies that treat data as infrastructure, not an afterthought
+- Teams where I can contribute to architecture decisions, not just execute tickets
+- Operations-focused industries (energy, logistics, financial services, contact center tech)
+
+If that sounds like your team, let’s talk.
+
+\[Download Resume\] \[Contact Me\]
+
+---
+
+## 3. PROJECTS PAGE
+
+### Navigation Note
+
+The Projects page serves as an overview and status hub for all projects. A side navbar provides direct links to live dashboards and repositories. Users land on the overview first, then navigate to specific projects via the sidebar.
+
+### Intro Text
+
+These are projects I’ve built—some professional (anonymized where needed), some personal. Each one taught me something. Use the sidebar to jump directly to live dashboards or explore the overviews below.
+
+---
+
+### Project Card: Toronto Housing Market Dashboard
+
+Type: Personal Project | Status: Live
+
+The Problem:
+Toronto’s housing market moves fast, and most publicly available data is either outdated, behind paywalls, or scattered across dozens of sources. I wanted a single dashboard that tracked trends in real-time.
+
+What I Built:
+
+- Data Pipeline: Python scraper pulling listings data, automated on schedule
+- Transformation Layer: dbt-based SQL architecture (staging → intermediate → marts)
+- Visualization: Interactive Plotly-Dash dashboard with filters by neighborhood, price range, property type
+- Infrastructure: PostgreSQL backend, version-controlled in Git
+
+Tech Stack: Python, dbt, PostgreSQL, Plotly-Dash, GitHub Actions
+
+What I Learned:
+Real estate data is messy as hell. Listings get pulled, prices change, duplicates are everywhere. Building a reliable pipeline meant implementing serious data quality checks and learning to embrace “good enough” over “perfect.”
+
+\[View Live Dashboard\] \[View Repository (ETL + dbt)\]
+
+---
+
+### Project Card: US Retail Energy Price Predictor
+
+Type: Personal Project | Status: Coming Soon (Phase 2)
+
+The Problem:
+Retail energy pricing in deregulated US markets is volatile and opaque. Consumers and analysts lack accessible tools to understand pricing trends and forecast where rates are headed.
+
+What I’m Building:
+
+- Data Pipeline: Automated ingestion of public pricing data across multiple US markets
+- ML Model: Price prediction using time series forecasting (ARIMA, Prophet, or similar)
+- Transformation Layer: dbt-based SQL architecture for feature engineering
+- Visualization: Interactive dashboard showing historical trends + predictions by state/market
+
+Tech Stack: Python, Scikit-learn, dbt, PostgreSQL, Plotly-Dash
+
+Why This Project:
+This showcases the ML side of my skillset—something the Toronto Housing dashboard doesn’t cover. It also leverages my domain expertise from 5+ years in retail energy operations.
+
+\[Coming Soon\]
+
+---
+
+### Project Card: DataFlow Platform (Enterprise Case Study)
+
+Type: Professional | Status: Deferred (Phase 3 — requires sanitized codebase)
+
+The Context:
+When I joined Summitt Energy, there was no data infrastructure. Reports were manual. Insights were guesswork. I was hired to fix that.
+
+What I Built (Over 5 Years):
+
+- v1 (2020): Basic ETL scripts pulling Genesys Cloud data into MSSQL
+- v2 (2021): Dimensional model (star schema) with fact/dimension tables
+- v3 (2022): Python refactor with SQLAlchemy ORM, batch processing, error handling
+- v4 (2023-24): dbt-pattern SQL views (staging → intermediate → marts), FastAPI layer, CLI tools
+
+Current State:
+
+- 21 tables, 1B+ rows
+- 5,000+ daily transactions processed
+- Integrates Genesys Cloud, Zoho CRM, legacy systems
+- Feeds Power BI prototypes and production Dash dashboards
+- Near-zero reporting errors
+
+Impact:
+
+- 40% improvement in reporting efficiency
+- 30% reduction in call abandon rate (via KPI framework)
+- 50% faster Average Speed to Answer
+- 100% callback completion rate
+
+What I Learned:
+Building data infrastructure as a team of one forces brutal prioritization. I learned to ship imperfect solutions fast, iterate based on feedback, and never underestimate how long stakeholder buy-in takes.
+
+Note: This is proprietary work. A sanitized case study with architecture patterns (no proprietary data) will be published in Phase 3.
+
+---
+
+### Project Card: AI-Assisted Automation (Bandit Labs)
+
+Type: Consulting/Side Business | Status: Active
+
+What It Is:
+Bandit Labs is my consulting practice focused on automation for small businesses. Most clients don’t need enterprise data platforms—they need someone to eliminate the 4 hours/week they spend manually entering receipts.
+
+Sample Work:
+
+- Receipt Processing Automation: OCR pipeline (Tesseract, Google Vision) extracting purchase data from photos, pushing directly to QuickBooks. Eliminated 3-4 hours/week of manual entry for a restaurant client.
+- Product Margin Tracker: Plotly-Dash dashboard with real-time profitability insights
+- Claude Code Plugins: MCP servers for Gitea, Wiki.js, NetBox integration
+
+Why I Do This:
+Small businesses are underserved by the data/automation industry. Everyone wants to sell them enterprise software they don’t need. I like solving problems at a scale where the impact is immediately visible.
+
+\[Learn More About Bandit Labs\]
+
+---
+
+## 4. LAB PAGE (Bandit Labs / Experiments)
+
+### Intro
+
+This is where I experiment. Some of this becomes client work. Some of it teaches me something and gets abandoned. All of it is real code solving real (or at least real-adjacent) problems.
+
+---
+
+### Bandit Labs — Automation for Small Business
+
+I started Bandit Labs because I kept meeting small business owners drowning in manual work that should have been automated years ago. Enterprise tools are overkill. Custom development is expensive. There’s a gap in the middle.
+
+What I Offer:
+
+- Receipt/invoice processing automation
+- Dashboard development (Plotly-Dash)
+- Data pipeline setup for non-technical teams
+- AI integration for repetitive tasks
+
+Recent Client Work:
+
+- Rio Açaí (Restaurant, Gatineau): Receipt OCR → QuickBooks integration. Saved 3-4 hours/week.
+
+\[Contact for Consulting\]
+
+---
+
+### Open Source / Experiments
+
+MCP Servers (Model Context Protocol)
+I’ve built production-ready MCP servers for:
+
+- Gitea: Issue management, label operations
+- Wiki.js: Documentation access via GraphQL
+- NetBox: CMDB integration (DCIM, IPAM, Virtualization)
+
+These let AI assistants (like Claude) interact with infrastructure tools through natural language. Still experimental, but surprisingly useful for my own workflows.
+
+Claude Code Plugins
+
+- projman: AI-guided sprint planning with Gitea/Wiki.js integration
+- cmdb-assistant: Conversational infrastructure queries against NetBox
+- project-hygiene: Post-task cleanup automation
+
+\[View on GitHub\]
+
+---
+
+## 5. BLOG PAGE
+
+### Intro
+
+I write occasionally about data engineering, automation, and the reality of being a one-person data team. No hot takes, no growth hacking—just things I’ve learned the hard way.
+
+---
+
+### Suggested Initial Articles
+
+Article 1: “Building a Data Platform as a Team of One”What I learned from 5 years as the sole data professional at a mid-size company
+
+Outline:
+
+- The reality of “full stack data” when there’s no one else
+- Prioritization frameworks (what to build first when everything is urgent)
+- Technical debt vs. shipping something
+- Building stakeholder trust without a team to back you up
+- What I’d do differently
+
+---
+
+Article 2: “dbt Patterns Without dbt (And Why I Eventually Adopted Them)”How I accidentally implemented analytics engineering best practices before knowing the terminology
+
+Outline:
+
+- The problem: SQL spaghetti in production dashboards
+- My solution: staging → intermediate → marts view architecture
+- Why separation of concerns matters for maintainability
+- The day I discovered dbt and realized I’d been doing this manually
+- Migration path for legacy SQL codebases
+
+---
+
+Article 3: “The Toronto Housing Market Dashboard: A Data Engineering Postmortem”Building a real-time analytics pipeline for messy, uncooperative data
+
+Outline:
+
+- Why I built this (and why public housing data sucks)
+- Data sourcing challenges and ethical scraping
+- Pipeline architecture decisions
+- dbt transformation layer design
+- What broke and how I fixed it
+- Dashboard design for non-technical users
+
+---
+
+Article 4: “Automating Small Business Operations with OCR and AI”A case study in practical automation for non-enterprise clients
+
+Outline:
+
+- The client problem: 4 hours/week on receipt entry
+- Why “just use \[enterprise tool\]” doesn’t work for small business
+- Building an OCR pipeline with Tesseract and Google Vision
+- QuickBooks integration gotchas
+- ROI calculation for automation projects
+
+---
+
+Article 5: “What I Wish I Knew Before Building My First ETL Pipeline”Hard-won lessons for junior data engineers
+
+Outline:
+
+- Error handling isn’t optional (it’s the whole job)
+- Logging is your best friend at 2am
+- Why idempotency matters
+- The staging table pattern
+- Testing data pipelines
+- Documentation nobody will read (write it anyway)
+
+---
+
+Article 6: “Predicting US Retail Energy Prices: An ML Project Walkthrough”Building a forecasting model with domain knowledge from 5 years in energy retail
+
+Outline:
+
+- Why retail energy pricing is hard to predict (deregulation, seasonality, policy)
+- Data sourcing and pipeline architecture
+- Feature engineering with dbt
+- Model selection (ARIMA vs Prophet vs ensemble)
+- Evaluation metrics that matter for price forecasting
+- Lessons from applying domain expertise to ML
+
+---
+
+## 6. RESUME PAGE
+
+### Inline Display
+
+Show a clean, readable version of the resume directly on the page. Use your tailored Senior Data Analyst version as the base.
+
+### Download Options
+
+- \[Download PDF\]
+- \[Download DOCX\]
+- \[View on LinkedIn\]
+
+### Optional: Interactive Timeline
+
+Visual timeline of career progression with expandable sections for each role. More engaging than a wall of text, but only if you have time to build it.
+
+---
+
+## 7. CONTACT PAGE
+
+### Intro
+
+I’m currently open to Senior Data Analyst and Data Engineer roles in Toronto (or remote). If you’re working on something interesting and need someone who can build data infrastructure from scratch, I’d like to hear about it.
+
+For consulting inquiries (automation, dashboards, small business data work), reach out about Bandit Labs.
+
+---
+
+### Contact Form Fields
+
+- Name
+- Email
+- Subject (dropdown: Job Opportunity / Consulting Inquiry / Other)
+- Message
+
+---
+
+### Direct Contact
+
+- Email: leobrmi@hotmail.com
+- Phone: (416) 859-7936
+- LinkedIn: \[link\]
+- GitHub: \[link\]
+
+---
+
+### Location
+
+Toronto, ON, Canada  
+Canadian Citizen | Eligible to work in Canada and US
+
+---
+
+## TONE GUIDELINES
+
+### Do:
+
+- Be direct and specific
+- Use first person naturally
+- Include concrete metrics
+- Acknowledge constraints and tradeoffs
+- Show personality without being performative
+- Write like you talk (minus the profanity)
+
+### Don’t:
+
+- Use buzzwords without substance (“leveraging synergies”)
+- Oversell or inflate
+- Write in third person
+- Use passive voice excessively
+- Sound like a LinkedIn influencer
+- Pretend you’re a full team when you’re one person
+
+---
+
+## SEO / DISCOVERABILITY
+
+### Target Keywords (Organic)
+
+- Toronto data analyst
+- Data engineer portfolio
+- Python ETL developer
+- dbt analytics engineer
+- Contact center analytics
+
+### Blog Strategy
+
+Aim for 1-2 posts per month initially. Focus on:
+
+- Technical tutorials (how I built X)
+- Lessons learned (what went wrong and how I fixed it)
+- Industry observations (data work in operations-heavy companies)
+
+---
+
+## IMPLEMENTATION PRIORITY
+
+### Phase 1 (MVP — Get it live)
+
+1. Home page (hero + brief intro + featured project)
+2. About page (full content)
+3. Projects page (overview + status cards with navbar links to dashboards)
+4. Resume page (inline + download)
+5. Contact page (form + direct info)
+6. Blog (start with 2-3 articles)
+
+### Phase 2 (Expand)
+
+1. Lab page (Bandit Labs + experiments)
+2. US Retail Energy Price Predictor (ML project — coming soon)
+3. Add more projects as completed
+
+### Phase 3 (Polish)
+
+1. DataFlow Platform case study (requires sanitized fork of proprietary codebase)
+2. Testimonials (if available from Summitt stakeholders)
+3. Interactive elements (timeline, project filters)
+
+---
+
+Last updated: January 2025

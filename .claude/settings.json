@@ -1,0 +1,8 @@
+{
+  "enabledPlugins": {
+    "data-platform@leo-claude-mktplace": true,
+    "viz-platform@leo-claude-mktplace": true,
+    "data-seed@leo-claude-mktplace": true
+  },
+  "model": "opusplan"
+}

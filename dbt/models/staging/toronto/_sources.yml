@@ -1,0 +1,100 @@
+version: 2
+
+sources:
+  - name: toronto
+    description: "Toronto data loaded from CMHC and City of Toronto sources"
+    database: portfolio
+    schema: raw_toronto
+    tables:
+      - name: fact_rentals
+        description: "CMHC annual rental survey data by zone and bedroom type"
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: date_key
+            description: "Foreign key to dim_time"
+          - name: zone_key
+            description: "Foreign key to dim_cmhc_zone"
+
+      - name: dim_cmhc_zone
+        description: >
+          CMHC zone dimension. Currently contains only the Toronto CMA
+          aggregate zone (TORCMA). Sub-zone boundaries (31 zones) exist
+          in data/toronto/raw/geo/cmhc_zones.geojson but are not yet
+          loaded — geometry column is NULL until sub-zone loading is
+          implemented.
+        columns:
+          - name: zone_key
+            description: "Primary key"
+          - name: zone_code
+            description: "CMHC zone code"
+          - name: geometry
+            description: "PostGIS geometry — NOT YET POPULATED (NULL for CMA-level zone)"
+
+      - name: dim_neighbourhood
+        description: "City of Toronto neighbourhoods (158 official boundaries)"
+        columns:
+          - name: neighbourhood_id
+            description: "Primary key"
+
+      - name: dim_policy_event
+        description: "Housing policy events for annotation"
+        columns:
+          - name: event_id
+            description: "Primary key"
+
+      - name: fact_census
+        description: "Census demographics by neighbourhood and year"
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: neighbourhood_id
+            description: "Foreign key to dim_neighbourhood"
+          - name: census_year
+            description: "Census year (2016, 2021, etc.)"
+          - name: population
+            description: "Total population"
+          - name: median_household_income
+            description: "Median household income"
+
+      - name: fact_crime
+        description: "Crime statistics by neighbourhood, year, and type"
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: neighbourhood_id
+            description: "Foreign key to dim_neighbourhood"
+          - name: year
+            description: "Statistics year"
+          - name: crime_type
+            description: "Type of crime"
+          - name: count
+            description: "Number of incidents"
+          - name: rate_per_100k
+            description: "Rate per 100,000 population"
+
+      - name: fact_amenities
+        description: "Amenity counts by neighbourhood and type"
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: neighbourhood_id
+            description: "Foreign key to dim_neighbourhood"
+          - name: amenity_type
+            description: "Type of amenity (parks, schools, transit)"
+          - name: count
+            description: "Number of amenities"
+          - name: year
+            description: "Reference year"
+
+      - name: bridge_cmhc_neighbourhood
+        description: "CMHC zone to neighbourhood mapping with area weights"
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: cmhc_zone_code
+            description: "CMHC zone code"
+          - name: neighbourhood_id
+            description: "Neighbourhood ID"
+          - name: weight
+            description: "Proportional area weight (0-1)"

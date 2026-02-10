@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: shared
+    description: "Shared dimension tables used across all dashboards"
+    database: portfolio
+    schema: public
+    tables:
+      - name: dim_time
+        description: "Time dimension (monthly grain) - shared across all projects"
+        columns:
+          - name: date_key
+            description: "Primary key (YYYYMM format)"
+          - name: full_date
+            description: "First day of month"
+          - name: year
+            description: "Calendar year"
+          - name: month
+            description: "Month number (1-12)"
+          - name: quarter
+            description: "Quarter (1-4)"
+          - name: month_name
+            description: "Month name"
+          - name: is_month_start
+            description: "Always true (monthly grain)"

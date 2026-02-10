@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: stg_dimensions__time
+    description: "Staged time dimension - shared across all projects"
+    columns:
+      - name: date_key
+        description: "Primary key (YYYYMM format)"
+        data_tests:
+          - unique
+          - not_null
+      - name: full_date
+        description: "First day of month"
+        data_tests:
+          - not_null
+      - name: year
+        description: "Calendar year"
+        data_tests:
+          - not_null
+      - name: month
+        description: "Month number (1-12)"
+        data_tests:
+          - not_null
+      - name: quarter
+        description: "Quarter (1-4)"
+        data_tests:
+          - not_null
+      - name: month_name
+        description: "Month name"
+        data_tests:
+          - not_null
+      - name: is_month_start
+        description: "Always true (monthly grain)"

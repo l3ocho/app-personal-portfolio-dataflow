@@ -1,0 +1,120 @@
+version: 2
+
+models:
+  - name: stg_cmhc__rentals
+    description: "Staged CMHC rental market data from fact_rentals"
+    columns:
+      - name: rental_id
+        description: "Unique identifier for rental record"
+        data_tests:
+          - unique
+          - not_null
+      - name: date_key
+        description: "Date dimension key (YYYYMMDD)"
+        data_tests:
+          - not_null
+      - name: zone_key
+        description: "CMHC zone dimension key"
+        data_tests:
+          - not_null
+
+  - name: stg_dimensions__cmhc_zones
+    description: "Staged CMHC zone dimension"
+    columns:
+      - name: zone_key
+        description: "Zone dimension key"
+        data_tests:
+          - unique
+          - not_null
+      - name: zone_code
+        description: "CMHC zone code"
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_toronto__neighbourhoods
+    description: "Staged Toronto neighbourhood dimension (158 official boundaries)"
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood primary key"
+        data_tests:
+          - unique
+          - not_null
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry (POLYGON)"
+
+  - name: stg_toronto__census
+    description: "Staged census demographics by neighbourhood"
+    columns:
+      - name: census_id
+        description: "Census record identifier"
+        data_tests:
+          - unique
+          - not_null
+      - name: neighbourhood_id
+        description: "Neighbourhood foreign key"
+        data_tests:
+          - not_null
+      - name: census_year
+        description: "Census year (2016, 2021)"
+        data_tests:
+          - not_null
+
+  - name: stg_toronto__crime
+    description: "Staged crime statistics by neighbourhood"
+    columns:
+      - name: crime_id
+        description: "Crime record identifier"
+        data_tests:
+          - unique
+          - not_null
+      - name: neighbourhood_id
+        description: "Neighbourhood foreign key"
+        data_tests:
+          - not_null
+      - name: crime_type
+        description: "Type of crime"
+        data_tests:
+          - not_null
+
+  - name: stg_toronto__amenities
+    description: "Staged amenity counts by neighbourhood"
+    columns:
+      - name: amenity_id
+        description: "Amenity record identifier"
+        data_tests:
+          - unique
+          - not_null
+      - name: neighbourhood_id
+        description: "Neighbourhood foreign key"
+        data_tests:
+          - not_null
+      - name: amenity_type
+        description: "Type of amenity"
+        data_tests:
+          - not_null
+
+  - name: stg_cmhc__zone_crosswalk
+    description: "Staged CMHC zone to neighbourhood crosswalk with area weights"
+    columns:
+      - name: crosswalk_id
+        description: "Crosswalk record identifier"
+        data_tests:
+          - unique
+          - not_null
+      - name: cmhc_zone_code
+        description: "CMHC zone code"
+        data_tests:
+          - not_null
+      - name: neighbourhood_id
+        description: "Neighbourhood foreign key"
+        data_tests:
+          - not_null
+      - name: area_weight
+        description: "Proportional area weight (0-1)"
+        data_tests:
+          - not_null

@@ -1,0 +1,162 @@
+version: 2
+
+models:
+  - name: mart_toronto_rentals
+    description: "Final mart for Toronto rental market analysis by zone and time"
+    columns:
+      - name: rental_id
+        description: "Unique rental record identifier"
+        data_tests:
+          - unique
+          - not_null
+      - name: date_key
+        description: "Foreign key to time dimension"
+        data_tests:
+          - relationships:
+              to: ref('stg_dimensions__time')
+              field: date_key
+      - name: zone_key
+        description: "Foreign key to CMHC zone dimension"
+        data_tests:
+          - relationships:
+              to: ref('stg_dimensions__cmhc_zones')
+              field: zone_key
+
+  - name: mart_neighbourhood_overview
+    description: "Neighbourhood overview with composite livability score"
+    meta:
+      dashboard_tab: Overview
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: livability_score
+        description: "Composite score: safety (30%), affordability (40%), amenities (30%)"
+      - name: safety_score
+        description: "Safety component score (0-100)"
+      - name: affordability_score
+        description: "Affordability component score (0-100)"
+      - name: amenity_score
+        description: "Amenity component score (0-100)"
+
+  - name: mart_neighbourhood_housing
+    description: "Housing and affordability metrics by neighbourhood"
+    meta:
+      dashboard_tab: Housing
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: rent_to_income_pct
+        description: "Rent as percentage of median income"
+      - name: affordability_index
+        description: "100 = city average affordability"
+      - name: rent_yoy_change_pct
+        description: "Year-over-year rent change"
+
+  - name: mart_neighbourhood_safety
+    description: "Crime rates and safety metrics by neighbourhood"
+    meta:
+      dashboard_tab: Safety
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: crime_rate_per_100k
+        description: "Total crime rate per 100K population"
+      - name: crime_index
+        description: "100 = city average crime rate"
+      - name: safety_tier
+        description: "Safety tier (1=safest, 5=highest crime)"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+
+  - name: mart_neighbourhood_demographics
+    description: "Demographics and income metrics by neighbourhood"
+    meta:
+      dashboard_tab: Demographics
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: median_household_income
+        description: "Median household income"
+      - name: income_index
+        description: "100 = city average income"
+      - name: income_quintile
+        description: "Income quintile (1-5)"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+
+  - name: mart_neighbourhood_amenities
+    description: "Amenity access metrics by neighbourhood"
+    meta:
+      dashboard_tab: Amenities
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: total_amenities_per_1000
+        description: "Total amenities per 1000 population"
+      - name: amenity_index
+        description: "100 = city average amenities"
+      - name: amenity_tier
+        description: "Amenity tier (1=best, 5=lowest)"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
