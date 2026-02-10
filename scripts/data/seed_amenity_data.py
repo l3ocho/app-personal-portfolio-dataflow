@@ -40,7 +40,7 @@ def seed_amenities() -> int:
 
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT neighbourhood_id FROM public.dim_neighbourhood")
+            text("SELECT neighbourhood_id FROM raw_toronto.dim_neighbourhood")
         )
         neighbourhood_ids = [row[0] for row in result]
 
@@ -92,7 +92,7 @@ def update_population() -> int:
         result = conn.execute(
             text(
                 """
-            UPDATE public.dim_neighbourhood dn
+            UPDATE raw_toronto.dim_neighbourhood dn
             SET population = fc.population
             FROM public.fact_census fc
             WHERE dn.neighbourhood_id = fc.neighbourhood_id
@@ -235,7 +235,7 @@ def seed_housing_mart() -> int:
     with engine.begin() as conn:
         result = conn.execute(
             text(
-                "SELECT neighbourhood_id, name, geometry FROM public.dim_neighbourhood"
+                "SELECT neighbourhood_id, name, geometry FROM raw_toronto.dim_neighbourhood"
             )
         )
         neighbourhoods = [dict(row._mapping) for row in result]

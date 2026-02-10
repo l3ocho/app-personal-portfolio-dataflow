@@ -4,7 +4,7 @@ portfolio:
     dev:
       type: postgres
       host: 127.0.0.1
-      user: portfolio
+      user: "{{ env_var('POSTGRES_USER') }}"
       password: "{{ env_var('POSTGRES_PASSWORD') }}"
       port: 5432
       dbname: portfolio
