@@ -14,8 +14,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from portfolio_app.toronto.models import create_tables, get_engine  # noqa: E402
-from portfolio_app.toronto.models.dimensions import RAW_TORONTO_SCHEMA  # noqa: E402
+from dataflow.toronto.models import create_tables, get_engine  # noqa: E402
+from dataflow.toronto.models.dimensions import RAW_TORONTO_SCHEMA  # noqa: E402
 
 
 def main() -> int:

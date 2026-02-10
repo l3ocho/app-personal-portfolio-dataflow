@@ -102,14 +102,6 @@ seed-data: ## Seed sample development data (amenities, median_age)
 	$(PYTHON) scripts/data/seed_amenity_data.py
 
 # =============================================================================
-# Application
-# =============================================================================
-
-run: ## Start Dash development server
-	@echo "$(GREEN)Starting Dash server...$(NC)"
-	$(PYTHON) -m portfolio_app.app
-
-# =============================================================================
 # Testing
 # =============================================================================
 
@@ -152,7 +144,7 @@ format: ## Run ruff formatter
 
 typecheck: ## Run mypy type checker
 	@echo "$(GREEN)Running type checker...$(NC)"
-	mypy portfolio_app
+	mypy dataflow
 
 ci: ## Run all checks (lint, typecheck, test)
 	@echo "$(GREEN)Running CI checks...$(NC)"

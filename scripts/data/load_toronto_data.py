@@ -37,7 +37,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from portfolio_app.toronto.loaders import (  # noqa: E402
+from dataflow.toronto.loaders import (  # noqa: E402
     build_cmhc_neighbourhood_crosswalk,
     get_session,
     load_amenities,
@@ -48,15 +48,15 @@ from portfolio_app.toronto.loaders import (  # noqa: E402
     load_statcan_cmhc_data,
     load_time_dimension,
 )
-from portfolio_app.toronto.parsers import (  # noqa: E402
+from dataflow.toronto.parsers import (  # noqa: E402
     TorontoOpenDataParser,
     TorontoPoliceParser,
 )
-from portfolio_app.toronto.parsers.geo import CMHCZoneParser  # noqa: E402
-from portfolio_app.toronto.parsers.statcan_cmhc import (  # noqa: E402
+from dataflow.toronto.parsers.geo import CMHCZoneParser  # noqa: E402
+from dataflow.toronto.parsers.statcan_cmhc import (  # noqa: E402
     fetch_toronto_rental_data,
 )
-from portfolio_app.toronto.schemas import Neighbourhood  # noqa: E402
+from dataflow.toronto.schemas import Neighbourhood  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

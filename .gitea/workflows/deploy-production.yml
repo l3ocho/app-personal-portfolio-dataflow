@@ -18,7 +18,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            cd ~/apps/personal-portfolio
+            cd ~/apps/portfolio-dataflow
 
             echo "Pulling latest changes..."
             git fetch origin main
@@ -28,17 +28,15 @@ jobs:
             source .venv/bin/activate
 
             echo "Installing dependencies..."
-            pip install -r requirements.txt --quiet
+            pip install -e ".[dev,dbt]" --quiet
+
+            echo "Verifying PostgreSQL connection..."
+            docker compose ps postgres
 
             echo "Running dbt models..."
             cd dbt && dbt run --profiles-dir . && cd ..
 
-            echo "Restarting application..."
-            docker compose down
-            docker compose up -d
-
-            echo "Waiting for health check..."
-            sleep 10
-            curl -f http://localhost:8050/health || exit 1
+            echo "Running dbt tests..."
+            cd dbt && dbt test --profiles-dir . && cd ..
 
             echo "Production deployment complete!"

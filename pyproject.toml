@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "portfolio"
+name = "portfolio-dataflow"
 version = "0.1.0"
-description = "Analytics Portfolio - Data engineering and visualization showcase"
+description = "Data Engineering Pipeline - ETL/ELT for analytics projects"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
@@ -38,12 +38,6 @@ dependencies = [
     "statsmodels>=0.14",
     "openpyxl>=3.1",
 
-    # Visualization
-    "dash>=3.3",
-    "plotly>=6.5",
-    "dash-mantine-components>=2.4",
-    "dash-iconify>=0.1",
-
     # PDF Parsing
     "pdfplumber>=0.11",
     "tabula-py>=2.9",
@@ -51,11 +45,6 @@ dependencies = [
     # Utilities
     "python-dotenv>=1.0",
     "httpx>=0.28",
-
-    # Blog/Markdown
-    "python-frontmatter>=1.1",
-    "markdown>=3.5",
-    "pygments>=2.17",
 ]
 
 [project.optional-dependencies]
@@ -89,7 +78,7 @@ portfolio = "portfolio_app.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["portfolio_app*"]
+include = ["dataflow*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -134,7 +123,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["portfolio_app"]
+known-first-party = ["dataflow"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -151,16 +140,10 @@ plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = [
-    "dash.*",
-    "dash_mantine_components.*",
-    "dash_iconify.*",
-    "plotly.*",
     "geopandas.*",
     "shapely.*",
     "pdfplumber.*",
     "tabula.*",
     "pydantic_settings.*",
-    "frontmatter.*",
-    "markdown.*",
 ]
 ignore_missing_imports = true

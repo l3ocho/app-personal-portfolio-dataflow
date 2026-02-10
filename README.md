@@ -1,40 +1,18 @@
-# Analytics Portfolio
+# Portfolio Data Pipeline
 
-[![CI](https://gitea.hotserv.cloud/lmiranda/personal-portfolio/actions/workflows/ci.yml/badge.svg)](https://gitea.hotserv.cloud/lmiranda/personal-portfolio/actions)
+[![CI](https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow/actions/workflows/ci.yml/badge.svg)](https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow/actions)
 
-**Live Demo:** [leodata.science](https://leodata.science)
+**Data engineering pipeline for analytics projects.** This repository contains the ETL/ELT infrastructure that powers the portfolio analytics platform.
 
-A personal portfolio website showcasing data engineering and visualization capabilities, featuring an interactive Toronto Neighbourhood Dashboard.
+## Purpose
 
-## Live Pages
+This is a **data-only** repository focused on:
+- Data acquisition from external sources (APIs, files)
+- Data validation and transformation
+- Database persistence and schema management
+- Analytics-ready data preparation via dbt
 
-| Route | Page | Description |
-|-------|------|-------------|
-| `/` | Home | Bio landing page |
-| `/about` | About | Background and experience |
-| `/projects` | Projects | Portfolio project showcase |
-| `/resume` | Resume | Professional CV |
-| `/contact` | Contact | Contact form |
-| `/blog` | Blog | Technical articles |
-| `/blog/{slug}` | Article | Individual blog posts |
-| `/toronto` | Toronto Dashboard | Neighbourhood analysis (5 tabs) |
-| `/toronto/methodology` | Methodology | Dashboard data sources and methods |
-| `/health` | Health | API health check endpoint |
-
-## Toronto Neighbourhood Dashboard
-
-An interactive choropleth dashboard analyzing Toronto's 158 official neighbourhoods across five dimensions:
-
-- **Overview**: Composite livability scores, income vs safety scatter
-- **Housing**: Affordability index, rent trends, dwelling types
-- **Safety**: Crime rates, breakdowns by type, trend analysis
-- **Demographics**: Income distribution, age pyramids, population density
-- **Amenities**: Parks, schools, transit accessibility
-
-**Data Sources**:
-- City of Toronto Open Data Portal (neighbourhoods, census profiles, amenities)
-- Toronto Police Service (crime statistics)
-- CMHC Rental Market Survey (rental data by zone)
+**Frontend/Visualization**: See [personal-portfolio](https://gitea.hotserv.cloud/personal-projects/personal-portfolio) (separate repository)
 
 ## Architecture
 
@@ -46,7 +24,7 @@ flowchart LR
         A3[CMHC Data]
     end
 
-    subgraph ETL
+    subgraph ETL["ETL Pipeline (This Repo)"]
         B1[Parsers]
         B2[Loaders]
     end
@@ -56,94 +34,111 @@ flowchart LR
         C2[dbt Models]
     end
 
-    subgraph Application
-        D1[Dash App]
-        D2[Plotly Figures]
+    subgraph Consumer["Portfolio Webapp"]
+        D1[Query Services]
+        D2[Visualizations]
     end
 
     A1 & A2 & A3 --> B1 --> B2 --> C1 --> C2 --> D1 --> D2
 ```
 
 **Pipeline Stages:**
-- **Sources**: External APIs and data files (City of Toronto, Toronto Police, CMHC)
-- **ETL**: Python parsers extract and validate data; loaders persist to database
-- **Database**: PostgreSQL with PostGIS for geospatial; dbt transforms raw → staging → marts
-- **Application**: Dash serves interactive dashboards with Plotly visualizations
+1. **Sources**: External APIs and data files
+2. **ETL**: Python parsers extract and validate data; loaders persist to PostgreSQL
+3. **Transformation**: dbt models transform raw → staging → intermediate → marts
+4. **Consumer**: Webapp reads from mart tables (read-only access)
 
-For detailed database schema, see [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md).
+## Current Projects
+
+### Toronto Neighbourhood Analysis
+
+Comprehensive data pipeline for Toronto's 158 official neighbourhoods:
+
+**Data Sources**:
+- City of Toronto Open Data Portal (neighbourhoods, census, amenities)
+- Toronto Police Service (crime statistics)
+- CMHC Rental Market Survey (rental market data)
+
+**Output Schemas**:
+- `raw_toronto.*` - Raw fact and dimension tables
+- `stg_toronto.*` - dbt staging views (cleaned, typed)
+- `int_toronto.*` - dbt intermediate models (business logic)
+- `mart_toronto.*` - Analytics-ready tables for consumption
+
+**dbt Lineage**:
+```
+raw_toronto.dim_neighbourhood
+  └─> stg_toronto__dim_neighbourhood
+      └─> int_toronto__neighbourhood_metrics
+          └─> mart_toronto.dim_neighbourhood
+```
 
 ## Quick Start
 
-```bash
-# Clone and setup
-git clone https://gitea.hotserv.cloud/lmiranda/personal-portfolio.git
-cd personal-portfolio
+### Local Development
 
-# Install dependencies and configure environment
+```bash
+# Clone repository
+git clone https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow.git
+cd personal-portfolio-dataflow
+
+# Install dependencies
 make setup
 
-# Start database
+# Start PostgreSQL
 make docker-up
 
 # Initialize database schema
 make db-init
 
-# Run development server
-make run
+# Load data
+make load-toronto
+
+# Run dbt models
+make dbt-run
 ```
 
-Visit `http://localhost:8050` to view the portfolio.
+### Production Deployment
+
+See [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md) for complete VPS deployment guide.
+
+**Summary:**
+1. Clone to VPS: `/opt/apps/portfolio-dataflow`
+2. Create Python venv and install dependencies
+3. Configure `.env` with database connection
+4. Initialize database and load data
+5. Schedule cron jobs for automated ETL
 
 ## Project Structure
 
 ```
-portfolio_app/
-├── app.py                 # Dash app factory
-├── config.py              # Pydantic settings
-├── pages/
-│   ├── home.py            # Bio landing (/)
-│   ├── about.py           # About page
-│   ├── contact.py         # Contact form
-│   ├── projects.py        # Project showcase
-│   ├── resume.py          # Resume/CV
-│   ├── blog/              # Blog system
-│   │   ├── index.py       # Article listing
-│   │   └── article.py     # Article renderer
-│   └── toronto/           # Toronto dashboard
-│       ├── dashboard.py   # Main layout with tabs
-│       ├── methodology.py # Data documentation
-│       ├── tabs/          # Tab layouts (5)
-│       └── callbacks/     # Interaction logic
-├── components/            # Shared UI components
-├── figures/
-│   └── toronto/           # Toronto figure factories
-├── content/
-│   └── blog/              # Markdown blog articles
-├── toronto/               # Toronto data logic
-│   ├── parsers/           # API data extraction
-│   ├── loaders/           # Database operations
-│   ├── schemas/           # Pydantic models
-│   └── models/            # SQLAlchemy ORM (raw_toronto schema)
-└── errors/                # Exception handling
+dataflow/
+├── config.py              # Database configuration
+├── errors/                # Exception classes
+└── toronto/               # Toronto data pipeline
+    ├── parsers/           # API data extraction
+    ├── loaders/           # Database persistence
+    ├── schemas/           # Pydantic validation models
+    └── models/            # SQLAlchemy ORM (raw_toronto schema)
 
 dbt/                       # dbt project: portfolio
 ├── models/
-│   ├── shared/            # Cross-domain dimensions
+│   ├── shared/            # Cross-domain dimensions (dim_time)
 │   ├── staging/toronto/   # Toronto staging models
-│   ├── intermediate/toronto/ # Toronto intermediate models
+│   ├── intermediate/toronto/ # Toronto business logic
 │   └── marts/toronto/     # Toronto analytical tables
 
-notebooks/
-└── toronto/               # Toronto documentation (15 notebooks)
-    ├── overview/          # Overview tab visualizations
-    ├── housing/           # Housing tab visualizations
-    ├── safety/            # Safety tab visualizations
-    ├── demographics/      # Demographics tab visualizations
-    └── amenities/         # Amenities tab visualizations
+scripts/
+├── db/                    # Database initialization
+└── data/                  # ETL scripts
+    ├── load_toronto_data.py
+    └── seed_amenity_data.py
 
+data/                      # Raw data files (CSV, Excel)
 docs/
-├── PROJECT_REFERENCE.md   # Architecture reference
-├── CONTRIBUTING.md        # Developer guide
+├── deployment/            # Deployment guides
+│   ├── vps-deployment.md
+│   └── shared-postgres.md
 └── project-lessons-learned/
 ```
 
@@ -151,45 +146,180 @@ docs/
 
 | Layer | Technology |
 |-------|------------|
-| Database | PostgreSQL 16 + PostGIS |
+| Database | PostgreSQL 16 + PostGIS 3.4 |
 | Validation | Pydantic 2.x |
 | ORM | SQLAlchemy 2.x |
-| Transformation | dbt-postgres |
-| Data Processing | Pandas, GeoPandas |
-| Visualization | Dash + Plotly |
-| UI Components | dash-mantine-components |
+| Transformation | dbt-postgres 1.9+ |
+| Data Processing | Pandas, GeoPandas, Shapely |
+| PDF Parsing | pdfplumber, tabula-py |
 | Testing | pytest |
 | Python | 3.11+ |
 
 ## Development
 
+### Makefile Targets
+
 ```bash
-make test      # Run pytest
-make lint      # Run ruff linter
-make format    # Format code
-make ci        # Run all checks
-make dbt-run   # Run dbt models
-make dbt-test  # Run dbt tests
+# Setup & Database
+make setup          # Install deps, create .env, init pre-commit
+make docker-up      # Start PostgreSQL + PostGIS
+make docker-down    # Stop containers
+make db-init        # Initialize database schema
+make db-reset       # Drop and recreate database (DESTRUCTIVE)
+
+# Data Loading
+make load-data      # Load all project data (currently: Toronto)
+make load-toronto   # Load Toronto data from APIs
+
+# dbt
+make dbt-run        # Run dbt models
+make dbt-test       # Run dbt tests
+make dbt-docs       # Generate and serve dbt documentation
+
+# Testing & Quality
+make test           # Run pytest
+make lint           # Run ruff linter
+make format         # Run ruff formatter
+make typecheck      # Run mypy type checker
+make ci             # Run all checks (lint, typecheck, test)
 ```
 
-## Environment Variables
+### Environment Variables
 
 Copy `.env.example` to `.env` and configure:
 
 ```bash
+# Database Connection
 DATABASE_URL=postgresql://user:pass@localhost:5432/portfolio
 POSTGRES_USER=portfolio
 POSTGRES_PASSWORD=<secure>
 POSTGRES_DB=portfolio
-DASH_DEBUG=true
-SECRET_KEY=<random>
+
+# Logging
+LOG_LEVEL=INFO
 ```
+
+## Testing
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+make test-cov
+
+# Run specific test file
+pytest tests/test_loaders.py -v
+```
+
+## dbt Models
+
+### Model Layers
+
+| Layer | Naming | Purpose |
+|-------|--------|---------|
+| Staging | `stg_{domain}__{entity}` | 1:1 source mapping, cleaned |
+| Intermediate | `int_{domain}__{transform}` | Business logic, joins |
+| Marts | `mart_{domain}` | Analytics-ready tables |
+
+### Run Models
+
+```bash
+# Run all models
+make dbt-run
+
+# Run specific model
+cd dbt && dbt run --profiles-dir . --select stg_toronto__dim_neighbourhood
+
+# Run with full refresh
+cd dbt && dbt run --profiles-dir . --full-refresh
+
+# Run tests
+make dbt-test
+```
+
+### Generate Documentation
+
+```bash
+make dbt-docs
+# Opens browser to http://localhost:8080
+```
+
+## Deployment
+
+### VPS Deployment
+
+Complete guide: [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md)
+
+**Prerequisites:**
+- VPS with Docker + Docker Compose
+- PostgreSQL container (see [shared-postgres.md](docs/deployment/shared-postgres.md))
+- Python 3.11+
+
+**Deployment model**: Cron-based ETL jobs (not a containerized service)
+
+**Recommended schedule:**
+- Daily data refresh: 2 AM
+- dbt models: 3 AM (after data load)
+- dbt tests: 4 AM
+- Weekly full refresh: Sunday 1 AM
+
+### CI/CD
+
+Gitea Actions workflows:
+- **ci.yml**: Lint and test on push to development/staging/main
+- **deploy-staging.yml**: Deploy to staging on push to staging branch
+- **deploy-production.yml**: Deploy to production on push to main branch
+
+## Database Schema
+
+### Toronto Raw Schema
+
+**Dimensions:**
+- `raw_toronto.dim_neighbourhood` - 158 neighbourhoods with geometries
+- `raw_toronto.dim_time` - Date dimension
+- `raw_toronto.dim_cmhc_zone` - CMHC zones (36 zones)
+
+**Facts:**
+- `raw_toronto.fact_census` - Census metrics by neighbourhood
+- `raw_toronto.fact_crime` - Crime incidents by neighbourhood and date
+- `raw_toronto.fact_rentals` - Rental data by CMHC zone and date
+- `raw_toronto.fact_amenities` - Points of interest by neighbourhood
+
+### Toronto Mart Schema
+
+- `mart_toronto.dim_neighbourhood` - Enriched neighbourhood dimension
+- `mart_toronto.fact_neighbourhood_metrics` - Pre-aggregated metrics
+- `mart_toronto.fact_crime_summary` - Crime statistics
+- `mart_toronto.fact_housing_metrics` - Housing affordability metrics
+
+See [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) for complete schema documentation.
+
+## Adding New Data Domains
+
+To add a new data domain (e.g., `football`):
+
+1. **Create domain directory**: `dataflow/football/`
+2. **Implement parsers**: Extract data from sources
+3. **Create schemas**: Pydantic models for validation
+4. **Define models**: SQLAlchemy ORM for `raw_football` schema
+5. **Build loaders**: Persist data to database
+6. **Write dbt models**: `staging/football/`, `marts/football/`
+7. **Create load script**: `scripts/data/load_football_data.py`
+8. **Add Makefile target**: `make load-football`
 
 ## Documentation
 
-- **For developers**: See `docs/CONTRIBUTING.md` for setup and contribution guidelines
-- **For Claude Code**: See `CLAUDE.md` for AI assistant context
-- **Architecture**: See `docs/PROJECT_REFERENCE.md` for technical details
+- **Deployment**: [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md)
+- **Shared PostgreSQL**: [docs/deployment/shared-postgres.md](docs/deployment/shared-postgres.md)
+- **For Claude Code**: [CLAUDE.md](CLAUDE.md) (AI assistant context)
+- **Database Schema**: [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)
+- **Lessons Learned**: [docs/project-lessons-learned/INDEX.md](docs/project-lessons-learned/INDEX.md)
+
+## Related Repositories
+
+- **Frontend/Webapp**: [personal-portfolio](https://gitea.hotserv.cloud/personal-projects/personal-portfolio) - Dash app with visualizations
+- **Live Site**: [leodata.science](https://leodata.science) (when deployed)
 
 ## License
 
@@ -198,3 +328,5 @@ MIT
 ## Author
 
 Leo Miranda
+- GitHub: [leonardomiranda](https://github.com/leonardomiranda)
+- Email: contact@leodata.science

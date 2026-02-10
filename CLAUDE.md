@@ -30,27 +30,20 @@
 
 ---
 
+## Project Overview
 
+**Repository**: personal-portfolio-dataflow
+**Purpose**: Data engineering pipeline (ETL/ELT) for analytics projects
+**Scope**: Data acquisition → Database persistence (NO FRONTEND)
 
-## Mandatory Behavior Rules
-
-**These rules are NON-NEGOTIABLE. Violating them wastes the user's time and money.**
-
-1. **CHECK EVERYTHING** - Search ALL locations before saying "no" (cache, installed, source directories)
-2. **BELIEVE THE USER** - Investigate thoroughly before disagreeing; user instincts are often right
-3. **VERIFY BEFORE "DONE"** - Run commands, show output; "done" means verified working
-4. **SHOW EXACTLY WHAT'S ASKED** - Do not interpret or summarize unless requested
-
----
-
-Working context for Claude Code on the Analytics Portfolio project.
+This is a **data-only** repository. All visualization and frontend code lives in the separate `personal-portfolio` webapp repository.
 
 ---
 
 ## Project Status
 
-**Last Completed Sprint**: 9 (Neighbourhood Dashboard Transition)
-**Current State**: Ready for deployment sprint or new features
+**Last Completed Sprint**: 10 (Dataflow Separation & Production Deployment)
+**Current State**: Production-ready data pipeline
 **Branch**: `development` (feature branches merge here)
 
 ---
@@ -71,8 +64,10 @@ make db-reset       # Drop and recreate database (DESTRUCTIVE)
 make load-data      # Load all project data (currently: Toronto)
 make load-toronto   # Load Toronto data from APIs
 
-# Application
-make run            # Start Dash dev server
+# dbt
+make dbt-run        # Run dbt models
+make dbt-test       # Run dbt tests
+make dbt-docs       # Generate and serve dbt documentation
 
 # Testing & Quality
 make test           # Run pytest
@@ -80,11 +75,6 @@ make lint           # Run ruff linter
 make format         # Run ruff formatter
 make typecheck      # Run mypy type checker
 make ci             # Run all checks (lint, typecheck, test)
-
-# dbt
-make dbt-run        # Run dbt models
-make dbt-test       # Run dbt tests
-make dbt-docs       # Generate and serve dbt documentation
 
 # Run `make help` for full target list
 ```
@@ -116,8 +106,6 @@ make dbt-docs       # Generate and serve dbt documentation
 | `models/` | SQLAlchemy ORM for database persistence |
 | `parsers/` | API/CSV extraction for raw data ingestion |
 | `loaders/` | Database operations for data loading |
-| `services/` | Query functions for dbt mart queries |
-| `figures/` | Chart factories for Plotly figure generation |
 | `errors/` | Custom exception classes (see `errors/exceptions.py`) |
 
 ### Code Standards
@@ -131,21 +119,26 @@ make dbt-docs       # Generate and serve dbt documentation
 
 ## Application Structure
 
-**Entry Point:** `portfolio_app/app.py` (Dash app factory with Pages routing)
+**Entry Point**: ETL scripts in `scripts/data/`
 
 | Directory | Purpose |
 |-----------|---------|
-| `pages/` | Dash Pages (file-based routing) |
-| `pages/toronto/` | Toronto Dashboard (`tabs/` for layouts, `callbacks/` for interactions) |
-| `components/` | Shared UI components |
-| `figures/toronto/` | Toronto chart factories |
-| `toronto/` | Toronto data logic (parsers, loaders, schemas, models) |
+| `dataflow/` | Core data pipeline code |
+| `dataflow/toronto/` | Toronto data logic (parsers, loaders, schemas, models) |
+| `scripts/db/` | Database initialization |
+| `scripts/data/` | ETL scripts |
+| `dbt/` | dbt project (transformations) |
+| `data/` | Raw data files |
+| `docs/` | Documentation |
 
-**Key URLs:** `/` (home), `/toronto` (dashboard), `/blog` (listing), `/blog/{slug}` (articles), `/health` (status)
+**Key Operations:**
+- `scripts/data/load_toronto_data.py` - Load Toronto data from APIs
+- `scripts/db/init_schema.py` - Initialize database schemas
+- `dbt/models/` - Data transformations
 
-### Multi-Dashboard Architecture
+### Multi-Domain Architecture
 
-- **figures/**: Domain-namespaced (`figures/toronto/`, future: `figures/football/`)
+- **dataflow/**: Domain-namespaced (`dataflow/toronto/`, future: `dataflow/football/`)
 - **dbt models**: Domain subdirectories (`staging/toronto/`, `marts/toronto/`)
 - **Database schemas**: Domain-specific raw data (`raw_toronto`, future: `raw_football`)
 
@@ -155,12 +148,11 @@ make dbt-docs       # Generate and serve dbt documentation
 
 | Layer | Technology | Version |
 |-------|------------|---------|
-| Database | PostgreSQL + PostGIS | 16.x |
+| Database | PostgreSQL + PostGIS | 16.x / 3.4 |
 | Validation | Pydantic | >=2.0 |
 | ORM | SQLAlchemy | >=2.0 (2.0-style API only) |
 | Transformation | dbt-postgres | >=1.7 |
-| Visualization | Dash + Plotly + dash-mantine-components | >=2.14 |
-| Geospatial | GeoPandas + Shapely | >=0.14 |
+| Data Processing | Pandas, GeoPandas, Shapely | Latest |
 | Python | 3.11+ | Via pyenv |
 
 **Notes**: SQLAlchemy 2.0 + Pydantic 2.0 only. Docker Compose V2 format (no `version` field).
@@ -198,6 +190,7 @@ make dbt-docs       # Generate and serve dbt documentation
 |---------|--------|
 | Historical boundary reconciliation (140->158) | 2021+ data only for V1 |
 | ML prediction models | Energy project scope (future phase) |
+| Frontend visualizations | Moved to separate webapp repository |
 
 ---
 
@@ -210,10 +203,12 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/portfolio
 POSTGRES_USER=portfolio
 POSTGRES_PASSWORD=<secure>
 POSTGRES_DB=portfolio
-DASH_DEBUG=true
-SECRET_KEY=<random>
 LOG_LEVEL=INFO
 ```
+
+**Removed** (frontend-only):
+- `DASH_DEBUG` - Not applicable
+- `SECRET_KEY` - Not applicable
 
 ---
 
@@ -221,25 +216,10 @@ LOG_LEVEL=INFO
 
 | Document | Location | Use When |
 |----------|----------|----------|
-| Project reference | `docs/PROJECT_REFERENCE.md` | Architecture decisions |
-| Developer guide | `docs/CONTRIBUTING.md` | How to add pages, tabs |
+| Deployment runbook | `docs/deployment/vps-deployment.md` | Deploying to VPS |
+| Shared postgres | `docs/deployment/shared-postgres.md` | Multi-database postgres setup |
+| Database schema | `docs/DATABASE_SCHEMA.md` | Schema reference |
 | Lessons learned | `docs/project-lessons-learned/INDEX.md` | Past issues and solutions |
-| Deployment runbook | `docs/runbooks/deployment.md` | Deploying to environments |
-| Plugin workflow prompts | `docs/plugin-prompts/` | Interactive UI adjustment sessions |
-
-### Plugin Workflow Prompts
-
-The `docs/plugin-prompts/` directory contains specialized workflow prompts for activating leo-code-marketplace plugins in interactive UI refinement sessions:
-
-| Prompt | Purpose | Plugins Used |
-|--------|---------|--------------|
-| `ui-dash-adjust.md` | Dashboard page adjustments (data-driven pages with dbt, Plotly, callbacks) | viz-platform, data-platform, git-flow |
-| `ui-layout-adjust.md` | Non-dashboard page adjustments (home, about, contact, projects, resume, blog) | viz-platform, git-flow |
-
-**When to use:**
-- Start live Dash debug sessions with iterative UI changes
-- Auto-reload on save workflow
-- Includes quality gates and git-flow integration for branch management
 
 ---
 
@@ -258,7 +238,7 @@ The `docs/plugin-prompts/` directory contains specialized workflow prompts for a
 
 **Default workflow**: `/projman:sprint-plan` before code -> create issues -> `/projman:sprint-start` -> track via Gitea -> `/projman:sprint-close`
 
-**Gitea**: `personal-projects/personal-portfolio` at `gitea.hotserv.cloud`
+**Gitea**: `personal-projects/personal-portfolio-dataflow` at `gitea.hotserv.cloud`
 
 ### Data Platform: data-platform
 
@@ -272,19 +252,6 @@ Use for dbt, PostgreSQL, and PostGIS operations.
 **When to use:** Schema changes, dbt model development, data loading, before merging data PRs.
 
 **MCP tools available:** `pg_connect`, `pg_query`, `pg_tables`, `pg_columns`, `pg_schemas`, `st_*` (PostGIS), `dbt_*` operations.
-
-### Visualization: viz-platform
-
-Use for Dash/Mantine component validation and chart creation.
-
-| Skill | Purpose |
-|-------|---------|
-| `/viz-platform:component` | Inspect DMC component props and validation |
-| `/viz-platform:chart` | Create themed Plotly charts |
-| `/viz-platform:theme` | Apply/validate themes |
-| `/viz-platform:dashboard` | Create dashboard layouts |
-
-**When to use:** Dashboard development, new visualizations, component prop lookup.
 
 ### Code Quality: code-sentinel
 
@@ -326,17 +293,6 @@ Use when requirements are ambiguous or need decomposition.
 
 **When to use:** Unclear specifications, complex feature requests, conflicting requirements.
 
-### Contract Validation: contract-validator
-
-Use for plugin interface validation.
-
-| Skill | Purpose |
-|-------|---------|
-| `/contract-validator:agent-check` | Quick agent definition validation |
-| `/contract-validator:full-validation` | Full plugin contract validation |
-
-**When to use:** When modifying plugin integrations or agent definitions.
-
 ### Git Workflow: git-flow
 
 Use for standardized git operations.
@@ -351,4 +307,57 @@ Use for standardized git operations.
 
 ---
 
-*Last Updated: February 2026*
+## Deployment
+
+### Production Deployment
+
+This repository deploys to VPS as **cron-based ETL jobs** (not a containerized service).
+
+**Architecture:**
+```
+VPS: /opt/apps/
+├── docker-compose.yml          # PostgreSQL (shared with Gitea, CloudBeaver)
+├── gitea/
+├── cloudbeaver/
+└── portfolio-dataflow/         # This application (venv + cron)
+    ├── .venv/
+    ├── dataflow/
+    ├── dbt/
+    └── scripts/
+```
+
+**Deployment Steps:**
+1. Clone to `/opt/apps/portfolio-dataflow`
+2. Create Python venv and install dependencies
+3. Configure `.env` with shared postgres connection
+4. Initialize database and load data
+5. Schedule cron jobs for automated ETL
+
+**See**: `docs/deployment/vps-deployment.md` for complete guide
+
+### Shared PostgreSQL
+
+VPS uses a single PostgreSQL container with multiple databases:
+- `gitea` - Gitea database
+- `portfolio` - Portfolio dataflow database
+
+**See**: `docs/deployment/shared-postgres.md` for multi-database setup
+
+---
+
+## Webapp Integration
+
+The frontend webapp (`personal-portfolio`) consumes data from this pipeline:
+
+**Interface Contract:**
+- Dataflow produces: `mart_toronto.*` tables
+- Webapp consumes: Read-only queries to mart tables
+- Connection: Same postgres instance, different database client
+
+**Responsibilities:**
+- **Dataflow** (this repo): Maintain stable mart schemas, document column contracts, version changes
+- **Webapp**: Read-only access, never write to database
+
+---
+
+*Last Updated: February 2026 (Sprint 10)*
