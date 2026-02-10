@@ -57,7 +57,7 @@ def seed_amenities() -> int:
     year = 2024
 
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM public.fact_amenities"))
+        conn.execute(text("DELETE FROM raw_toronto.fact_amenities"))
 
         total = 0
         for n_id in neighbourhood_ids:
@@ -66,7 +66,7 @@ def seed_amenities() -> int:
                 conn.execute(
                     text(
                         """
-                    INSERT INTO public.fact_amenities
+                    INSERT INTO raw_toronto.fact_amenities
                     (neighbourhood_id, amenity_type, count, year)
                     VALUES (:neighbourhood_id, :amenity_type, :count, :year)
                 """
@@ -94,7 +94,7 @@ def update_population() -> int:
                 """
             UPDATE raw_toronto.dim_neighbourhood dn
             SET population = fc.population
-            FROM public.fact_census fc
+            FROM raw_toronto.fact_census fc
             WHERE dn.neighbourhood_id = fc.neighbourhood_id
               AND fc.census_year = 2021
         """
@@ -112,7 +112,7 @@ def seed_median_age() -> int:
 
     with engine.begin() as conn:
         result = conn.execute(
-            text("SELECT id FROM public.fact_census WHERE median_age IS NULL")
+            text("SELECT id FROM raw_toronto.fact_census WHERE median_age IS NULL")
         )
         null_ids = [row[0] for row in result]
 
@@ -123,7 +123,7 @@ def seed_median_age() -> int:
         for census_id in null_ids:
             age = random.randint(30, 50)
             conn.execute(
-                text("UPDATE public.fact_census SET median_age = :age WHERE id = :id"),
+                text("UPDATE raw_toronto.fact_census SET median_age = :age WHERE id = :id"),
                 {"age": age, "id": census_id},
             )
 
@@ -137,7 +137,7 @@ def seed_census_housing() -> int:
 
     with engine.begin() as conn:
         result = conn.execute(
-            text("SELECT id FROM public.fact_census WHERE pct_owner_occupied IS NULL")
+            text("SELECT id FROM raw_toronto.fact_census WHERE pct_owner_occupied IS NULL")
         )
         null_ids = [row[0] for row in result]
 
@@ -149,7 +149,7 @@ def seed_census_housing() -> int:
             conn.execute(
                 text(
                     """
-                UPDATE public.fact_census SET
+                UPDATE raw_toronto.fact_census SET
                     pct_owner_occupied = :owner,
                     pct_renter_occupied = :renter,
                     average_dwelling_value = :dwelling,
