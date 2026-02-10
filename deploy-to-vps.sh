@@ -154,6 +154,9 @@ echo -e "${BLUE}Step 8: Running dbt models and tests...${NC}"
 ssh $VPS_HOST "
     cd $DEPLOY_PATH
     source .venv/bin/activate
+    # Load environment variables
+    set -a && source .env && set +a
+    # Run dbt
     cd dbt && dbt deps --profiles-dir . && dbt run --profiles-dir . && dbt test --profiles-dir .
 "
 echo -e "${GREEN}✓ dbt models executed${NC}"
@@ -189,13 +192,13 @@ ssh $VPS_HOST "
     (crontab -l 2>/dev/null | grep -v 'portfolio-dataflow'; cat <<CRONEOF
 # Portfolio Dataflow - Toronto Data ETL
 # Daily data refresh at 2 AM
-0 2 * * * cd $APPS_DIR/personal-portfolio-dataflow && $APPS_DIR/personal-portfolio-dataflow/.venv/bin/python scripts/data/load_toronto_data.py >> /var/log/portfolio-dataflow/etl.log 2>&1
+0 2 * * * cd $APPS_DIR/personal-portfolio-dataflow && set -a && source .env && set +a && $APPS_DIR/personal-portfolio-dataflow/.venv/bin/python scripts/data/load_toronto_data.py >> /var/log/portfolio-dataflow/etl.log 2>&1
 
 # Run dbt models at 3 AM (after data loads)
-0 3 * * * cd $APPS_DIR/personal-portfolio-dataflow/dbt && $APPS_DIR/personal-portfolio-dataflow/.venv/bin/dbt run --profiles-dir . >> /var/log/portfolio-dataflow/dbt.log 2>&1
+0 3 * * * cd $APPS_DIR/personal-portfolio-dataflow && set -a && source .env && set +a && cd dbt && $APPS_DIR/personal-portfolio-dataflow/.venv/bin/dbt run --profiles-dir . >> /var/log/portfolio-dataflow/dbt.log 2>&1
 
 # Run dbt tests at 4 AM
-0 4 * * * cd $APPS_DIR/personal-portfolio-dataflow/dbt && $APPS_DIR/personal-portfolio-dataflow/.venv/bin/dbt test --profiles-dir . >> /var/log/portfolio-dataflow/dbt-test.log 2>&1
+0 4 * * * cd $APPS_DIR/personal-portfolio-dataflow && set -a && source .env && set +a && cd dbt && $APPS_DIR/personal-portfolio-dataflow/.venv/bin/dbt test --profiles-dir . >> /var/log/portfolio-dataflow/dbt-test.log 2>&1
 CRONEOF
     ) | crontab -
 "
