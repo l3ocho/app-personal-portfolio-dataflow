@@ -380,6 +380,21 @@ def run_dbt() -> bool:
     env = os.environ.copy()
     env["POSTGRES_PASSWORD"] = os.environ.get("POSTGRES_PASSWORD", "")
 
+    # First install dbt packages
+    print("Installing dbt packages...")
+    result = subprocess.run(
+        [dbt_cmd, "deps", "--profiles-dir", str(dbt_dir)],
+        cwd=dbt_dir,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    if result.returncode != 0:
+        print(f"dbt deps failed:\n{result.stdout}\n{result.stderr}")
+        return False
+
+    # Then run dbt models
     result = subprocess.run(
         [dbt_cmd, "run", "--profiles-dir", str(dbt_dir)],
         cwd=dbt_dir,
@@ -389,7 +404,7 @@ def run_dbt() -> bool:
     )
 
     if result.returncode != 0:
-        print(f"dbt failed:\n{result.stdout}\n{result.stderr}")
+        print(f"dbt run failed:\n{result.stdout}\n{result.stderr}")
         return False
 
     print("dbt completed successfully")
