@@ -191,6 +191,8 @@ make ci             # Run all checks (lint, typecheck, test)
 | Historical boundary reconciliation (140->158) | 2021+ data only for V1 |
 | ML prediction models | Energy project scope (future phase) |
 | Frontend visualizations | Moved to separate webapp repository |
+| Policy event annotation (dim_policy_event) | Table exists but requires manual data curation (future phase) |
+| dbt source freshness checks | Requires migration to add updated_at timestamp columns to raw tables |
 
 ---
 
