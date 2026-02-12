@@ -259,3 +259,98 @@ def load_statcan_cmhc_data(
         result = _load(sess)
         sess.commit()
         return result
+
+
+def update_universe_from_excel(
+    excel_data: dict[int, list[Any]],  # year -> list of CMHCUniverseRecord
+    session: Session | None = None,
+) -> int:
+    """Upsert fact_rentals records with universe data from Excel files.
+
+    This function creates zone-level rental records with universe (total rental units)
+    data from CMHC Excel files. The StatCan API only provides CMA-level aggregate data,
+    so this adds detailed zone-level records.
+
+    Args:
+        excel_data: Dictionary mapping year to list of CMHCUniverseRecord objects
+            from the cmhc_excel parser.
+        session: Optional existing session.
+
+    Returns:
+        Number of records inserted or updated.
+    """
+    from dataflow.toronto.parsers.cmhc_excel import CMHCUniverseRecord
+
+    def _upsert(sess: Session) -> int:
+        facts_to_upsert = []
+
+        for year, records in excel_data.items():
+            # Get date key for October (CMHC survey month)
+            survey_date = date(year, 10, 1)
+            date_key = generate_date_key(survey_date)
+
+            # Verify time dimension exists
+            time_dim = sess.query(DimTime).filter_by(date_key=date_key).first()
+            if not time_dim:
+                logger.warning(
+                    f"Time dimension not found for {survey_date}, skipping year {year}"
+                )
+                continue
+
+            # Get zone key mapping
+            zones = sess.query(DimCMHCZone).all()
+            zone_map = {z.zone_code: z.zone_key for z in zones}
+
+            for record in records:
+                if not isinstance(record, CMHCUniverseRecord):
+                    logger.warning(f"Skipping invalid record type: {type(record)}")
+                    continue
+
+                # Get zone_key for this zone
+                zone_key = zone_map.get(record.zone_code)
+                if not zone_key:
+                    logger.debug(
+                        f"Zone not found in dim_cmhc_zone: {record.zone_code}, skipping"
+                    )
+                    continue
+
+                # Create fact record with universe only (rent/vacancy will be NULL)
+                fact = FactRentals(
+                    date_key=date_key,
+                    zone_key=zone_key,
+                    bedroom_type=record.bedroom_type,
+                    universe=record.universe,
+                    avg_rent=None,
+                    median_rent=None,
+                    vacancy_rate=None,
+                    availability_rate=None,
+                    turnover_rate=None,
+                    rent_change_pct=None,
+                    reliability_code=None,
+                )
+                facts_to_upsert.append(fact)
+
+        # Upsert all records
+        if facts_to_upsert:
+            inserted, updated = upsert_by_key(
+                sess,
+                FactRentals,
+                facts_to_upsert,
+                ["date_key", "zone_key", "bedroom_type"],
+            )
+            total = inserted + updated
+            logger.info(
+                f"Upserted {total} zone-level rental records with universe data "
+                f"({inserted} inserted, {updated} updated)"
+            )
+            return total
+        else:
+            logger.warning("No valid records to upsert")
+            return 0
+
+    if session:
+        return _upsert(session)
+    with get_session() as sess:
+        result = _upsert(sess)
+        sess.commit()
+        return result

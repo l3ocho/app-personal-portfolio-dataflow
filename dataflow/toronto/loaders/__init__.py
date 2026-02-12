@@ -8,6 +8,7 @@ from .cmhc import (
     load_cmhc_record,
     load_cmhc_rentals,
     load_statcan_cmhc_data,
+    update_universe_from_excel,
 )
 from .cmhc_crosswalk import (
     build_cmhc_neighbourhood_crosswalk,
@@ -38,6 +39,7 @@ __all__ = [
     "load_cmhc_rentals",
     "load_cmhc_record",
     "load_statcan_cmhc_data",
+    "update_universe_from_excel",
     "ensure_toronto_cma_zone",
     # Phase 3 loaders
     "load_census_data",

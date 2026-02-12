@@ -81,8 +81,15 @@ crime_summary as (
         ) as crime_rate_per_100k
 
     from neighbourhoods n
-    left join census c on n.neighbourhood_id = c.neighbourhood_id
     inner join with_yoy w on n.neighbourhood_id = w.neighbourhood_id
+    -- Use most recent census data available for each year
+    left join census c on n.neighbourhood_id = c.neighbourhood_id
+        and c.census_year = (
+            select max(c2.census_year)
+            from {{ ref('stg_toronto__census') }} c2
+            where c2.neighbourhood_id = n.neighbourhood_id
+            and c2.census_year <= w.year
+        )
 )
 
 select * from crime_summary
