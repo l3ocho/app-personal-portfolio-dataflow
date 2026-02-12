@@ -47,10 +47,12 @@ from dataflow.toronto.loaders import (  # noqa: E402
     load_neighbourhoods,
     load_statcan_cmhc_data,
     load_time_dimension,
+    update_universe_from_excel,
 )
 from dataflow.toronto.parsers import (  # noqa: E402
     TorontoOpenDataParser,
     TorontoPoliceParser,
+    parse_cmhc_excel_directory,
 )
 from dataflow.toronto.parsers.geo import CMHCZoneParser  # noqa: E402
 from dataflow.toronto.parsers.statcan_cmhc import (  # noqa: E402
@@ -182,23 +184,53 @@ class DataPipeline:
         logger.info(f"  Loaded {count} neighbourhoods")
 
     def _load_census(self, session: Any) -> None:
-        """Fetch and load census profile data."""
+        """Fetch and load census profile data for 2016 and 2021."""
         logger.info("Fetching census profiles from Toronto Open Data...")
 
         if self.dry_run:
-            logger.info("  [DRY RUN] Would fetch and load census data")
+            logger.info("  [DRY RUN] Would fetch and load census data (2016 and 2021)")
             return
 
         parser = TorontoOpenDataParser()
-        census_records = parser.get_census_profiles(year=2021)
+        total_count = 0
 
-        if not census_records:
-            logger.warning("  No census records fetched")
-            return
+        # Load 2016 census data
+        try:
+            logger.info("  Fetching 2016 census profiles...")
+            census_records_2016 = parser.get_census_profiles(year=2016)
+            if census_records_2016:
+                count = load_census_data(census_records_2016, session)
+                total_count += count
+                logger.info(f"  Loaded {count} census records for 2016")
+            else:
+                logger.warning("  No 2016 census records fetched")
+        except Exception as e:
+            logger.warning(f"  Failed to load 2016 census data: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
 
-        count = load_census_data(census_records, session)
-        self.stats["census"] = count
-        logger.info(f"  Loaded {count} census records")
+        # Load 2021 census data
+        try:
+            logger.info("  Fetching 2021 census profiles...")
+            census_records_2021 = parser.get_census_profiles(year=2021)
+            if census_records_2021:
+                count = load_census_data(census_records_2021, session)
+                total_count += count
+                logger.info(f"  Loaded {count} census records for 2021")
+            else:
+                logger.warning("  No 2021 census records fetched")
+        except Exception as e:
+            logger.warning(f"  Failed to load 2021 census data: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
+
+        self.stats["census"] = total_count
+        if total_count == 0:
+            logger.warning("  No census records loaded")
+        else:
+            logger.info(f"  Total census records loaded: {total_count}")
 
     def _load_crime(self, session: Any) -> None:
         """Fetch and load crime statistics."""
@@ -220,7 +252,7 @@ class DataPipeline:
         logger.info(f"  Loaded {count} crime records")
 
     def _load_amenities(self, session: Any) -> None:
-        """Fetch and load amenity data (parks, schools, childcare)."""
+        """Fetch and load amenity data (parks, schools, childcare, libraries, community centres)."""
         logger.info("Fetching amenities from Toronto Open Data...")
 
         if self.dry_run:
@@ -260,6 +292,26 @@ class DataPipeline:
         except Exception as e:
             logger.warning(f"  Failed to load childcare: {e}")
 
+        # Fetch libraries
+        try:
+            libraries = parser.get_libraries()
+            if libraries:
+                count = load_amenities(libraries, year=2024, session=session)
+                total_count += count
+                logger.info(f"  Loaded {count} library amenities")
+        except Exception as e:
+            logger.warning(f"  Failed to load libraries: {e}")
+
+        # Fetch community centres
+        try:
+            community_centres = parser.get_community_centres()
+            if community_centres:
+                count = load_amenities(community_centres, year=2024, session=session)
+                total_count += count
+                logger.info(f"  Loaded {count} community centre amenities")
+        except Exception as e:
+            logger.warning(f"  Failed to load community centres: {e}")
+
         # Fetch transit stops (TTC GTFS data)
         try:
             transit_stops = parser.get_transit_stops()
@@ -273,15 +325,16 @@ class DataPipeline:
         self.stats["amenities"] = total_count
 
     def _load_rentals(self, session: Any) -> None:
-        """Fetch and load CMHC rental data from StatCan."""
+        """Fetch and load CMHC rental data from StatCan, then update with Excel universe data."""
         logger.info("Fetching CMHC rental data from Statistics Canada...")
 
         if self.dry_run:
             logger.info("  [DRY RUN] Would fetch and load CMHC rental data")
+            logger.info("  [DRY RUN] Would update universe data from Excel files")
             return
 
         try:
-            # Fetch rental data (2014-present)
+            # Fetch rental data from StatCan API (2014-present)
             rental_records = fetch_toronto_rental_data(start_year=2014)
 
             if not rental_records:
@@ -290,7 +343,26 @@ class DataPipeline:
 
             count = load_statcan_cmhc_data(rental_records, session)
             self.stats["rentals"] = count
-            logger.info(f"  Loaded {count} CMHC rental records")
+            logger.info(f"  Loaded {count} CMHC rental records from StatCan API")
+
+            # Update universe values from Excel files
+            logger.info("Updating universe data from CMHC Excel files...")
+            cmhc_excel_dir = PROJECT_ROOT / "data" / "raw" / "cmhc"
+            if cmhc_excel_dir.exists():
+                excel_data = parse_cmhc_excel_directory(
+                    cmhc_excel_dir, start_year=2021
+                )
+                if excel_data:
+                    updated_count = update_universe_from_excel(excel_data, session)
+                    self.stats["universe_updates"] = updated_count
+                    logger.info(
+                        f"  Updated {updated_count} records with universe data"
+                    )
+                else:
+                    logger.warning("  No universe data parsed from Excel files")
+            else:
+                logger.warning(f"  CMHC Excel directory not found: {cmhc_excel_dir}")
+
         except Exception as e:
             logger.warning(f"  Failed to load CMHC rental data: {e}")
             if self.verbose:

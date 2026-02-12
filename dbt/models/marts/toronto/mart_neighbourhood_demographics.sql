@@ -35,6 +35,7 @@ final as (
         d.median_household_income,
         d.average_household_income,
         d.income_quintile,
+        d.is_imputed,  -- Flag for CPI-adjusted estimated values (income, education, dwelling - 2016-2020)
 
         -- Income index (100 = city average)
         case

@@ -939,6 +939,84 @@ class TorontoOpenDataParser:
             address_field="ADDRESS",
         )
 
+    def get_community_centres(self) -> list[AmenityRecord]:
+        """Fetch community centre locations from parks-and-recreation-facilities dataset.
+
+        Filters to TYPE='Community Centre' records only.
+
+        Returns:
+            List of validated AmenityRecord objects.
+        """
+        return self._fetch_amenities(
+            self.DATASETS["parks"],
+            AmenityType.COMMUNITY_CENTRE,
+            name_field="ASSET_NAME",
+            address_field="ADDRESS",
+            type_filter="Community Centre",
+        )
+
+    def get_libraries(self) -> list[AmenityRecord]:
+        """Fetch Toronto Public Library branch locations.
+
+        Uses the library-branch-general-information dataset.
+
+        Returns:
+            List of validated AmenityRecord objects.
+        """
+        try:
+            records = self._fetch_csv_as_json("library-branch-general-information")
+        except (httpx.HTTPError, ValueError) as e:
+            logger.warning(f"Could not fetch library data: {e}")
+            return []
+
+        amenity_records = []
+        skipped_no_location = 0
+
+        for record in records:
+            # Only include physical branches (excludes bookmobiles, virtual branches)
+            if str(record.get("PhysicalBranch", "0")) != "1":
+                continue
+
+            lat = record.get("Lat")
+            lon = record.get("Long")
+
+            # Skip if missing coordinates
+            if not lat or not lon:
+                skipped_no_location += 1
+                continue
+
+            try:
+                lat_float = float(lat)
+                lon_float = float(lon)
+            except (ValueError, TypeError):
+                skipped_no_location += 1
+                continue
+
+            # Use spatial matching to determine neighbourhood ID
+            neighbourhood_id = self._assign_neighbourhood_id(lat_float, lon_float)
+            if neighbourhood_id == 0:
+                skipped_no_location += 1
+                continue
+
+            amenity_records.append(
+                AmenityRecord(
+                    amenity_name=str(record.get("BranchName", "Unknown Library")),
+                    amenity_type=AmenityType.LIBRARY,
+                    address=str(record.get("Address", "")),
+                    latitude=lat_float,
+                    longitude=lon_float,
+                    neighbourhood_id=neighbourhood_id,
+                )
+            )
+
+        if skipped_no_location > 0:
+            logger.warning(
+                f"Skipped {skipped_no_location} libraries without valid coordinates"
+            )
+
+        logger.info(f"Parsed {len(amenity_records)} library records")
+        return amenity_records
+
     def get_transit_stops(self) -> list[AmenityRecord]:
         """Fetch TTC transit stop locations from GTFS data.
 

@@ -267,14 +267,36 @@ Census statistics. Grain: neighbourhood × census year.
 | census_year | INTEGER | NOT NULL | 2016, 2021, etc. |
 | population | INTEGER | | Total population |
 | population_density | NUMERIC(10,2) | | People per km² |
-| median_household_income | NUMERIC(12,2) | | Median income |
-| average_household_income | NUMERIC(12,2) | | Average income |
+| median_household_income | NUMERIC(12,2) | | Median income ⚠️ **See note below** |
+| average_household_income | NUMERIC(12,2) | | Average income ⚠️ **See note below** |
 | unemployment_rate | NUMERIC(5,2) | | Unemployment % |
 | pct_bachelors_or_higher | NUMERIC(5,2) | | Education rate |
 | pct_owner_occupied | NUMERIC(5,2) | | Owner rate |
 | pct_renter_occupied | NUMERIC(5,2) | | Renter rate |
 | median_age | NUMERIC(5,2) | | Median resident age |
 | average_dwelling_value | NUMERIC(12,2) | | Average home value |
+
+**⚠️ Data Quality Note - Income Columns**:
+
+The 2016 census from Toronto Open Data Portal **does not include neighbourhood-level household income data**. Only the 2021 census contains `median_household_income` and `average_household_income` at the neighbourhood grain.
+
+**Raw Data Status**:
+- **2021 Census**: Contains actual observed income values for all 158 neighbourhoods
+- **2016 Census**: Income values are NULL at neighbourhood level (only city-wide aggregate available)
+
+**Imputation in dbt Models**:
+
+For analytical use, income values for 2016-2020 are **imputed** in the `int_neighbourhood__demographics` intermediate model using backward inflation adjustment from 2021 census values.
+
+**Method**: Apply Statistics Canada CPI to adjust 2021 income backwards
+```sql
+income_2016 = income_2021 × (CPI_2016 / CPI_2021)
+income_2016 = income_2021 × (128.4 / 141.6)
+```
+
+**Important**: Imputed values are **estimates**, not observed census data. The `is_income_imputed` flag in downstream models identifies imputed values.
+
+**See**: `docs/data-quality/DATA_SOURCES.md` for complete imputation methodology and limitations.
 
 #### fact_crime
 Crime statistics. Grain: neighbourhood × year × crime type.
