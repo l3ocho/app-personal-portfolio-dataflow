@@ -79,12 +79,84 @@ make ci             # Run all checks (lint, typecheck, test)
 # Run `make help` for full target list
 ```
 
-### Branch Workflow
+### Git Workflow
 
-1. Create feature branch FROM `development`: `git checkout -b feature/{sprint}-{description}`
-2. Work and commit on feature branch
-3. Merge INTO `development` when complete
-4. `development` -> `staging` -> `main` for releases
+**Style**: PR-required (all changes via pull requests)
+**Base Branch**: `development`
+**Protected Branches**: `main`, `staging`, `development`
+**Repository**: `personal-projects/app-personal-portfolio-dataflow` @ `gitea.hotserv.cloud`
+
+#### Branch Naming
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| Feature | `feature/{sprint}-{description}` | `feature/11-add-user-auth` |
+| Fix | `fix/{sprint}-{description}` | `fix/11-schema-validation` |
+| Chore | `chore/{description}` | `chore/update-dependencies` |
+| Hotfix | `hotfix/{description}` | `hotfix/critical-security-patch` |
+
+Use `/gitflow branch-start` to create branches with correct naming.
+
+#### Commit Message Convention
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`
+**Scopes**: `data`, `db`, `dbt`, `api`, `ci`, `deploy`
+
+**Examples:**
+- `feat(data): add Toronto energy consumption loader`
+- `fix(dbt): correct join logic in mart_toronto model`
+- `docs(deploy): update VPS deployment runbook`
+
+Use `/gitflow commit` for auto-generated conventional commits.
+
+#### Workflow Steps
+
+1. **Start Feature**: `/gitflow branch-start` → creates `feature/{sprint}-{description}`
+2. **Make Changes**: Edit code, test locally (`make ci`)
+3. **Commit**: `/gitflow commit` (generates conventional commit message)
+4. **Push**: `git push -u origin feature/{sprint}-{description}`
+5. **Create PR**: Via Gitea UI or `gh pr create`
+6. **Review**: PR review (use `/pr review` for automated analysis)
+7. **Merge**: Merge PR into `development` (squash or merge commit)
+8. **Cleanup**: `/gitflow branch-cleanup` (deletes merged branches)
+
+#### Release Flow
+
+```
+development → staging → main
+```
+
+- **development**: Active development, all features merge here
+- **staging**: Pre-release testing, deploy to staging environment
+- **main**: Production-ready code, tagged releases
+
+#### Pre-Push Checks
+
+Before pushing or creating PR, run:
+```bash
+make ci          # Lint, typecheck, test
+make dbt-test    # Validate dbt models
+```
+
+Use `/data review` before merging data-related PRs.
+
+#### Protected Branch Rules
+
+- **main**: No direct commits, requires PR + review
+- **staging**: No direct commits, requires PR from development
+- **development**: No direct commits, requires PR from feature branches
+
+**Emergency hotfixes**: Create `hotfix/{description}` from `main`, merge back to both `main` and `development`.
 
 ---
 

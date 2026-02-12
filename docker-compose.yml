@@ -11,12 +11,26 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-portfolio}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/db/init-postgis.sql:/docker-entrypoint-initdb.d/init-postgis.sql:ro
+      - ./scripts/db/init-postgis.sql:/docker-entrypoint-initdb.d/01-init-postgis.sql:ro
+      - ./scripts/db/init-reader-user.sql:/docker-entrypoint-initdb.d/02-init-reader-user.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-portfolio} -d ${POSTGRES_DB:-portfolio}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: portfolio-pgweb
+    profiles: ["dev"]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: ${PGWEB_DATABASE_URL}
+    command: ["--bind=0.0.0.0", "--listen=8081", "--readonly"]
 
 volumes:
   postgres_data:
