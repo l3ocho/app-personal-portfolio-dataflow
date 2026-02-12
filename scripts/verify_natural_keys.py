@@ -2,8 +2,9 @@
 """Verify natural key uniqueness for composite constraints."""
 
 import os
-from sqlalchemy import create_engine, text
+
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -74,7 +75,7 @@ print("=" * 80)
 
 # Run summary counts
 with engine.connect() as conn:
-    for table_name in queries.keys():
+    for table_name in queries:
         schema, table = table_name.split("_", 1) if "_" in table_name else ("raw_toronto", table_name)
         full_table = f"raw_toronto.{table_name}"
 
