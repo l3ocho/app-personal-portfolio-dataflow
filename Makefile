@@ -65,6 +65,24 @@ docker-logs: ## View container logs
 	$(DOCKER_COMPOSE) logs -f
 
 # =============================================================================
+# Development Tools
+# =============================================================================
+
+pgweb-up: ## Start pgweb database browser (dev only)
+	@echo "$(GREEN)Starting pgweb on http://localhost:8081...$(NC)"
+	$(DOCKER_COMPOSE) --profile dev up pgweb -d
+	@echo "$(GREEN)pgweb started!$(NC)"
+	@echo "$(BLUE)Access from localhost: http://localhost:8081$(NC)"
+	@echo "$(BLUE)Access from LAN: http://$$(hostname -I | awk '{print $$1}'):8081$(NC)"
+
+pgweb-down: ## Stop pgweb
+	@echo "$(YELLOW)Stopping pgweb...$(NC)"
+	$(DOCKER_COMPOSE) --profile dev down
+
+pgweb-logs: ## View pgweb logs
+	$(DOCKER_COMPOSE) --profile dev logs -f pgweb
+
+# =============================================================================
 # Database
 # =============================================================================
 

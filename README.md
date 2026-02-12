@@ -157,6 +157,38 @@ docs/
 
 ## Development
 
+### Database Browser (pgweb)
+
+pgweb is available for browsing the database during development. It provides a lightweight web interface with read-only access.
+
+**Start pgweb:**
+```bash
+make pgweb-up
+```
+
+**Access pgweb:**
+- **From localhost**: http://localhost:8081
+- **From LAN** (other devices on your network):
+  - mDNS: `http://<hostname>.local:8081` (e.g., `http://raspberrypi.local:8081`)
+  - Direct IP: `http://<pi-ip>:8081` (e.g., `http://192.168.1.184:8081`)
+
+**Stop pgweb:**
+```bash
+make pgweb-down
+```
+
+**View logs:**
+```bash
+make pgweb-logs
+```
+
+**Security Notes:**
+- pgweb runs with the `portfolio_reader` user (read-only, `SELECT` on `mart_*` tables only)
+- pgweb is configured with `--readonly` flag for additional safety
+- pgweb is bound to `0.0.0.0` (all network interfaces) for LAN access
+- **Only use on trusted home networks** — stop the container on shared/public networks
+- pgweb only starts with the `dev` profile and never runs in production
+
 ### Makefile Targets
 
 ```bash
@@ -166,6 +198,11 @@ make docker-up      # Start PostgreSQL + PostGIS
 make docker-down    # Stop containers
 make db-init        # Initialize database schema
 make db-reset       # Drop and recreate database (DESTRUCTIVE)
+
+# Development Tools
+make pgweb-up       # Start pgweb database browser (dev only)
+make pgweb-down     # Stop pgweb
+make pgweb-logs     # View pgweb logs
 
 # Data Loading
 make load-data      # Load all project data (currently: Toronto)
