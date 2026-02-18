@@ -44,15 +44,15 @@ from dataflow.toronto.loaders import (  # noqa: E402
     load_census_data,
     load_cmhc_zones,
     load_crime_data,
+    load_excel_rental_data,
     load_neighbourhoods,
     load_statcan_cmhc_data,
     load_time_dimension,
-    update_universe_from_excel,
 )
 from dataflow.toronto.parsers import (  # noqa: E402
     TorontoOpenDataParser,
     TorontoPoliceParser,
-    parse_cmhc_excel_directory,
+    parse_cmhc_excel_rental_directory,
 )
 from dataflow.toronto.parsers.geo import CMHCZoneParser  # noqa: E402
 from dataflow.toronto.parsers.statcan_cmhc import (  # noqa: E402
@@ -325,16 +325,16 @@ class DataPipeline:
         self.stats["amenities"] = total_count
 
     def _load_rentals(self, session: Any) -> None:
-        """Fetch and load CMHC rental data from StatCan, then update with Excel universe data."""
+        """Fetch and load CMHC rental data from StatCan, then load full metrics from Excel."""
         logger.info("Fetching CMHC rental data from Statistics Canada...")
 
         if self.dry_run:
             logger.info("  [DRY RUN] Would fetch and load CMHC rental data")
-            logger.info("  [DRY RUN] Would update universe data from Excel files")
+            logger.info("  [DRY RUN] Would load zone-level rental metrics from Excel files")
             return
 
         try:
-            # Fetch rental data from StatCan API (2014-present)
+            # Fetch rental data from StatCan API (2014-present, CMA-level)
             rental_records = fetch_toronto_rental_data(start_year=2014)
 
             if not rental_records:
@@ -345,21 +345,21 @@ class DataPipeline:
             self.stats["rentals"] = count
             logger.info(f"  Loaded {count} CMHC rental records from StatCan API")
 
-            # Update universe values from Excel files
-            logger.info("Updating universe data from CMHC Excel files...")
+            # Load zone-level rental metrics from Excel files
+            logger.info("Loading zone-level rental metrics from CMHC Excel files...")
             cmhc_excel_dir = PROJECT_ROOT / "data" / "raw" / "cmhc"
             if cmhc_excel_dir.exists():
-                excel_data = parse_cmhc_excel_directory(
+                excel_data = parse_cmhc_excel_rental_directory(
                     cmhc_excel_dir, start_year=2021
                 )
                 if excel_data:
-                    updated_count = update_universe_from_excel(excel_data, session)
-                    self.stats["universe_updates"] = updated_count
+                    updated_count = load_excel_rental_data(excel_data, session)
+                    self.stats["excel_rental_updates"] = updated_count
                     logger.info(
-                        f"  Updated {updated_count} records with universe data"
+                        f"  Loaded {updated_count} zone-level rental records from Excel"
                     )
                 else:
-                    logger.warning("  No universe data parsed from Excel files")
+                    logger.warning("  No rental data parsed from Excel files")
             else:
                 logger.warning(f"  CMHC Excel directory not found: {cmhc_excel_dir}")
 

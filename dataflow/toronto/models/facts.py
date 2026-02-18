@@ -134,11 +134,7 @@ class FactRentals(Base):
     bedroom_type: Mapped[str] = mapped_column(String(20), nullable=False)
     universe: Mapped[int | None] = mapped_column(Integer, nullable=True)
     avg_rent: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
-    median_rent: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     vacancy_rate: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
-    availability_rate: Mapped[float | None] = mapped_column(
-        Numeric(5, 2), nullable=True
-    )
     turnover_rate: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     rent_change_pct: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     reliability_code: Mapped[str | None] = mapped_column(String(2), nullable=True)

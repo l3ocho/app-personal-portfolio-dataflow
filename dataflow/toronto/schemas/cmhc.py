@@ -46,16 +46,10 @@ class CMHCRentalRecord(BaseModel):
         default=None, ge=0, le=100, description="Vacancy rate (%)"
     )
     vacancy_rate_reliability: ReliabilityCode | None = Field(default=None)
-    availability_rate: Decimal | None = Field(
-        default=None, ge=0, le=100, description="Availability rate (%)"
-    )
     average_rent: Decimal | None = Field(
         default=None, ge=0, description="Average monthly rent ($)"
     )
     average_rent_reliability: ReliabilityCode | None = Field(default=None)
-    median_rent: Decimal | None = Field(
-        default=None, ge=0, description="Median monthly rent ($)"
-    )
     rent_change_pct: Decimal | None = Field(
         default=None, description="YoY rent change (%)"
     )

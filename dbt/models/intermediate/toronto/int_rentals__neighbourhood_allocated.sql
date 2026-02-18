@@ -23,7 +23,6 @@ allocated as (
 
         -- Weighted average rent (using area weight)
         sum(r.avg_rent * c.area_weight) as weighted_avg_rent,
-        sum(r.median_rent * c.area_weight) as weighted_median_rent,
         sum(c.area_weight) as total_weight,
 
         -- Weighted vacancy rate

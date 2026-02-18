@@ -64,9 +64,7 @@ def load_cmhc_rentals(
                 bedroom_type=record.bedroom_type.value,
                 universe=record.universe,
                 avg_rent=record.average_rent,
-                median_rent=record.median_rent,
                 vacancy_rate=record.vacancy_rate,
-                availability_rate=record.availability_rate,
                 turnover_rate=record.turnover_rate,
                 rent_change_pct=record.rent_change_pct,
                 reliability_code=record.average_rent_reliability.value
@@ -126,9 +124,7 @@ def load_cmhc_record(
             bedroom_type=record.bedroom_type.value,
             universe=record.universe,
             avg_rent=record.average_rent,
-            median_rent=record.median_rent,
             vacancy_rate=record.vacancy_rate,
-            availability_rate=record.availability_rate,
             turnover_rate=record.turnover_rate,
             rent_change_pct=record.rent_change_pct,
             reliability_code=record.average_rent_reliability.value
@@ -234,11 +230,9 @@ def load_statcan_cmhc_data(
                 bedroom_type=record.bedroom_type,
                 universe=record.universe,
                 avg_rent=float(record.avg_rent) if record.avg_rent else None,
-                median_rent=None,  # StatCan doesn't provide median
                 vacancy_rate=float(record.vacancy_rate)
                 if record.vacancy_rate
                 else None,
-                availability_rate=None,
                 turnover_rate=None,
                 rent_change_pct=None,
                 reliability_code=None,
@@ -252,6 +246,94 @@ def load_statcan_cmhc_data(
 
         logger.info(f"Loaded {loaded} CMHC rental records from StatCan")
         return loaded
+
+    if session:
+        return _load(session)
+    with get_session() as sess:
+        result = _load(sess)
+        sess.commit()
+        return result
+
+
+def load_excel_rental_data(
+    excel_data: dict[int, list[Any]],  # year -> list of CMHCExcelRentalRecord
+    session: Session | None = None,
+) -> int:
+    """Load full rental metrics from parsed CMHC Excel files into fact_rentals.
+
+    Writes all available zone-level metrics (universe, avg_rent, vacancy_rate,
+    turnover_rate, rent_change_pct, reliability_code) in a single upsert pass.
+    Fields not available in Excel files (median_rent, availability_rate) are
+    set to None.
+
+    Args:
+        excel_data: Dictionary mapping year to list of CMHCExcelRentalRecord
+            objects from parse_cmhc_excel_rental_directory().
+        session: Optional existing session.
+
+    Returns:
+        Number of records inserted or updated.
+    """
+    from dataflow.toronto.parsers.cmhc_excel import CMHCExcelRentalRecord
+
+    def _load(sess: Session) -> int:
+        facts_to_upsert = []
+
+        for year, records in excel_data.items():
+            survey_date = date(year, 10, 1)
+            date_key = generate_date_key(survey_date)
+
+            time_dim = sess.query(DimTime).filter_by(date_key=date_key).first()
+            if not time_dim:
+                logger.warning(
+                    f"Time dimension not found for {survey_date}, skipping year {year}"
+                )
+                continue
+
+            zones = sess.query(DimCMHCZone).all()
+            zone_map = {z.zone_code: z.zone_key for z in zones}
+
+            for record in records:
+                if not isinstance(record, CMHCExcelRentalRecord):
+                    logger.warning(f"Skipping invalid record type: {type(record)}")
+                    continue
+
+                zone_key = zone_map.get(record.zone_code)
+                if not zone_key:
+                    logger.debug(
+                        f"Zone not found in dim_cmhc_zone: {record.zone_code}, skipping"
+                    )
+                    continue
+
+                fact = FactRentals(
+                    date_key=date_key,
+                    zone_key=zone_key,
+                    bedroom_type=record.bedroom_type,
+                    universe=record.universe,
+                    avg_rent=record.avg_rent,
+                    vacancy_rate=record.vacancy_rate,
+                    turnover_rate=record.turnover_rate,
+                    rent_change_pct=record.rent_change_pct,
+                    reliability_code=record.avg_rent_reliability,
+                )
+                facts_to_upsert.append(fact)
+
+        if facts_to_upsert:
+            inserted, updated = upsert_by_key(
+                sess,
+                FactRentals,
+                facts_to_upsert,
+                ["date_key", "zone_key", "bedroom_type"],
+            )
+            total = inserted + updated
+            logger.info(
+                f"Upserted {total} zone-level rental records from Excel "
+                f"({inserted} inserted, {updated} updated)"
+            )
+            return total
+
+        logger.warning("No valid rental records to upsert from Excel data")
+        return 0
 
     if session:
         return _load(session)
@@ -321,9 +403,7 @@ def update_universe_from_excel(
                     bedroom_type=record.bedroom_type,
                     universe=record.universe,
                     avg_rent=None,
-                    median_rent=None,
                     vacancy_rate=None,
-                    availability_rate=None,
                     turnover_rate=None,
                     rent_change_pct=None,
                     reliability_code=None,
