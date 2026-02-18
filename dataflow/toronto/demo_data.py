@@ -44,7 +44,6 @@ def get_demo_rental_data() -> list[dict[str, Any]]:
                         "full_date": date(year, 10, 1),
                         "bedroom_type": bedroom,
                         "average_rent": int(base_rent * year_factor),
-                        "median_rent": int(base_rent * year_factor * 0.98),
                         "vacancy_rate": round(
                             2.5 - (year - 2021) * 0.3, 1
                         ),  # Decreasing vacancy

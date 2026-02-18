@@ -57,9 +57,7 @@ erDiagram
         string bedroom_type
         int universe
         numeric avg_rent
-        numeric median_rent
         numeric vacancy_rate
-        numeric availability_rate
         numeric turnover_rate
         numeric rent_change_pct
         string reliability_code
@@ -250,12 +248,10 @@ CMHC rental market survey data. Grain: zone × bedroom type × survey date.
 | bedroom_type | VARCHAR(20) | NOT NULL | bachelor/1-bed/2-bed/3+bed/total |
 | universe | INTEGER | | Total rental units |
 | avg_rent | NUMERIC(10,2) | | Average rent |
-| median_rent | NUMERIC(10,2) | | Median rent |
 | vacancy_rate | NUMERIC(5,2) | | Vacancy percentage |
-| availability_rate | NUMERIC(5,2) | | Availability percentage |
 | turnover_rate | NUMERIC(5,2) | | Turnover percentage |
 | rent_change_pct | NUMERIC(5,2) | | Year-over-year change |
-| reliability_code | VARCHAR(2) | | CMHC data quality code |
+| reliability_code | VARCHAR(2) | | CMHC data quality code (a/b/c/d) |
 
 #### fact_census
 Census statistics. Grain: neighbourhood × census year.

@@ -7,6 +7,7 @@ from .cmhc import (
     ensure_toronto_cma_zone,
     load_cmhc_record,
     load_cmhc_rentals,
+    load_excel_rental_data,
     load_statcan_cmhc_data,
     update_universe_from_excel,
 )
@@ -38,6 +39,7 @@ __all__ = [
     # Fact loaders
     "load_cmhc_rentals",
     "load_cmhc_record",
+    "load_excel_rental_data",
     "load_statcan_cmhc_data",
     "update_universe_from_excel",
     "ensure_toronto_cma_zone",

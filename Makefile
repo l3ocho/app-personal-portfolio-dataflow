@@ -137,15 +137,15 @@ test-cov: ## Run pytest with coverage
 
 dbt-run: ## Run dbt models
 	@echo "$(GREEN)Running dbt models...$(NC)"
-	@set -a && . ./.env && set +a && cd dbt && dbt run --profiles-dir .
+	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt run --profiles-dir .
 
 dbt-test: ## Run dbt tests
 	@echo "$(GREEN)Running dbt tests...$(NC)"
-	@set -a && . ./.env && set +a && cd dbt && dbt test --profiles-dir .
+	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt test --profiles-dir .
 
 dbt-docs: ## Generate dbt documentation
 	@echo "$(GREEN)Generating dbt docs...$(NC)"
-	@set -a && . ./.env && set +a && cd dbt && dbt docs generate --profiles-dir . && dbt docs serve --profiles-dir .
+	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt docs generate --profiles-dir . && ../.venv/bin/dbt docs serve --profiles-dir .
 
 # =============================================================================
 # Code Quality

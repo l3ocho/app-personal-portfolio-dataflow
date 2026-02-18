@@ -1,7 +1,12 @@
 """Parsers for Toronto housing data sources."""
 
 from .cmhc import CMHCParser
-from .cmhc_excel import CMHCExcelParser, parse_cmhc_excel_directory
+from .cmhc_excel import (
+    CMHCExcelParser,
+    CMHCExcelRentalRecord,
+    parse_cmhc_excel_directory,
+    parse_cmhc_excel_rental_directory,
+)
 from .geo import (
     CMHCZoneParser,
     NeighbourhoodParser,
@@ -13,7 +18,9 @@ from .toronto_police import TorontoPoliceParser
 __all__ = [
     "CMHCParser",
     "CMHCExcelParser",
+    "CMHCExcelRentalRecord",
     "parse_cmhc_excel_directory",
+    "parse_cmhc_excel_rental_directory",
     # GeoJSON parsers
     "CMHCZoneParser",
     "NeighbourhoodParser",
