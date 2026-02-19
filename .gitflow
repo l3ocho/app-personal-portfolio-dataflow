@@ -1,0 +1,14 @@
+# Git-Flow Configuration
+# This file documents the git-flow settings for this repository
+
+WORKFLOW_STYLE=feature-branch
+DEFAULT_BASE_BRANCH=development
+AUTO_DELETE_MERGED=true
+AUTO_PUSH_AFTER_COMMIT=true
+PROTECTED_BRANCHES=main
+
+# Workflow:
+# 1. Create feature branches from 'development'
+# 2. After merge to 'development', branches are auto-deleted
+# 3. 'main' is protected from direct commits
+# Note: No staging branch in this repo (backend/ETL only)
