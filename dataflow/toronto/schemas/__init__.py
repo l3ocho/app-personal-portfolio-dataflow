@@ -13,6 +13,7 @@ from .dimensions import (
     TimeDimension,
 )
 from .neighbourhood import CensusRecord, CrimeRecord, CrimeType, NeighbourhoodRecord
+from .profile import ProfileRecord, VALID_CATEGORIES
 
 __all__ = [
     # CMHC
@@ -39,4 +40,7 @@ __all__ = [
     "AmenityType",
     "AmenityRecord",
     "AmenityCount",
+    # Profile (Neighbourhood community profile data)
+    "ProfileRecord",
+    "VALID_CATEGORIES",
 ]

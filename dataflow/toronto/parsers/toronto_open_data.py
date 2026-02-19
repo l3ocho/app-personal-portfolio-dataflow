@@ -23,6 +23,7 @@ from dataflow.toronto.schemas import (
     AmenityType,
     CensusRecord,
     NeighbourhoodRecord,
+    ProfileRecord,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,72 @@ class TorontoOpenDataParser:
         "childcare": "licensed-child-care-centres",
         "transit_stops": "b811ead4-6eaf-4adb-8408-d389fb5a069c",
     }
+
+    # Known continent names from Statistics Canada 2021 XLSX
+    # Used to distinguish place_of_birth continent-level from country-level rows
+    _POB_CONTINENTS: frozenset[str] = frozenset({
+        "africa",
+        "americas",
+        "asia",
+        "europe",
+        "oceania",
+    })
+
+    # Section metadata for profile data parsing
+    # Maps category to start/stop anchors for identifying data sections
+    # Anchors use substring matching on normalized characteristic text
+    _PROFILE_SECTIONS: list[dict[str, str]] = [
+        {
+            "category": "immigration_status",
+            "start_anchor": "immigration status",
+            "stop_anchor": "place of birth",
+        },
+        {
+            "category": "place_of_birth",
+            "start_anchor": "place of birth",
+            "stop_anchor": "citizenship",
+        },
+        {
+            "category": "place_of_birth_recent",
+            "start_anchor": "place of birth of recent",
+            "stop_anchor": "citizenship status",
+        },
+        {
+            "category": "citizenship",
+            "start_anchor": "citizenship status",
+            "stop_anchor": "generation status",
+        },
+        {
+            "category": "generation_status",
+            "start_anchor": "generation status",
+            "stop_anchor": "visible minority",
+        },
+        {
+            "category": "admission_category",
+            "start_anchor": "admission category",
+            "stop_anchor": "visible minority",
+        },
+        {
+            "category": "visible_minority",
+            "start_anchor": "visible minority",
+            "stop_anchor": "ethnic origin",
+        },
+        {
+            "category": "ethnic_origin",
+            "start_anchor": "ethnic origin",
+            "stop_anchor": "mother tongue",
+        },
+        {
+            "category": "mother_tongue",
+            "start_anchor": "mother tongue",
+            "stop_anchor": "official language",
+        },
+        {
+            "category": "official_language",
+            "start_anchor": "official language",
+            "stop_anchor": "total population by religion",
+        },
+    ]
 
     def __init__(
         self,
@@ -858,6 +925,515 @@ class TorontoOpenDataParser:
 
         logger.info(f"Parsed {len(records)} census records for year {year}")
         return records
+
+    def get_neighbourhood_profiles(self, year: int = 2021) -> list[ProfileRecord]:
+        """Fetch neighbourhood community profile data from Statistics Canada.
+
+        The Toronto Open Data neighbourhood profiles dataset is pivoted:
+        - Rows are demographic characteristics (e.g., "Born in Africa", "English")
+        - Columns are neighbourhoods
+
+        This method transposes the data to create one ProfileRecord per
+        neighbourhood-category-subcategory combination.
+
+        Only supports 2021 XLSX data (158 neighbourhoods, most complete).
+        Returns empty list with warning for other years.
+
+        Args:
+            year: Census year. Only 2021 is supported.
+
+        Returns:
+            List of validated ProfileRecord objects.
+        """
+        if year != 2021:
+            logger.warning(f"Neighbourhood profiles only available for 2021; got {year}")
+            return []
+
+        raw_records: list[dict[str, Any]] = []
+        try:
+            raw_records = self._fetch_xlsx_as_records(
+                self.DATASETS["neighbourhood_profiles"],
+                name_filter="2021",
+            )
+        except (ValueError, Exception) as e:
+            logger.warning(f"Could not fetch 2021 neighbourhood profiles: {e}")
+            return []
+
+        if not raw_records:
+            logger.warning("Neighbourhood profiles dataset is empty")
+            return []
+
+        logger.info(f"Fetched {len(raw_records)} profile rows")
+
+        # Identify neighbourhood columns (exclude metadata)
+        sample_row = raw_records[0]
+        exclude_cols = {
+            "Characteristic",
+            "Category",
+            "_id",
+            "Topic",
+            "Data Source",
+        }
+        neighbourhood_cols = [col for col in sample_row if col not in exclude_cols]
+        logger.info(f"Found {len(neighbourhood_cols)} neighbourhood columns")
+
+        # Tag rows by category using state machine
+        tagged_rows = self._tag_profile_rows(raw_records)
+
+        # Build mapping of neighbourhood column to ID
+        col_to_id: dict[str, int] = {}
+        for col in neighbourhood_cols:
+            neighbourhood_id = self._match_neighbourhood_id(col)
+            if neighbourhood_id is not None:
+                col_to_id[col] = neighbourhood_id
+
+        if not col_to_id:
+            logger.warning("Could not match any neighbourhood columns to IDs")
+            return []
+
+        logger.info(
+            f"Matched {len(col_to_id)} neighbourhood columns to IDs "
+            f"(out of {len(neighbourhood_cols)} total)"
+        )
+
+        # Build records by category, applying filters where needed
+        records = self._build_profile_records(tagged_rows, col_to_id, year)
+
+        logger.info(f"Parsed {len(records)} profile records for year {year}")
+        return records
+
+    def _tag_profile_rows(
+        self, raw_records: list[dict[str, Any]]
+    ) -> list[tuple[str, str, str, dict[str, Any]]]:
+        """Tag profile rows with category, subcategory, and level.
+
+        Extracts rows from specific community profile sections using exact
+        section header matching. Avoids false matches from demographic sections.
+
+        Tags each row as (category, subcategory, level, row_dict).
+
+        Skips:
+        - Header rows (starting with "Total - ")
+        - Rows with empty characteristic
+        - Aggregate sub-totals (rows containing "Total")
+
+        Place-of-birth rows are tagged with level (continent vs country)
+        by matching subcategory against known continent names.
+
+        Args:
+            raw_records: Raw records from XLSX fetch.
+
+        Returns:
+            List of (category, subcategory, level, row_dict) tuples.
+        """
+        # Exact section header mappings for community profile categories
+        # Using specific text patterns to avoid matching related sections
+        # (e.g., "mother tongue" section vs "language spoken at home" section)
+        profile_sections: dict[str, str] = {
+            "knowledge of official languages for the population in private": "official_language",
+            "citizenship for the population in private households": "citizenship",
+            "immigrant status and period of immigration for the population": "immigration_status",
+            "place of birth for the immigrant population in private households - 25%": "place_of_birth",
+            "place of birth for the recent immigrant population in private": "place_of_birth_recent",
+            "generation status for the population in private households - 25%": "generation_status",
+            "admission category and applicant type for the immigrant population": "admission_category",
+            "visible minority for the population in private households - 25%": "visible_minority",
+            "ethnic or cultural origin for the population in private": "ethnic_origin",
+            "total - mother tongue for the population in private households - 25%": "mother_tongue",
+        }
+
+        # Find all profile section header rows
+        section_headers: list[tuple[int, str, str]] = []  # (index, header_text, category)
+
+        for idx, row in enumerate(raw_records):
+            characteristic = str(row.get("Characteristic", "")).strip()
+            if not characteristic:
+                continue
+
+            char_lower = characteristic.lower()
+
+            # Check for exact profile section matches
+            for header_anchor, category in profile_sections.items():
+                if header_anchor in char_lower:
+                    section_headers.append((idx, characteristic, category))
+                    logger.debug(f"Found section: {category} at row {idx}: {characteristic[:60]}")
+                    break
+
+        if not section_headers:
+            logger.warning("No profile sections detected in XLSX data")
+            return []
+
+        logger.info(f"Detected {len(section_headers)} profile sections")
+
+        # Extract rows between section headers
+        tagged = []
+
+        for sec_idx, (header_idx, header_text, category) in enumerate(section_headers):
+            # Find end of this section
+            # Stop at the next profile section header OR any "Total - " header
+            # (since there may be intermediate "Total - " headers between profile sections)
+            next_header_idx = len(raw_records)
+
+            if sec_idx + 1 < len(section_headers):
+                next_header_idx = section_headers[sec_idx + 1][0]
+            else:
+                # For the last profile section, find the next "Total - " header
+                for row_idx in range(header_idx + 1, len(raw_records)):
+                    char = str(raw_records[row_idx].get("Characteristic", "")).strip().lower()
+                    if char.startswith("total -"):
+                        next_header_idx = row_idx
+                        break
+
+            # Collect rows in this section (skip the header itself)
+            section_rows = 0
+            for row_idx in range(header_idx + 1, next_header_idx):
+                row = raw_records[row_idx]
+                characteristic = str(row.get("Characteristic", "")).strip()
+
+                if not characteristic:
+                    continue
+
+                # Skip ANY "Total" rows (they're section headers, not data)
+                if characteristic.lower().startswith("total -"):
+                    # Stop at next section header
+                    next_header_idx = row_idx
+                    break
+
+                # Skip aggregate sub-totals (rows that just contain "Total")
+                if characteristic.lower() == "total":
+                    continue
+
+                # Subcategory is the characteristic itself
+                subcategory = characteristic
+                section_rows += 1
+
+                # Detect level for place_of_birth categories
+                level = ""
+                if category in ("place_of_birth", "place_of_birth_recent"):
+                    level = self._detect_place_of_birth_level(subcategory)
+
+                tagged.append((category, subcategory, level, row))
+
+            logger.debug(f"  {category:30} extracted {section_rows} subcategories")
+
+        logger.debug(f"Tagged {len(tagged)} profile rows")
+        return tagged
+
+    def _parse_count(self, value: Any) -> int | None:
+        """Parse a Statistics Canada count value.
+
+        Strips commas from numbers and returns None for suppression codes.
+
+        Args:
+            value: Raw value from XLSX.
+
+        Returns:
+            Parsed integer count, or None if suppressed/invalid.
+        """
+        if value is None or value == "":
+            return None
+
+        str_val = str(value).strip()
+        if not str_val:
+            return None
+
+        # Handle StatCan suppression codes
+        if str_val in ("x", "X", "F", ".."):
+            return None
+
+        # Strip commas and convert
+        try:
+            clean = str_val.replace(",", "").strip()
+            if clean and clean not in ("x", "X", "F", ".."):
+                return int(clean)
+        except (ValueError, TypeError):
+            pass
+
+        return None
+
+    def _build_profile_records(
+        self,
+        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        col_to_id: dict[str, int],
+        year: int,
+    ) -> list[ProfileRecord]:
+        """Build ProfileRecord objects from tagged rows.
+
+        Routes processing by category:
+        - Standard categories: emit all rows for all neighbourhoods
+        - ethnic_origin: apply top-30 city-wide filter
+        - mother_tongue: apply per-neighbourhood top-15 filter
+
+        Args:
+            tagged_rows: Output from _tag_profile_rows.
+            col_to_id: Mapping of neighbourhood column names to IDs.
+            year: Census year.
+
+        Returns:
+            List of validated ProfileRecord objects.
+        """
+        # Organize rows by category for filtering
+        rows_by_category: dict[str, list[tuple[str, str, str, dict[str, Any]]]] = {}
+        for category, subcategory, level, row in tagged_rows:
+            if category not in rows_by_category:
+                rows_by_category[category] = []
+            rows_by_category[category].append((category, subcategory, level, row))
+
+        records = []
+
+        # Process each category
+        for category in rows_by_category:
+            cat_rows = rows_by_category[category]
+
+            if category == "ethnic_origin":
+                # Apply top-30 city-wide filter
+                cat_records = self._filter_ethnic_origin(cat_rows, col_to_id, year)
+            elif category == "mother_tongue":
+                # Apply per-neighbourhood top-15 filter
+                cat_records = self._filter_mother_tongue(cat_rows, col_to_id, year)
+            else:
+                # Standard: emit all rows for all neighbourhoods
+                cat_records = self._emit_category_records(cat_rows, col_to_id, year)
+
+            records.extend(cat_records)
+
+        return records
+
+    def _emit_category_records(
+        self,
+        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        col_to_id: dict[str, int],
+        year: int,
+    ) -> list[ProfileRecord]:
+        """Emit ProfileRecord for all rows in a standard (non-filtered) category.
+
+        Args:
+            tagged_rows: Rows for this category from _tag_profile_rows.
+            col_to_id: Neighbourhood ID mapping.
+            year: Census year.
+
+        Returns:
+            List of ProfileRecord objects.
+        """
+        records = []
+
+        for category, subcategory, level, row in tagged_rows:
+            # Emit one record per neighbourhood
+            for col, neighbourhood_id in col_to_id.items():
+                value = row.get(col)
+                count = self._parse_count(value)
+
+                try:
+                    record = ProfileRecord(
+                        neighbourhood_id=neighbourhood_id,
+                        census_year=year,
+                        category=category,
+                        subcategory=subcategory,
+                        count=count,
+                        level=level,
+                    )
+                    records.append(record)
+                except Exception as e:
+                    logger.debug(
+                        f"Skipping record for {col}/"
+                        f"{subcategory}: {e}"
+                    )
+
+        return records
+
+    def _filter_ethnic_origin(
+        self,
+        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        col_to_id: dict[str, int],
+        year: int,
+    ) -> list[ProfileRecord]:
+        """Filter ethnic origin to top-30 by city-wide total.
+
+        Computes the sum of counts across all neighbourhoods for each
+        ethnic origin, keeps only the top-30, then emits records only for
+        those ethnicities.
+
+        Args:
+            tagged_rows: Rows for ethnic_origin category.
+            col_to_id: Neighbourhood ID mapping.
+            year: Census year.
+
+        Returns:
+            List of ProfileRecord objects for top-30 ethnicities only.
+        """
+        # Compute city-wide total per subcategory
+        subcategory_totals: dict[str, int] = {}
+
+        for category, subcategory, level, row in tagged_rows:
+            total = 0
+            for col in col_to_id:
+                count = self._parse_count(row.get(col))
+                if count is not None:
+                    total += count
+            if total > 0:
+                subcategory_totals[subcategory] = total
+
+        # Get top-30 by city-wide total
+        sorted_subs = sorted(
+            subcategory_totals.items(), key=lambda x: x[1], reverse=True
+        )
+        top_30 = {sub for sub, _ in sorted_subs[:30]}
+
+        logger.info(
+            f"Ethnic origin: selected top-30 from {len(subcategory_totals)} total; "
+            f"cutoff threshold: {sorted_subs[29][1] if len(sorted_subs) >= 30 else 'N/A'}"
+        )
+
+        # Emit records only for top-30 subcategories
+        records = []
+        for category, subcategory, level, row in tagged_rows:
+            if subcategory not in top_30:
+                continue
+
+            for col, neighbourhood_id in col_to_id.items():
+                value = row.get(col)
+                count = self._parse_count(value)
+
+                try:
+                    record = ProfileRecord(
+                        neighbourhood_id=neighbourhood_id,
+                        census_year=year,
+                        category=category,
+                        subcategory=subcategory,
+                        count=count,
+                        level=level,
+                    )
+                    records.append(record)
+                except Exception as e:
+                    logger.debug(
+                        f"Skipping ethnic origin record for {col}/"
+                        f"{subcategory}: {e}"
+                    )
+
+        return records
+
+    def _filter_mother_tongue(
+        self,
+        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        col_to_id: dict[str, int],
+        year: int,
+    ) -> list[ProfileRecord]:
+        """Filter mother tongue to per-neighbourhood top-15 non-official + official.
+
+        For each neighbourhood:
+        - Collect all mother tongue rows (official + non-official)
+        - Rank non-official by count
+        - Keep top-15 non-official + always include English and French
+        - Emit records for these languages only
+
+        Skips aggregate rows like "Non-official languages" that don't represent
+        individual languages.
+
+        Args:
+            tagged_rows: Rows for mother_tongue category.
+            col_to_id: Neighbourhood ID mapping.
+            year: Census year.
+
+        Returns:
+            List of ProfileRecord objects with per-neighbourhood top-15 filtering.
+        """
+        # Aggregate rows: skip these
+        skip_patterns = {"non-official", "official", "other"}
+
+        records = []
+
+        # Process each neighbourhood independently
+        for neighbourhood_col, neighbourhood_id in col_to_id.items():
+            # Collect language counts for this neighbourhood
+            lang_counts: dict[str, int] = {}
+
+            for category, subcategory, level, row in tagged_rows:
+                # Skip aggregate rows
+                subcat_lower = subcategory.lower()
+                if any(pat in subcat_lower for pat in skip_patterns):
+                    continue
+
+                # Get count for this neighbourhood
+                count = self._parse_count(row.get(neighbourhood_col))
+                if count is not None:
+                    lang_counts[subcategory] = count
+
+            # Identify official languages
+            # Only include English and French (exact two languages, no variants)
+            official_langs = set()
+            for category, subcategory, level, row in tagged_rows:
+                subcat_lower = subcategory.lower().strip()
+                # Match only English and French (the two official languages)
+                if subcat_lower in ("english", "french"):
+                    official_langs.add(subcategory)
+
+            # Rank non-official by count, keep top-15 + official
+            non_official = [
+                (lang, count)
+                for lang, count in lang_counts.items()
+                if lang not in official_langs
+            ]
+            non_official.sort(key=lambda x: x[1], reverse=True)
+            top_15_non_official = {lang for lang, _ in non_official[:15]}
+
+            # Combine: top-15 non-official + all official
+            include_langs = top_15_non_official | official_langs
+
+            logger.debug(
+                f"Mother tongue for neighbourhood {neighbourhood_id}: "
+                f"keeping {len(include_langs)} languages "
+                f"(top-15 non-official + {len(official_langs)} official)"
+            )
+
+            # Emit records for included languages only
+            for category, subcategory, level, row in tagged_rows:
+                if subcategory not in include_langs:
+                    continue
+
+                count = self._parse_count(row.get(neighbourhood_col))
+
+                try:
+                    record = ProfileRecord(
+                        neighbourhood_id=neighbourhood_id,
+                        census_year=year,
+                        category=category,
+                        subcategory=subcategory,
+                        count=count,
+                        level=level,
+                    )
+                    records.append(record)
+                except Exception as e:
+                    logger.debug(
+                        f"Skipping mother tongue record for neighbourhood "
+                        f"{neighbourhood_id}/{subcategory}: {e}"
+                    )
+
+        return records
+
+    def _detect_place_of_birth_level(self, characteristic_text: str) -> str:
+        """Detect place-of-birth level (continent vs country).
+
+        Matches the characteristic text (subcategory) against known continent
+        names to distinguish continent-level rows from country-level rows.
+
+        Args:
+            characteristic_text: The characteristic/subcategory text.
+
+        Returns:
+            'continent' if text matches a known continent, else 'country'.
+        """
+        text_lower = characteristic_text.lower().strip()
+        # Extract subcategory (remove any leading prefixes like "Total -")
+        if " - " in text_lower:
+            parts = text_lower.split(" - ")
+            subcategory = parts[-1].strip()
+        else:
+            subcategory = text_lower
+
+        # Check against known continents
+        if subcategory in self._POB_CONTINENTS:
+            return "continent"
+        return "country"
 
     def _build_spatial_index(self) -> None:
         """Build spatial index from neighbourhood boundaries for point-in-polygon lookups."""

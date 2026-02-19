@@ -131,6 +131,14 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
+      - name: pct_immigrant
+        description: "Percentage of population who are immigrants (2021 Census)"
+      - name: pct_visible_minority
+        description: "Percentage who are visible minority (2021 Census)"
+      - name: pct_neither_official_lang
+        description: "Percentage who know neither English nor French (2021 Census)"
+      - name: diversity_index
+        description: "Shannon diversity index from visible minority category"
 
   - name: mart_neighbourhood_amenities
     description: "Amenity access metrics by neighbourhood"
@@ -160,3 +168,61 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
+
+  - name: mart_toronto__neighbourhood_profile
+    description: "Neighbourhood community profile analytical table with all demographics breakdown"
+    meta:
+      dashboard_tab: Profile
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: census_year
+        description: "Census year (2021)"
+        data_tests:
+          - not_null
+      - name: category
+        description: "Profile category"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - immigration_status
+                  - place_of_birth
+                  - place_of_birth_recent
+                  - citizenship
+                  - generation_status
+                  - admission_category
+                  - visible_minority
+                  - ethnic_origin
+                  - mother_tongue
+                  - official_language
+      - name: subcategory
+        description: "Specific subcategory"
+        data_tests:
+          - not_null
+      - name: pct_of_neighbourhood
+        description: "Percentage of neighbourhood total within category"
+      - name: city_total
+        description: "City-wide total for this subcategory"
+      - name: pct_of_city
+        description: "Percentage of city total"
+      - name: rank_in_neighbourhood
+        description: "Rank within neighbourhood (1=highest)"
+      - name: level
+        description: "Hierarchy level (continent/country) for place_of_birth"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["", continent, country]
+      - name: diversity_index
+        description: "Shannon diversity index (visible_minority rows only)"

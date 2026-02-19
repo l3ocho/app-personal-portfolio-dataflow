@@ -17,6 +17,7 @@ from .cmhc_crosswalk import (
     get_neighbourhood_weights_for_zone,
 )
 from .crime import load_crime_data
+from .profile_loader import load_profile_data
 from .dimensions import (
     generate_date_key,
     load_cmhc_zones,
@@ -48,6 +49,7 @@ __all__ = [
     "load_crime_data",
     "load_amenities",
     "load_amenity_counts",
+    "load_profile_data",
     # CMHC crosswalk
     "build_cmhc_neighbourhood_crosswalk",
     "get_neighbourhood_weights_for_zone",

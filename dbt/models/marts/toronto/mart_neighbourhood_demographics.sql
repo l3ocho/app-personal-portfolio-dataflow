@@ -19,6 +19,29 @@ city_avg as (
     group by census_year
 ),
 
+-- Profile summary: extract key indicators from community profile data
+profile_summary as (
+    select
+        neighbourhood_id,
+        census_year,
+        -- pct_immigrant: from immigration_status category
+        max(case when category = 'immigration_status' and subcategory = 'immigrants'
+            then pct_of_neighbourhood end) as pct_immigrant,
+        -- pct_visible_minority: from visible_minority category
+        max(case when category = 'visible_minority'
+                  and subcategory = 'total visible minority population'
+            then pct_of_neighbourhood end) as pct_visible_minority,
+        -- pct_neither_official_lang: from official_language category
+        max(case when category = 'official_language'
+                  and subcategory = 'neither english nor french'
+            then pct_of_neighbourhood end) as pct_neither_official_lang,
+        -- diversity_index: Shannon entropy from visible_minority
+        max(case when category = 'visible_minority'
+            then diversity_index end) as diversity_index
+    from {{ ref('int_toronto__neighbourhood_profile') }}
+    group by neighbourhood_id, census_year
+),
+
 final as (
     select
         d.neighbourhood_id,
@@ -73,10 +96,18 @@ final as (
         -- City comparisons
         round(ca.city_avg_income::numeric, 2) as city_avg_income,
         round(ca.city_avg_age::numeric, 1) as city_avg_age,
-        round(ca.city_avg_unemployment::numeric, 2) as city_avg_unemployment
+        round(ca.city_avg_unemployment::numeric, 2) as city_avg_unemployment,
+
+        -- Community profile summary (from neighbourhood profile data)
+        round(ps.pct_immigrant::numeric, 2) as pct_immigrant,
+        round(ps.pct_visible_minority::numeric, 2) as pct_visible_minority,
+        round(ps.pct_neither_official_lang::numeric, 2) as pct_neither_official_lang,
+        round(ps.diversity_index::numeric, 4) as diversity_index
 
     from demographics d
     left join city_avg ca on d.census_year = ca.census_year
+    left join profile_summary ps on d.neighbourhood_id = ps.neighbourhood_id
+        and d.census_year = ps.census_year
 )
 
 select * from final

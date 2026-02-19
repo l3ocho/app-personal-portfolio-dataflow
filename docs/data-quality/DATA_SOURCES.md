@@ -55,6 +55,56 @@ This document describes the data sources used in the Toronto Neighbourhood Analy
 
 **Solution**: CPI-based imputation for all four metrics (see below)
 
+#### 2. Neighbourhood Community Profile Data (2021)
+
+**Dataset**: `neighbourhood-profiles` (same as census, but different extraction)
+**Coverage**: 2021 Census only - 158 neighbourhoods
+**Data Format**: Long/narrow fact table (one row per neighbourhood × category × subcategory)
+
+**Categories Extracted** (10 total):
+- Immigration status (immigrants, non-permanent residents, etc.)
+- Place of birth (by country and continent level)
+- Citizenship status
+- Generation status (1st, 2nd, 3rd+ generation)
+- Admission category (economic, family-sponsored, refugee, etc.)
+- Visible minority status (14 categories + "Not a visible minority")
+- Ethnic origin (top 30 by city-wide count)
+- Mother tongue (top 15 non-official languages per neighbourhood + English + French)
+- Official language (English only, French only, Both, Neither)
+
+**Key Features**:
+- ✅ One row per neighbourhood-category-subcategory combination
+- ✅ Includes StatCan suppression codes (NULL counts for small populations)
+- ✅ Place of birth hierarchy level flagged (continent vs country)
+- ✅ Mother tongue filtered to top-15 per neighbourhood (avoids 300+ language rows)
+- ✅ Ethnic origin filtered to top-30 city-wide (avoids 200+ ethnicity rows)
+
+**Quality Notes**:
+- **Mother tongue**: Only top-15 non-official languages extracted per neighbourhood to avoid data explosion; always includes English and French totals
+- **Ethnic origin**: Multi-response data; neighbourhood totals may exceed population (people report multiple origins)
+- **Place of birth**: Available at both country and continent levels; continent totals provided for context
+- **StatCan suppression**: Small population cells marked as NULL; documented in `count` column
+
+**Data Lineage**:
+```
+Toronto Open Data XLSX (neighbourhood-profiles 2021)
+  ↓
+raw_toronto.fact_neighbourhood_profile (Python parser)
+  ↓
+stg_toronto__profiles (dbt staging - normalization)
+  ↓
+int_toronto__neighbourhood_profile (dbt intermediate - percentages + Shannon diversity)
+  ↓
+mart_toronto__neighbourhood_profile (dbt mart - final consumption)
+```
+
+**Downstream Use**:
+- `mart_neighbourhood_demographics` enriched with profile summary columns:
+  - `pct_immigrant` (from immigration_status)
+  - `pct_visible_minority` (from visible_minority)
+  - `pct_neither_official_lang` (from official_language)
+  - `diversity_index` (Shannon entropy on visible_minority)
+
 ---
 
 ## Data Quality: Imputation Methods
@@ -187,4 +237,4 @@ For questions about data quality or imputation methodology:
 
 ---
 
-*Last Updated: 2026-02-12*
+*Last Updated: 2026-02-19*

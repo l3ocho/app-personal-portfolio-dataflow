@@ -103,3 +103,34 @@ models:
         description: "Weighted average 2-bedroom rent"
       - name: vacancy_rate
         description: "Weighted average vacancy rate"
+
+  - name: int_toronto__neighbourhood_profile
+    description: "Neighbourhood community profile with computed percentages and diversity"
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: census_year
+        description: "Census year"
+        data_tests:
+          - not_null
+      - name: category
+        description: "Profile category"
+        data_tests:
+          - not_null
+      - name: subcategory
+        description: "Specific subcategory"
+        data_tests:
+          - not_null
+      - name: pct_of_neighbourhood
+        description: "Percentage of neighbourhood total within category"
+      - name: pct_of_city
+        description: "Percentage of city-wide total"
+      - name: rank_in_neighbourhood
+        description: "Rank within neighbourhood and category"
+      - name: diversity_index
+        description: "Shannon diversity index (visible_minority only)"

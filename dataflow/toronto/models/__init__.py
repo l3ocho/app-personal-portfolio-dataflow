@@ -14,6 +14,7 @@ from .facts import (
     FactCrime,
     FactRentals,
 )
+from .profile import FactNeighbourhoodProfile
 
 __all__ = [
     # Base
@@ -31,6 +32,7 @@ __all__ = [
     "FactCensus",
     "FactCrime",
     "FactAmenities",
+    "FactNeighbourhoodProfile",
     # Bridge tables
     "BridgeCMHCNeighbourhood",
 ]

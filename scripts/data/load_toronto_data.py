@@ -46,6 +46,7 @@ from dataflow.toronto.loaders import (  # noqa: E402
     load_crime_data,
     load_excel_rental_data,
     load_neighbourhoods,
+    load_profile_data,
     load_statcan_cmhc_data,
     load_time_dimension,
 )
@@ -102,16 +103,19 @@ class DataPipeline:
                 # 4. Load census data
                 self._load_census(session)
 
-                # 5. Load crime data
+                # 5. Load neighbourhood community profiles
+                self._load_profiles(session)
+
+                # 6. Load crime data
                 self._load_crime(session)
 
-                # 6. Load amenities
+                # 7. Load amenities
                 self._load_amenities(session)
 
-                # 7. Load CMHC rental data from StatCan
+                # 8. Load CMHC rental data from StatCan
                 self._load_rentals(session)
 
-                # 8. Build CMHC-neighbourhood crosswalk
+                # 9. Build CMHC-neighbourhood crosswalk
                 self._build_cmhc_crosswalk(session)
 
                 session.commit()
@@ -231,6 +235,30 @@ class DataPipeline:
             logger.warning("  No census records loaded")
         else:
             logger.info(f"  Total census records loaded: {total_count}")
+
+    def _load_profiles(self, session: Any) -> None:
+        """Fetch and load neighbourhood community profile data for 2021."""
+        logger.info("Fetching neighbourhood profiles from Toronto Open Data...")
+
+        if self.dry_run:
+            logger.info("  [DRY RUN] Would fetch and load neighbourhood profile data (2021)")
+            return
+
+        parser = TorontoOpenDataParser()
+        try:
+            logger.info("  Fetching 2021 neighbourhood profiles...")
+            profile_records = parser.get_neighbourhood_profiles(year=2021)
+            if profile_records:
+                count = load_profile_data(profile_records, session)
+                self.stats["profiles"] = count
+                logger.info(f"  Loaded {count} profile records for 2021")
+            else:
+                logger.warning("  No neighbourhood profile records fetched")
+        except Exception as e:
+            logger.warning(f"  Failed to load neighbourhood profile data: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
 
     def _load_crime(self, session: Any) -> None:
         """Fetch and load crime statistics."""

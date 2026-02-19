@@ -102,3 +102,23 @@ sources:
             description: "Neighbourhood ID"
           - name: weight
             description: "Proportional area weight (0-1)"
+
+      - name: fact_neighbourhood_profile
+        description: >
+          Neighbourhood community profile data (immigration, visible minorities,
+          languages, ethnic origin, etc.) from Statistics Canada 2021 Census
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: neighbourhood_id
+            description: "Foreign key to dim_neighbourhood"
+          - name: census_year
+            description: "Census year (2021)"
+          - name: category
+            description: "Profile category (immigration_status, visible_minority, mother_tongue, etc.)"
+          - name: subcategory
+            description: "Specific subcategory within the category"
+          - name: count
+            description: "Count value (NULL = Statistics Canada suppressed)"
+          - name: level
+            description: "Hierarchy level for place_of_birth (continent or country); empty for other categories"
