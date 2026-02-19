@@ -17,7 +17,6 @@ from .cmhc_crosswalk import (
     get_neighbourhood_weights_for_zone,
 )
 from .crime import load_crime_data
-from .profile_loader import load_profile_data
 from .dimensions import (
     generate_date_key,
     load_cmhc_zones,
@@ -25,6 +24,7 @@ from .dimensions import (
     load_policy_events,
     load_time_dimension,
 )
+from .profile_loader import load_profile_data
 
 __all__ = [
     # Base utilities

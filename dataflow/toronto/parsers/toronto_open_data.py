@@ -1068,7 +1068,7 @@ class TorontoOpenDataParser:
         # Extract rows between section headers
         tagged = []
 
-        for sec_idx, (header_idx, header_text, category) in enumerate(section_headers):
+        for sec_idx, (header_idx, _header_text, category) in enumerate(section_headers):
             # Find end of this section
             # Stop at the next profile section header OR any "Total - " header
             # (since there may be intermediate "Total - " headers between profile sections)
@@ -1264,7 +1264,7 @@ class TorontoOpenDataParser:
         # Compute city-wide total per subcategory
         subcategory_totals: dict[str, int] = {}
 
-        for category, subcategory, level, row in tagged_rows:
+        for _category, subcategory, _level, row in tagged_rows:
             total = 0
             for col in col_to_id:
                 count = self._parse_count(row.get(col))
@@ -1347,7 +1347,7 @@ class TorontoOpenDataParser:
             # Collect language counts for this neighbourhood
             lang_counts: dict[str, int] = {}
 
-            for category, subcategory, level, row in tagged_rows:
+            for _category, subcategory, _level, row in tagged_rows:
                 # Skip aggregate rows
                 subcat_lower = subcategory.lower()
                 if any(pat in subcat_lower for pat in skip_patterns):
@@ -1361,7 +1361,7 @@ class TorontoOpenDataParser:
             # Identify official languages
             # Only include English and French (exact two languages, no variants)
             official_langs = set()
-            for category, subcategory, level, row in tagged_rows:
+            for _category, subcategory, _level, _row in tagged_rows:
                 subcat_lower = subcategory.lower().strip()
                 # Match only English and French (the two official languages)
                 if subcat_lower in ("english", "french"):
