@@ -77,6 +77,7 @@ raw_toronto.dim_neighbourhood
 
 ### Local Development
 
+**Quick Setup (recommended):**
 ```bash
 # Clone repository
 git clone https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow.git
@@ -85,17 +86,23 @@ cd personal-portfolio-dataflow
 # Install dependencies
 make setup
 
-# Start PostgreSQL
-make docker-up
+# Start everything at once (Docker, database, pgweb)
+make local-dev
+```
 
-# Initialize database schema
-make db-init
+**Step-by-step (if you prefer):**
+```bash
+make docker-up      # Start PostgreSQL
+make db-init        # Initialize database schema
+make pgweb-up       # Start pgweb database browser (optional)
+make load-toronto   # Load Toronto data
+make dbt-run        # Run dbt models
+```
 
-# Load data
-make load-toronto
-
-# Run dbt models
-make dbt-run
+**View logs:**
+```bash
+make docker-logs    # Database logs
+make pgweb-logs     # pgweb logs (dev only)
 ```
 
 ### Production Deployment
