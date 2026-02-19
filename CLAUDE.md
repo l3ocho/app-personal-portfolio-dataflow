@@ -438,3 +438,216 @@ The frontend webapp (`personal-portfolio`) consumes data from this pipeline:
 ---
 
 *Last Updated: February 2026 (Sprint 10)*
+
+## Marketplace Plugin Integration
+
+The following plugins are installed from the mktpl-claude-datasaas:
+
+
+---
+
+<!-- BEGIN marketplace-plugin: projman -->
+<!-- profile: default -->
+
+## Sprint Management (projman)
+
+This project uses the **projman** plugin for sprint planning and project management with Gitea integration.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `/sprint plan` | Start sprint planning with AI-guided architecture analysis |
+| `/sprint start` | Begin sprint execution with relevant lessons learned |
+| `/sprint status` | Check current sprint progress and identify blockers |
+| `/sprint close` | Complete sprint and capture lessons learned to Gitea Wiki |
+| `/labels sync` | Synchronize label taxonomy from Gitea |
+| `/projman setup` | Run initial setup for projman plugin |
+| `/rfc create` | Create new RFC from conversation or clarified spec |
+| `/rfc list` | List all RFCs grouped by status |
+| `/rfc review` | Submit Draft RFC for review |
+| `/rfc approve` | Approve RFC for sprint planning |
+| `/rfc reject` | Reject RFC with documented reason |
+
+### MCP Tools Available
+
+The following Gitea MCP tools are available for issue and project management:
+
+**Issue Management:**
+- `list_issues` - Query issues with filters (state, labels)
+- `get_issue` - Fetch single issue details
+- `create_issue` - Create new issue with labels
+- `update_issue` - Modify existing issue
+- `add_comment` - Add comments to issues
+
+**Labels:**
+- `get_labels` - Fetch org + repo label taxonomy
+- `suggest_labels` - Analyze context and suggest appropriate labels
+- `create_label` - Create missing required labels
+
+**Milestones:**
+- `list_milestones` - List sprint milestones
+- `get_milestone` - Get milestone details
+- `create_milestone` - Create sprint milestone
+- `update_milestone` - Update/close milestone
+
+**Dependencies:**
+- `list_issue_dependencies` - Get issue dependencies
+- `create_issue_dependency` - Create dependency between issues
+- `get_execution_order` - Get parallel execution batches
+
+**Wiki (Lessons Learned & RFCs):**
+- `list_wiki_pages` - List wiki pages
+- `get_wiki_page` - Fetch specific page content
+- `create_wiki_page` - Create new wiki page
+- `update_wiki_page` - Update existing wiki page
+- `create_lesson` - Create lessons learned document
+- `search_lessons` - Search past lessons by tags
+- `allocate_rfc_number` - Get next available RFC number
+
+### Usage Guidelines
+
+- **Always use `/sprint plan`** when starting new development work
+- **Check `/sprint status`** regularly during active sprints
+- **Run `/sprint close`** at the end of each sprint to capture lessons learned
+- Use `suggest_labels` when creating issues to ensure proper categorization
+- Search lessons learned with `search_lessons` before implementing features to avoid repeated mistakes
+
+<!-- END marketplace-plugin: projman -->
+
+---
+
+<!-- BEGIN marketplace-plugin: code-sentinel -->
+<!-- profile: default -->
+
+# Code Sentinel Integration
+
+Add to your project's CLAUDE.md:
+
+## Security & Code Quality
+
+This project uses code-sentinel for security scanning and refactoring.
+
+### Automatic Security Checks
+PreToolUse hooks scan all code changes for:
+- SQL/Command/Code injection
+- XSS vulnerabilities
+- Hardcoded secrets
+- Unsafe deserialization
+
+Critical issues are blocked. Warnings are noted but allowed.
+
+### Commands
+- `/sentinel scan` - Full project security audit
+- `/sentinel refactor <target>` - Apply refactoring pattern
+- `/sentinel refactor-dry <target>` - Preview refactoring opportunities
+
+### Severity Levels
+- Critical: Must fix immediately
+- High: Fix before release
+- Medium: Improve when possible
+
+<!-- END marketplace-plugin: code-sentinel -->
+
+---
+
+<!-- BEGIN marketplace-plugin: doc-guardian -->
+<!-- profile: default -->
+
+# Doc Guardian Integration
+
+Add to your project's CLAUDE.md:
+
+## Documentation Management
+
+This project uses doc-guardian for automatic documentation synchronization.
+
+### Behavior
+- Documentation drift is detected automatically when files change
+- Pending updates are queued silently during work
+- Run `/doc sync` to apply all pending documentation updates
+- Run `/doc audit` for a full project documentation review
+- Run `/doc changelog-gen` to generate changelog from conventional commits
+- Run `/doc coverage` to check documentation coverage metrics
+- Run `/doc stale-docs` to find documentation that may be outdated
+
+### Documentation Files Tracked
+- README.md (root and subdirectories)
+- CLAUDE.md
+- API documentation in docs/
+- Docstrings in Python/TypeScript files
+
+### Commit Convention
+Documentation sync commits use: `docs: sync documentation with code changes`
+
+<!-- END marketplace-plugin: doc-guardian -->
+
+---
+
+<!-- BEGIN marketplace-plugin: data-platform -->
+<!-- profile: default -->
+
+
+## Data Platform Integration
+
+This project uses the data-platform plugin for data engineering workflows.
+
+### Configuration
+
+**PostgreSQL**: Credentials in `~/.config/claude/postgres.env`
+**dbt**: Project path auto-detected from `dbt_project.yml`
+
+### Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/data ingest` | Load data from files or database |
+| `/data profile` | Generate statistical profile |
+| `/data schema` | Show schema information |
+| `/data explain` | Explain dbt model |
+| `/data lineage` | Show data lineage |
+| `/data lineage-viz` | Visual lineage diagram |
+| `/data run` | Execute dbt models |
+| `/data dbt-test` | Run dbt tests |
+| `/data quality` | Data quality checks |
+| `/data review` | Comprehensive data audit |
+| `/data gate` | Pass/fail data quality gate |
+
+### data_ref Convention
+
+DataFrames are stored with references. Use meaningful names:
+- `raw_*` for source data
+- `stg_*` for staged/cleaned data
+- `dim_*` for dimension tables
+- `fct_*` for fact tables
+- `rpt_*` for reports
+
+### dbt Workflow
+
+1. Always validate before running: `/data run` includes automatic `dbt_parse`
+2. For dbt 1.9+, check for deprecated syntax before commits
+3. Use `/data lineage` to understand impact of changes
+
+### Database Access
+
+PostgreSQL tools require POSTGRES_URL configuration:
+- Read-only queries: `pg_query`
+- Write operations: `pg_execute`
+- Schema exploration: `pg_tables`, `pg_columns`
+
+PostGIS spatial data:
+- List spatial tables: `st_tables`
+- Check geometry: `st_geometry_type`, `st_srid`, `st_extent`
+
+### Environment Variables
+
+```env
+# dbt configuration
+DBT_PROJECT_DIR=./transform
+DBT_PROFILES_DIR=~/.dbt
+
+# Memory limits
+DATA_PLATFORM_MAX_ROWS=100000
+```
+
+<!-- END marketplace-plugin: data-platform -->

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "gitea": {
+      "command": "/home/leomiranda/.claude/plugins/marketplaces/mktpl-claude-datasaas/mcp-servers/gitea/run.sh",
+      "args": []
+    },
+    "data-platform": {
+      "command": "/home/leomiranda/.claude/plugins/marketplaces/mktpl-claude-datasaas/mcp-servers/data-platform/run.sh",
+      "args": []
+    }
+  }
+}
