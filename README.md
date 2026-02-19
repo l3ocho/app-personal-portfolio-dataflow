@@ -348,6 +348,7 @@ To add a new data domain (e.g., `football`):
 ## Documentation
 
 - **Deployment**: [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md)
+- **Deployment Checklist**: [docs/deployment/deployment-checklist.md](docs/deployment/deployment-checklist.md)
 - **Shared PostgreSQL**: [docs/deployment/shared-postgres.md](docs/deployment/shared-postgres.md)
 - **For Claude Code**: [CLAUDE.md](CLAUDE.md) (AI assistant context)
 - **Database Schema**: [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)

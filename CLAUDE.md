@@ -92,6 +92,42 @@ Branch naming, commit conventions, workflow steps, and release procedures are do
 
 ---
 
+## Before Any Code Change: Impact Analysis
+
+**MANDATORY**: Before editing any dbt model or data pipeline file, search for downstream impact.
+
+| Change Type | Required Search | Purpose |
+|-------------|-----------------|---------|
+| **dbt staging model** (`staging/toronto/*.sql`) | `dbt lineage <model_name>` + `grep -r "<model_name>"` in intermediate/mart models | Staging changes cascade through intermediate → marts; missing a dependent model breaks the chain |
+| **dbt intermediate model** (`intermediate/toronto/*.sql`) | `dbt lineage <model_name>` + check all marts that depend on it | Intermediate logic changes affect multiple marts; changing logic without updating downstream causes silent data inconsistency |
+| **dbt mart model** (`marts/toronto/*.sql`) | `grep -r "mart_toronto.<table>"` in webapp repo (`app-personal-portfolio`) | **CRITICAL**: Mart tables are consumed by webapp; changing column names, types, or dropping columns breaks the webapp—MUST coordinate with webapp repo first |
+| **Raw data schema** (`raw_toronto_*`) | `dbt lineage raw_toronto_<table>` + check staging models that reference it | Raw table schema changes require staging model updates; missing update = stale/broken staging layer |
+| **Parser logic** (`parsers/toronto/*.py`) | `grep -r "parsers.toronto.<function>"` in loaders | Parsers are consumed by loaders; changing signature or output schema requires loader updates |
+
+### Workflow
+
+1. **Identify the file you want to change** (e.g., `dbt/models/marts/toronto/mart_neighbourhood_overview.sql`)
+2. **Run the appropriate search** from the table above
+3. **For mart changes, always check webapp**: `grep -r "mart_neighbourhood_overview" /home/leomiranda/repositories/personal/app-personal-portfolio/`
+4. **List all downstream references** to the user before editing
+5. **If changing mart schema**: Flag that webapp repo must be notified; schedule coordination
+6. **Run `dbt parse` before any dbt edit** to validate syntax early
+7. **Then make the change**
+
+### dbt-Specific Constraints (Non-Negotiable)
+
+- **Always `dbt parse` before `dbt run`** — catches model errors early, prevents silent failures
+- **Never modify `mart_*` table column names or types without explicit coordination with webapp repo** — these are the contract; breaking them = breaking production dashboards
+- **Schema naming is strict**:
+  - `raw_toronto_*` - Raw ingestion (direct API/file import, never transformed)
+  - `stg_toronto_*` - Staging (1:1 source cleaning, typed, ready for logic)
+  - `int_toronto_*` - Intermediate (business logic, joins, aggregations)
+  - `mart_toronto_*` - Mart (final, read-only, documented contracts with webapp)
+- **Run dbt tests** after model changes: `make dbt-test`
+- **Verify no orphaned models**: `dbt ls | grep orphaned`
+
+---
+
 ## Application Structure
 
 **Entry Point**: ETL scripts in `scripts/data/`
@@ -200,6 +236,32 @@ LOG_LEVEL=INFO
 
 ---
 
+## Plugin Requirements
+
+This project is a **data-only ETL/dbt pipeline** (no frontend) and requires these plugins to operate:
+
+| Plugin | Purpose in This Project | Core to Mission? |
+|--------|------------------------|-------------------|
+| **data-platform** | dbt orchestration, PostgreSQL writes, PostGIS, schema validation | ✅ YES — Every dbt/ETL change uses this |
+| **projman** | Sprint planning, issue tracking, lessons learned | ✅ YES — Sprint management |
+| **git-flow** | Conventional commits, branch management | ✅ YES — Daily workflow |
+| **pr-review** | Multi-agent PR quality gates | ✅ YES — Pre-merge reviews |
+| **ops-deploy-pipeline** | VPS deployment configs, cron job management | ✅ YES — Deployment |
+| **ops-release-manager** | Version bumping, changelog updates | ✅ YES — Releases |
+| **code-sentinel**, **doc-guardian**, **clarity-assist** | Code quality, documentation, requirements | ✅ YES — Periodic audits, complex tasks |
+| **viz-platform** | Dash/Mantine components, Plotly charts | ❌ NO — Not applicable to data-only repo |
+
+### Working Independently (Single-Repo Mode)
+
+This repo can be opened alone in VSCode:
+```bash
+code /home/leomiranda/repositories/personal/app-personal-portfolio-dataflow
+```
+
+All plugins will load from `~/.claude/plugins/` and the global `~/.claude/CLAUDE.md` provides baseline behavior. This project's `CLAUDE.md` provides specifics.
+
+---
+
 ## Plugin Reference
 
 ### Sprint Management: projman
@@ -217,18 +279,30 @@ LOG_LEVEL=INFO
 
 **Gitea**: `personal-projects/personal-portfolio-dataflow` at `gitea.hotserv.cloud`
 
-### Data Platform: data-platform
+### Data Platform: data-platform ⭐ CORE
 
-Use for dbt, PostgreSQL, and PostGIS operations.
+Use for dbt orchestration, PostgreSQL operations (reads and writes), PostGIS geometry, and data schema validation.
 
 | Skill | Purpose |
 |-------|---------|
-| `/data-platform:data-review` | Audit data integrity, schema validity, dbt compliance |
-| `/data-platform:data-gate` | CI/CD data quality gate (pass/fail) |
+| `/data:dbt_parse` | Validate dbt project syntax (run FIRST, before dbt run) |
+| `/data:dbt_run` | Execute dbt models (staging → intermediate → marts) |
+| `/data:dbt_test` | Run dbt tests on model outputs |
+| `/data:dbt_compile` | Compile dbt SQL without executing |
+| `/data:dbt_lineage` | Understand model dependencies before changes |
+| `/data:pg_query` | Execute SQL queries, load data |
+| `/data:pg_columns` | Inspect table schemas |
+| `/data:data-review` | Audit data integrity, schema validity, dbt compliance |
+| `/data:data-gate` | CI/CD data quality gate (pass/fail) |
 
-**When to use:** Schema changes, dbt model development, data loading, before merging data PRs.
+**When to use:**
+- Before ANY dbt change: run `dbt_parse` first
+- Before dbt_run: verify with `/data:dbt_compile` or `/data:dbt_lineage`
+- Before schema changes: run `/data:data-review`
+- After model changes: run `/data:dbt_test`
+- Before merging data PRs: run `/data:data-gate`
 
-**MCP tools available:** `pg_connect`, `pg_query`, `pg_tables`, `pg_columns`, `pg_schemas`, `st_*` (PostGIS), `dbt_*` operations.
+**MCP tools available (read + write)**: `dbt_*` (all operations), `pg_connect`, `pg_query`, `pg_execute`, `pg_tables`, `pg_columns`, `pg_schemas`, `st_*` (PostGIS), `head`, `tail`, `describe`.
 
 ### Code Quality: code-sentinel
 

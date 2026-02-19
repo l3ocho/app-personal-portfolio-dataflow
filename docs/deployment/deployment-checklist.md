@@ -14,7 +14,7 @@ Run this from your local machine (hotport):
 
 ```bash
 cd ~/repositories/personal/app-personal-portfolio-dataflow
-./deploy-to-vps.sh
+./scripts/deploy/deploy-to-vps.sh
 ```
 
 The script will automatically:
