@@ -1,0 +1,31 @@
+{
+  "recommendations": [
+    // === PYTHON DEVELOPMENT ===
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "ms-python.vscode-pylance",
+
+    // === TESTING ===
+    "littlefoxteam.vscode-python-test-adapter",
+
+    // === DATA & DBT ===
+    "fishtown-analytics.dbt-power-user",
+
+    // === SQL & DATABASE ===
+    "ms-mssql.mssql",
+    "cweijan.vscode-postgresql-client2",
+
+    // === GIT & VERSION CONTROL ===
+    "eamodio.gitlens",
+    "GitHub.copilot",
+
+    // === GENERAL PRODUCTIVITY ===
+    "ms-vscode.makefile-tools",
+    "ms-vscode.json5",
+    "ms-vscode-remote.remote-ssh",
+
+    // === DOCUMENTATION ===
+    "yzhang.markdown-all-in-one",
+    "hediet.vscode-drawio"
+  ]
+}

@@ -1,32 +1,6 @@
 # CLAUDE.md
 
-## ⛔ MANDATORY BEHAVIOR RULES - READ FIRST
-
-**These rules are NON-NEGOTIABLE. Violating them wastes the user's time and money.**
-
-### 1. WHEN USER ASKS YOU TO CHECK SOMETHING - CHECK EVERYTHING
-- Search ALL locations, not just where you think it is
-- Check cache directories: `~/.claude/plugins/cache/`
-- Check installed: `~/.claude/plugins/marketplaces/`
-- Check source directories
-- **NEVER say "no" or "that's not the issue" without exhaustive verification**
-
-### 2. WHEN USER SAYS SOMETHING IS WRONG - BELIEVE THEM
-- The user knows their system better than you
-- Investigate thoroughly before disagreeing
-- **Your confidence is often wrong. User's instincts are often right.**
-
-### 3. NEVER SAY "DONE" WITHOUT VERIFICATION
-- Run the actual command/script to verify
-- Show the output to the user
-- **"Done" means VERIFIED WORKING, not "I made changes"**
-
-### 4. SHOW EXACTLY WHAT USER ASKS FOR
-- If user asks for messages, show the MESSAGES
-- If user asks for code, show the CODE
-- **Do not interpret or summarize unless asked**
-
-**FAILURE TO FOLLOW THESE RULES = WASTED USER TIME = UNACCEPTABLE**
+> See `~/.claude/CLAUDE.md` for global behavior rules that apply to this and all projects.
 
 ---
 
@@ -81,82 +55,11 @@ make ci             # Run all checks (lint, typecheck, test)
 
 ### Git Workflow
 
-**Style**: PR-required (all changes via pull requests)
-**Base Branch**: `development`
+**Base Branch**: `development` (feature branches merge here)
 **Protected Branches**: `main`, `staging`, `development`
 **Repository**: `personal-projects/app-personal-portfolio-dataflow` @ `gitea.hotserv.cloud`
 
-#### Branch Naming
-
-| Type | Pattern | Example |
-|------|---------|---------|
-| Feature | `feature/{sprint}-{description}` | `feature/11-add-user-auth` |
-| Fix | `fix/{sprint}-{description}` | `fix/11-schema-validation` |
-| Chore | `chore/{description}` | `chore/update-dependencies` |
-| Hotfix | `hotfix/{description}` | `hotfix/critical-security-patch` |
-
-Use `/gitflow branch-start` to create branches with correct naming.
-
-#### Commit Message Convention
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <subject>
-
-[optional body]
-
-[optional footer]
-```
-
-**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`
-**Scopes**: `data`, `db`, `dbt`, `api`, `ci`, `deploy`
-
-**Examples:**
-- `feat(data): add Toronto energy consumption loader`
-- `fix(dbt): correct join logic in mart_toronto model`
-- `docs(deploy): update VPS deployment runbook`
-
-Use `/gitflow commit` for auto-generated conventional commits.
-
-#### Workflow Steps
-
-1. **Start Feature**: `/gitflow branch-start` → creates `feature/{sprint}-{description}`
-2. **Make Changes**: Edit code, test locally (`make ci`)
-3. **Commit**: `/gitflow commit` (generates conventional commit message)
-4. **Push**: `git push -u origin feature/{sprint}-{description}`
-5. **Create PR**: Via Gitea UI or `gh pr create`
-6. **Review**: PR review (use `/pr review` for automated analysis)
-7. **Merge**: Merge PR into `development` (squash or merge commit)
-8. **Cleanup**: `/gitflow branch-cleanup` (deletes merged branches)
-
-#### Release Flow
-
-```
-development → staging → main
-```
-
-- **development**: Active development, all features merge here
-- **staging**: Pre-release testing, deploy to staging environment
-- **main**: Production-ready code, tagged releases
-
-#### Pre-Push Checks
-
-Before pushing or creating PR, run:
-```bash
-make ci          # Lint, typecheck, test
-make dbt-test    # Validate dbt models
-```
-
-Use `/data review` before merging data-related PRs.
-
-#### Protected Branch Rules
-
-- **main**: No direct commits, requires PR + review
-- **staging**: No direct commits, requires PR from development
-- **development**: No direct commits, requires PR from feature branches
-
-**Emergency hotfixes**: Create `hotfix/{description}` from `main`, merge back to both `main` and `development`.
+Branch naming, commit conventions, workflow steps, and release procedures are documented in `/git-flow` plugin. Use `/gitflow branch-start` for branch creation and `/gitflow commit` for conventional commits.
 
 ---
 
@@ -378,6 +281,32 @@ Use for standardized git operations.
 | `/git-flow:git-status` | Comprehensive status with recommendations |
 
 **When to use:** Complex merge scenarios, branch management, standardized commits.
+
+### Deployment: ops-deploy-pipeline
+
+Use for deployment configuration generation and validation.
+
+| Skill | Purpose |
+|-------|---------|
+| `/ops-deploy-pipeline:deploy-generate` | Generate docker-compose.yml, Caddyfile, systemd units |
+| `/ops-deploy-pipeline:deploy-validate` | Validate deployment configs for correctness and security |
+| `/ops-deploy-pipeline:deploy-check` | Pre-deployment health check |
+| `/ops-deploy-pipeline:deploy-rollback` | Generate rollback plan |
+
+**When to use:** Preparing VPS deployments, validating configs, planning rollbacks for cron jobs.
+
+### Release Management: ops-release-manager
+
+Use for version management and release automation.
+
+| Skill | Purpose |
+|-------|---------|
+| `/ops-release-manager:release-prepare` | Bump versions, update changelog, create release branch |
+| `/ops-release-manager:release-validate` | Pre-release verification (version consistency, dependencies) |
+| `/ops-release-manager:release-tag` | Create annotated git tag with release notes |
+| `/ops-release-manager:release-status` | Show current version and release readiness |
+
+**When to use:** Preparing releases, version bumping, changelog updates.
 
 ---
 

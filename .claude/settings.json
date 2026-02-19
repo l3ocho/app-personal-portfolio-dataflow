@@ -1,8 +1,13 @@
 {
   "enabledPlugins": {
+    "projman@leo-claude-mktplace": true,
     "data-platform@leo-claude-mktplace": true,
-    "viz-platform@leo-claude-mktplace": true,
-    "data-seed@leo-claude-mktplace": true
+    "code-sentinel@leo-claude-mktplace": true,
+    "doc-guardian@leo-claude-mktplace": true,
+    "git-flow@leo-claude-mktplace": true,
+    "pr-review@leo-claude-mktplace": true,
+    "ops-deploy-pipeline@leo-claude-mktplace": true,
+    "ops-release-manager@leo-claude-mktplace": true
   },
   "model": "opusplan"
 }
