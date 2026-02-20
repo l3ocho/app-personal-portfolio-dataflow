@@ -9,6 +9,7 @@ Complete guide for deploying portfolio-dataflow to a VPS with shared PostgreSQL 
 - Python 3.11+ with venv support
 - Git access to repository
 - Database named `portfolio` in PostgreSQL
+- `make` installed (verify with `make --version`; install with `sudo apt install make -y`)
 
 ## Architecture Overview
 
