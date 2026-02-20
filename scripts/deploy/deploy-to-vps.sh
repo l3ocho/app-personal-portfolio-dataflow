@@ -23,11 +23,18 @@ NC='\033[0m' # No Color
 VPS_HOST="lmiranda@hotserv.tailc9b278.ts.net"
 POSTGRES_CONTAINER="hotserv_postgres"
 POSTGRES_USER="postgres"
-POSTGRES_PASSWORD="h0ts3rv_db_secure_2024"
 DB_NAME="portfolio"
 APPS_DIR="\$HOME/apps"  # Deploy to user's home directory
 DEPLOY_PATH="$APPS_DIR/personal-portfolio-dataflow"
-GIT_REPO="ssh://git@hotserv.tailc9b278.ts.net:2222/personal-projects/personal-portfolio-dataflow.git"
+GIT_REPO="ssh://git@hotserv.tailc9b278.ts.net:2222/personal-projects/app-personal-portfolio-dataflow.git"
+
+# Require POSTGRES_PASSWORD to be set in the environment — never hardcode secrets
+if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+    echo -e "${RED}ERROR: POSTGRES_PASSWORD environment variable is not set.${NC}"
+    echo "Export it before running this script:"
+    echo "  export POSTGRES_PASSWORD='your_secure_password'"
+    exit 1
+fi
 GIT_BRANCH="${1:-development}"  # Default to development branch, can override with argument
 
 # ==============================================================================
@@ -77,7 +84,7 @@ ssh $VPS_HOST "
         echo 'Cloning repository (branch: $GIT_BRANCH)...'
         # Remove directory if it exists but is not a git repo
         rm -rf $DEPLOY_PATH
-        cd $APPS_DIR && git clone -b $GIT_BRANCH $GIT_REPO
+        cd $APPS_DIR && git clone -b $GIT_BRANCH $GIT_REPO personal-portfolio-dataflow
     fi
 "
 echo -e "${GREEN}✓ Repository ready at $DEPLOY_PATH${NC}"

@@ -63,7 +63,7 @@ EOF
 
 ```bash
 cd $HOME/apps
-git clone ssh://git@hotserv.tailc9b278.ts.net:2222/personal-projects/personal-portfolio-dataflow.git
+git clone ssh://git@hotserv.tailc9b278.ts.net:2222/personal-projects/app-personal-portfolio-dataflow.git personal-portfolio-dataflow
 cd personal-portfolio-dataflow
 ```
 
@@ -80,13 +80,15 @@ pip install -e ".[dev,dbt]"
 ```bash
 cat > .env <<'EOF'
 # Use localhost since running on VPS host, not inside Docker container
-DATABASE_URL=postgresql://postgres:h0ts3rv_db_secure_2024@localhost:5432/portfolio
+DATABASE_URL=postgresql://postgres:$POSTGRES_PASSWORD@localhost:5432/portfolio
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=h0ts3rv_db_secure_2024
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DB=portfolio
 LOG_LEVEL=INFO
 EOF
 ```
+
+> **Note**: Set `POSTGRES_PASSWORD` in your shell environment before running the above, or replace `$POSTGRES_PASSWORD` with your actual password directly in the file (never commit the filled-in `.env`).
 
 ### 6. Initialize and Load Data
 
