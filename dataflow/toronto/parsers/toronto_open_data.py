@@ -435,7 +435,7 @@ class TorontoOpenDataParser:
         Raises:
             ValueError: If no matching XLSX resource is found.
         """
-        import openpyxl
+        import openpyxl  # type: ignore[import-untyped]
 
         package = self._get_package(package_id)
         resources = package.get("resources", [])
