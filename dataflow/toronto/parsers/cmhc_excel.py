@@ -15,6 +15,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -154,7 +155,7 @@ class CMHCExcelParser:
         Returns:
             List of CMHCUniverseRecord objects.
         """
-        records = []
+        records: list[CMHCUniverseRecord] = []
 
         header_row_idx = self._find_header_row(df)
         if header_row_idx is None:
@@ -241,7 +242,7 @@ class CMHCExcelParser:
             return {}
 
         data_start_idx = header_row_idx + 2
-        results: dict[str, dict] = {}
+        results: dict[str, dict[str, Any]] = {}
 
         for idx in range(data_start_idx, len(df)):
             row = df.iloc[idx]
@@ -335,7 +336,7 @@ class CMHCExcelParser:
             DataFrame if the sheet is found, None otherwise.
         """
         for name in excel_file.sheet_names:
-            if table_id in name:
+            if isinstance(name, str) and table_id in name:
                 return pd.read_excel(excel_file, sheet_name=name, header=None)
         logger.warning(
             f"Sheet '{table_id}' not found in {self.excel_path.name}. "
@@ -374,10 +375,10 @@ class CMHCExcelParser:
             excel_file = pd.ExcelFile(self.excel_path, engine="openpyxl")
 
             # Parse each metric table
-            vacancy_data: dict = {}
-            avg_rent_data: dict = {}
-            rent_change_data: dict = {}
-            turnover_data: dict = {}
+            vacancy_data: dict[str, dict[str, Any]] = {}
+            avg_rent_data: dict[str, dict[str, Any]] = {}
+            rent_change_data: dict[str, dict[str, Any]] = {}
+            turnover_data: dict[str, dict[str, Any]] = {}
 
             for table_id, target in [
                 ("3.1.1", vacancy_data),
