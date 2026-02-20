@@ -169,7 +169,7 @@ models:
               arguments:
                 values: [1, 2, 3, 4, 5]
 
-  - name: mart_toronto__neighbourhood_profile
+  - name: mart_neighbourhood_profile
     description: "Neighbourhood community profile analytical table with all demographics breakdown"
     meta:
       dashboard_tab: Profile

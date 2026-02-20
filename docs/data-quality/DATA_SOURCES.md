@@ -95,7 +95,7 @@ stg_toronto__profiles (dbt staging - normalization)
   ↓
 int_toronto__neighbourhood_profile (dbt intermediate - percentages + Shannon diversity)
   ↓
-mart_toronto__neighbourhood_profile (dbt mart - final consumption)
+mart_neighbourhood_profile (dbt mart - final consumption)
 ```
 
 **Downstream Use**:
