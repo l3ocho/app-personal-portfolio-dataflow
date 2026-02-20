@@ -71,9 +71,9 @@ def upsert_by_key(
         existing = session.query(model_class).filter_by(**filters).first()
 
         if existing:
-            # Update existing record
+            # Update existing record (skip primary key columns)
             for column in model_class.__table__.columns:
-                if column.name not in key_columns and column.name != "id":
+                if column.name not in key_columns and not column.primary_key:
                     setattr(existing, column.name, getattr(obj, column.name))
             updated += 1
         else:

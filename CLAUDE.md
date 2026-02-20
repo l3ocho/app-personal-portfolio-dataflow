@@ -1,32 +1,6 @@
 # CLAUDE.md
 
-## ⛔ MANDATORY BEHAVIOR RULES - READ FIRST
-
-**These rules are NON-NEGOTIABLE. Violating them wastes the user's time and money.**
-
-### 1. WHEN USER ASKS YOU TO CHECK SOMETHING - CHECK EVERYTHING
-- Search ALL locations, not just where you think it is
-- Check cache directories: `~/.claude/plugins/cache/`
-- Check installed: `~/.claude/plugins/marketplaces/`
-- Check source directories
-- **NEVER say "no" or "that's not the issue" without exhaustive verification**
-
-### 2. WHEN USER SAYS SOMETHING IS WRONG - BELIEVE THEM
-- The user knows their system better than you
-- Investigate thoroughly before disagreeing
-- **Your confidence is often wrong. User's instincts are often right.**
-
-### 3. NEVER SAY "DONE" WITHOUT VERIFICATION
-- Run the actual command/script to verify
-- Show the output to the user
-- **"Done" means VERIFIED WORKING, not "I made changes"**
-
-### 4. SHOW EXACTLY WHAT USER ASKS FOR
-- If user asks for messages, show the MESSAGES
-- If user asks for code, show the CODE
-- **Do not interpret or summarize unless asked**
-
-**FAILURE TO FOLLOW THESE RULES = WASTED USER TIME = UNACCEPTABLE**
+> See `~/.claude/CLAUDE.md` for global behavior rules that apply to this and all projects.
 
 ---
 
@@ -79,12 +53,13 @@ make ci             # Run all checks (lint, typecheck, test)
 # Run `make help` for full target list
 ```
 
-### Branch Workflow
+### Git Workflow
 
-1. Create feature branch FROM `development`: `git checkout -b feature/{sprint}-{description}`
-2. Work and commit on feature branch
-3. Merge INTO `development` when complete
-4. `development` -> `staging` -> `main` for releases
+**Base Branch**: `development` (feature branches merge here)
+**Protected Branches**: `main`, `staging`, `development`
+**Repository**: `personal-projects/app-personal-portfolio-dataflow` @ `gitea.hotserv.cloud`
+
+Branch naming, commit conventions, workflow steps, and release procedures are documented in `/git-flow` plugin. Use `/gitflow branch-start` for branch creation and `/gitflow commit` for conventional commits.
 
 ---
 
@@ -114,6 +89,42 @@ make ci             # Run all checks (lint, typecheck, test)
 - Single responsibility functions with verb naming
 - Early returns over deep nesting
 - Google-style docstrings only for non-obvious behavior
+
+---
+
+## Before Any Code Change: Impact Analysis
+
+**MANDATORY**: Before editing any dbt model or data pipeline file, search for downstream impact.
+
+| Change Type | Required Search | Purpose |
+|-------------|-----------------|---------|
+| **dbt staging model** (`staging/toronto/*.sql`) | `dbt lineage <model_name>` + `grep -r "<model_name>"` in intermediate/mart models | Staging changes cascade through intermediate → marts; missing a dependent model breaks the chain |
+| **dbt intermediate model** (`intermediate/toronto/*.sql`) | `dbt lineage <model_name>` + check all marts that depend on it | Intermediate logic changes affect multiple marts; changing logic without updating downstream causes silent data inconsistency |
+| **dbt mart model** (`marts/toronto/*.sql`) | `grep -r "mart_toronto.<table>"` in webapp repo (`app-personal-portfolio`) | **CRITICAL**: Mart tables are consumed by webapp; changing column names, types, or dropping columns breaks the webapp—MUST coordinate with webapp repo first |
+| **Raw data schema** (`raw_toronto_*`) | `dbt lineage raw_toronto_<table>` + check staging models that reference it | Raw table schema changes require staging model updates; missing update = stale/broken staging layer |
+| **Parser logic** (`parsers/toronto/*.py`) | `grep -r "parsers.toronto.<function>"` in loaders | Parsers are consumed by loaders; changing signature or output schema requires loader updates |
+
+### Workflow
+
+1. **Identify the file you want to change** (e.g., `dbt/models/marts/toronto/mart_neighbourhood_overview.sql`)
+2. **Run the appropriate search** from the table above
+3. **For mart changes, always check webapp**: `grep -r "mart_neighbourhood_overview" /home/leomiranda/repositories/personal/app-personal-portfolio/`
+4. **List all downstream references** to the user before editing
+5. **If changing mart schema**: Flag that webapp repo must be notified; schedule coordination
+6. **Run `dbt parse` before any dbt edit** to validate syntax early
+7. **Then make the change**
+
+### dbt-Specific Constraints (Non-Negotiable)
+
+- **Always `dbt parse` before `dbt run`** — catches model errors early, prevents silent failures
+- **Never modify `mart_*` table column names or types without explicit coordination with webapp repo** — these are the contract; breaking them = breaking production dashboards
+- **Schema naming is strict**:
+  - `raw_toronto_*` - Raw ingestion (direct API/file import, never transformed)
+  - `stg_toronto_*` - Staging (1:1 source cleaning, typed, ready for logic)
+  - `int_toronto_*` - Intermediate (business logic, joins, aggregations)
+  - `mart_toronto_*` - Mart (final, read-only, documented contracts with webapp)
+- **Run dbt tests** after model changes: `make dbt-test`
+- **Verify no orphaned models**: `dbt ls | grep orphaned`
 
 ---
 
@@ -191,6 +202,8 @@ make ci             # Run all checks (lint, typecheck, test)
 | Historical boundary reconciliation (140->158) | 2021+ data only for V1 |
 | ML prediction models | Energy project scope (future phase) |
 | Frontend visualizations | Moved to separate webapp repository |
+| Policy event annotation (dim_policy_event) | Table exists but requires manual data curation (future phase) |
+| dbt source freshness checks | Requires migration to add updated_at timestamp columns to raw tables |
 
 ---
 
@@ -223,6 +236,32 @@ LOG_LEVEL=INFO
 
 ---
 
+## Plugin Requirements
+
+This project is a **data-only ETL/dbt pipeline** (no frontend) and requires these plugins to operate:
+
+| Plugin | Purpose in This Project | Core to Mission? |
+|--------|------------------------|-------------------|
+| **data-platform** | dbt orchestration, PostgreSQL writes, PostGIS, schema validation | ✅ YES — Every dbt/ETL change uses this |
+| **projman** | Sprint planning, issue tracking, lessons learned | ✅ YES — Sprint management |
+| **git-flow** | Conventional commits, branch management | ✅ YES — Daily workflow |
+| **pr-review** | Multi-agent PR quality gates | ✅ YES — Pre-merge reviews |
+| **ops-deploy-pipeline** | VPS deployment configs, cron job management | ✅ YES — Deployment |
+| **ops-release-manager** | Version bumping, changelog updates | ✅ YES — Releases |
+| **code-sentinel**, **doc-guardian**, **clarity-assist** | Code quality, documentation, requirements | ✅ YES — Periodic audits, complex tasks |
+| **viz-platform** | Dash/Mantine components, Plotly charts | ❌ NO — Not applicable to data-only repo |
+
+### Working Independently (Single-Repo Mode)
+
+This repo can be opened alone in VSCode:
+```bash
+code /home/leomiranda/repositories/personal/app-personal-portfolio-dataflow
+```
+
+All plugins will load from `~/.claude/plugins/` and the global `~/.claude/CLAUDE.md` provides baseline behavior. This project's `CLAUDE.md` provides specifics.
+
+---
+
 ## Plugin Reference
 
 ### Sprint Management: projman
@@ -240,18 +279,30 @@ LOG_LEVEL=INFO
 
 **Gitea**: `personal-projects/personal-portfolio-dataflow` at `gitea.hotserv.cloud`
 
-### Data Platform: data-platform
+### Data Platform: data-platform ⭐ CORE
 
-Use for dbt, PostgreSQL, and PostGIS operations.
+Use for dbt orchestration, PostgreSQL operations (reads and writes), PostGIS geometry, and data schema validation.
 
 | Skill | Purpose |
 |-------|---------|
-| `/data-platform:data-review` | Audit data integrity, schema validity, dbt compliance |
-| `/data-platform:data-gate` | CI/CD data quality gate (pass/fail) |
+| `/data:dbt_parse` | Validate dbt project syntax (run FIRST, before dbt run) |
+| `/data:dbt_run` | Execute dbt models (staging → intermediate → marts) |
+| `/data:dbt_test` | Run dbt tests on model outputs |
+| `/data:dbt_compile` | Compile dbt SQL without executing |
+| `/data:dbt_lineage` | Understand model dependencies before changes |
+| `/data:pg_query` | Execute SQL queries, load data |
+| `/data:pg_columns` | Inspect table schemas |
+| `/data:data-review` | Audit data integrity, schema validity, dbt compliance |
+| `/data:data-gate` | CI/CD data quality gate (pass/fail) |
 
-**When to use:** Schema changes, dbt model development, data loading, before merging data PRs.
+**When to use:**
+- Before ANY dbt change: run `dbt_parse` first
+- Before dbt_run: verify with `/data:dbt_compile` or `/data:dbt_lineage`
+- Before schema changes: run `/data:data-review`
+- After model changes: run `/data:dbt_test`
+- Before merging data PRs: run `/data:data-gate`
 
-**MCP tools available:** `pg_connect`, `pg_query`, `pg_tables`, `pg_columns`, `pg_schemas`, `st_*` (PostGIS), `dbt_*` operations.
+**MCP tools available (read + write)**: `dbt_*` (all operations), `pg_connect`, `pg_query`, `pg_execute`, `pg_tables`, `pg_columns`, `pg_schemas`, `st_*` (PostGIS), `head`, `tail`, `describe`.
 
 ### Code Quality: code-sentinel
 
@@ -304,6 +355,32 @@ Use for standardized git operations.
 | `/git-flow:git-status` | Comprehensive status with recommendations |
 
 **When to use:** Complex merge scenarios, branch management, standardized commits.
+
+### Deployment: ops-deploy-pipeline
+
+Use for deployment configuration generation and validation.
+
+| Skill | Purpose |
+|-------|---------|
+| `/ops-deploy-pipeline:deploy-generate` | Generate docker-compose.yml, Caddyfile, systemd units |
+| `/ops-deploy-pipeline:deploy-validate` | Validate deployment configs for correctness and security |
+| `/ops-deploy-pipeline:deploy-check` | Pre-deployment health check |
+| `/ops-deploy-pipeline:deploy-rollback` | Generate rollback plan |
+
+**When to use:** Preparing VPS deployments, validating configs, planning rollbacks for cron jobs.
+
+### Release Management: ops-release-manager
+
+Use for version management and release automation.
+
+| Skill | Purpose |
+|-------|---------|
+| `/ops-release-manager:release-prepare` | Bump versions, update changelog, create release branch |
+| `/ops-release-manager:release-validate` | Pre-release verification (version consistency, dependencies) |
+| `/ops-release-manager:release-tag` | Create annotated git tag with release notes |
+| `/ops-release-manager:release-status` | Show current version and release readiness |
+
+**When to use:** Preparing releases, version bumping, changelog updates.
 
 ---
 
@@ -361,3 +438,216 @@ The frontend webapp (`personal-portfolio`) consumes data from this pipeline:
 ---
 
 *Last Updated: February 2026 (Sprint 10)*
+
+## Marketplace Plugin Integration
+
+The following plugins are installed from the mktpl-claude-datasaas:
+
+
+---
+
+<!-- BEGIN marketplace-plugin: projman -->
+<!-- profile: default -->
+
+## Sprint Management (projman)
+
+This project uses the **projman** plugin for sprint planning and project management with Gitea integration.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `/sprint plan` | Start sprint planning with AI-guided architecture analysis |
+| `/sprint start` | Begin sprint execution with relevant lessons learned |
+| `/sprint status` | Check current sprint progress and identify blockers |
+| `/sprint close` | Complete sprint and capture lessons learned to Gitea Wiki |
+| `/labels sync` | Synchronize label taxonomy from Gitea |
+| `/projman setup` | Run initial setup for projman plugin |
+| `/rfc create` | Create new RFC from conversation or clarified spec |
+| `/rfc list` | List all RFCs grouped by status |
+| `/rfc review` | Submit Draft RFC for review |
+| `/rfc approve` | Approve RFC for sprint planning |
+| `/rfc reject` | Reject RFC with documented reason |
+
+### MCP Tools Available
+
+The following Gitea MCP tools are available for issue and project management:
+
+**Issue Management:**
+- `list_issues` - Query issues with filters (state, labels)
+- `get_issue` - Fetch single issue details
+- `create_issue` - Create new issue with labels
+- `update_issue` - Modify existing issue
+- `add_comment` - Add comments to issues
+
+**Labels:**
+- `get_labels` - Fetch org + repo label taxonomy
+- `suggest_labels` - Analyze context and suggest appropriate labels
+- `create_label` - Create missing required labels
+
+**Milestones:**
+- `list_milestones` - List sprint milestones
+- `get_milestone` - Get milestone details
+- `create_milestone` - Create sprint milestone
+- `update_milestone` - Update/close milestone
+
+**Dependencies:**
+- `list_issue_dependencies` - Get issue dependencies
+- `create_issue_dependency` - Create dependency between issues
+- `get_execution_order` - Get parallel execution batches
+
+**Wiki (Lessons Learned & RFCs):**
+- `list_wiki_pages` - List wiki pages
+- `get_wiki_page` - Fetch specific page content
+- `create_wiki_page` - Create new wiki page
+- `update_wiki_page` - Update existing wiki page
+- `create_lesson` - Create lessons learned document
+- `search_lessons` - Search past lessons by tags
+- `allocate_rfc_number` - Get next available RFC number
+
+### Usage Guidelines
+
+- **Always use `/sprint plan`** when starting new development work
+- **Check `/sprint status`** regularly during active sprints
+- **Run `/sprint close`** at the end of each sprint to capture lessons learned
+- Use `suggest_labels` when creating issues to ensure proper categorization
+- Search lessons learned with `search_lessons` before implementing features to avoid repeated mistakes
+
+<!-- END marketplace-plugin: projman -->
+
+---
+
+<!-- BEGIN marketplace-plugin: code-sentinel -->
+<!-- profile: default -->
+
+# Code Sentinel Integration
+
+Add to your project's CLAUDE.md:
+
+## Security & Code Quality
+
+This project uses code-sentinel for security scanning and refactoring.
+
+### Automatic Security Checks
+PreToolUse hooks scan all code changes for:
+- SQL/Command/Code injection
+- XSS vulnerabilities
+- Hardcoded secrets
+- Unsafe deserialization
+
+Critical issues are blocked. Warnings are noted but allowed.
+
+### Commands
+- `/sentinel scan` - Full project security audit
+- `/sentinel refactor <target>` - Apply refactoring pattern
+- `/sentinel refactor-dry <target>` - Preview refactoring opportunities
+
+### Severity Levels
+- Critical: Must fix immediately
+- High: Fix before release
+- Medium: Improve when possible
+
+<!-- END marketplace-plugin: code-sentinel -->
+
+---
+
+<!-- BEGIN marketplace-plugin: doc-guardian -->
+<!-- profile: default -->
+
+# Doc Guardian Integration
+
+Add to your project's CLAUDE.md:
+
+## Documentation Management
+
+This project uses doc-guardian for automatic documentation synchronization.
+
+### Behavior
+- Documentation drift is detected automatically when files change
+- Pending updates are queued silently during work
+- Run `/doc sync` to apply all pending documentation updates
+- Run `/doc audit` for a full project documentation review
+- Run `/doc changelog-gen` to generate changelog from conventional commits
+- Run `/doc coverage` to check documentation coverage metrics
+- Run `/doc stale-docs` to find documentation that may be outdated
+
+### Documentation Files Tracked
+- README.md (root and subdirectories)
+- CLAUDE.md
+- API documentation in docs/
+- Docstrings in Python/TypeScript files
+
+### Commit Convention
+Documentation sync commits use: `docs: sync documentation with code changes`
+
+<!-- END marketplace-plugin: doc-guardian -->
+
+---
+
+<!-- BEGIN marketplace-plugin: data-platform -->
+<!-- profile: default -->
+
+
+## Data Platform Integration
+
+This project uses the data-platform plugin for data engineering workflows.
+
+### Configuration
+
+**PostgreSQL**: Credentials in `~/.config/claude/postgres.env`
+**dbt**: Project path auto-detected from `dbt_project.yml`
+
+### Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/data ingest` | Load data from files or database |
+| `/data profile` | Generate statistical profile |
+| `/data schema` | Show schema information |
+| `/data explain` | Explain dbt model |
+| `/data lineage` | Show data lineage |
+| `/data lineage-viz` | Visual lineage diagram |
+| `/data run` | Execute dbt models |
+| `/data dbt-test` | Run dbt tests |
+| `/data quality` | Data quality checks |
+| `/data review` | Comprehensive data audit |
+| `/data gate` | Pass/fail data quality gate |
+
+### data_ref Convention
+
+DataFrames are stored with references. Use meaningful names:
+- `raw_*` for source data
+- `stg_*` for staged/cleaned data
+- `dim_*` for dimension tables
+- `fct_*` for fact tables
+- `rpt_*` for reports
+
+### dbt Workflow
+
+1. Always validate before running: `/data run` includes automatic `dbt_parse`
+2. For dbt 1.9+, check for deprecated syntax before commits
+3. Use `/data lineage` to understand impact of changes
+
+### Database Access
+
+PostgreSQL tools require POSTGRES_URL configuration:
+- Read-only queries: `pg_query`
+- Write operations: `pg_execute`
+- Schema exploration: `pg_tables`, `pg_columns`
+
+PostGIS spatial data:
+- List spatial tables: `st_tables`
+- Check geometry: `st_geometry_type`, `st_srid`, `st_extent`
+
+### Environment Variables
+
+```env
+# dbt configuration
+DBT_PROJECT_DIR=./transform
+DBT_PROFILES_DIR=~/.dbt
+
+# Memory limits
+DATA_PLATFORM_MAX_ROWS=100000
+```
+
+<!-- END marketplace-plugin: data-platform -->

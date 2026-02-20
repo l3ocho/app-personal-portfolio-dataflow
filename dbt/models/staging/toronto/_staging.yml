@@ -13,10 +13,16 @@ models:
         description: "Date dimension key (YYYYMMDD)"
         data_tests:
           - not_null
+          - relationships:
+              to: ref('stg_dimensions__time')
+              field: date_key
       - name: zone_key
         description: "CMHC zone dimension key"
         data_tests:
           - not_null
+          - relationships:
+              to: ref('stg_dimensions__cmhc_zones')
+              field: zone_key
 
   - name: stg_dimensions__cmhc_zones
     description: "Staged CMHC zone dimension"
@@ -59,6 +65,9 @@ models:
         description: "Neighbourhood foreign key"
         data_tests:
           - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
       - name: census_year
         description: "Census year (2016, 2021)"
         data_tests:
@@ -76,6 +85,9 @@ models:
         description: "Neighbourhood foreign key"
         data_tests:
           - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
       - name: crime_type
         description: "Type of crime"
         data_tests:
@@ -93,6 +105,9 @@ models:
         description: "Neighbourhood foreign key"
         data_tests:
           - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
       - name: amenity_type
         description: "Type of amenity"
         data_tests:
@@ -110,11 +125,61 @@ models:
         description: "CMHC zone code"
         data_tests:
           - not_null
+          - relationships:
+              to: ref('stg_dimensions__cmhc_zones')
+              field: zone_code
       - name: neighbourhood_id
         description: "Neighbourhood foreign key"
         data_tests:
           - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
       - name: area_weight
         description: "Proportional area weight (0-1)"
         data_tests:
           - not_null
+
+  - name: stg_toronto__profiles
+    description: "Staged neighbourhood community profile data"
+    columns:
+      - name: profile_id
+        description: "Source record identifier"
+        data_tests:
+          - unique
+          - not_null
+      - name: neighbourhood_id
+        description: "Neighbourhood foreign key"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: census_year
+        description: "Census year"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [2021]
+      - name: category
+        description: "Profile category"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values:
+                - immigration_status
+                - place_of_birth
+                - place_of_birth_recent
+                - citizenship
+                - generation_status
+                - admission_category
+                - visible_minority
+                - ethnic_origin
+                - mother_tongue
+                - official_language
+      - name: subcategory
+        description: "Specific subcategory within category"
+        data_tests:
+          - not_null
+      - name: level
+        description: "Hierarchy level (continent/country) for place_of_birth; empty for others"

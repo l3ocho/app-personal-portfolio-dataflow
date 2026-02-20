@@ -35,9 +35,7 @@ enriched as (
         -- Metrics
         r.rental_universe,
         r.avg_rent,
-        r.median_rent,
         r.vacancy_rate,
-        r.availability_rate,
         r.turnover_rate,
         r.year_over_year_rent_change,
         r.reliability_code,

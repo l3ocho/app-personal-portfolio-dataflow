@@ -5,6 +5,11 @@ sources:
     description: "Toronto data loaded from CMHC and City of Toronto sources"
     database: portfolio
     schema: raw_toronto
+    # TODO: Add source freshness once loaded_at columns are added via migration
+    # freshness:
+    #   warn_after: {count: 48, period: hour}
+    #   error_after: {count: 168, period: hour}
+    #   loaded_at_field: updated_at  # Requires migration to add this column
     tables:
       - name: fact_rentals
         description: "CMHC annual rental survey data by zone and bedroom type"
@@ -18,18 +23,17 @@ sources:
 
       - name: dim_cmhc_zone
         description: >
-          CMHC zone dimension. Currently contains only the Toronto CMA
-          aggregate zone (TORCMA). Sub-zone boundaries (31 zones) exist
-          in data/toronto/raw/geo/cmhc_zones.geojson but are not yet
-          loaded — geometry column is NULL until sub-zone loading is
-          implemented.
+          CMHC zone dimension. Currently contains the Toronto CMA
+          aggregate zone (TORCMA) with geometry. Sub-zone boundaries
+          (31 zones) exist in data/toronto/raw/geo/cmhc_zones.geojson
+          but are not yet loaded.
         columns:
           - name: zone_key
             description: "Primary key"
           - name: zone_code
             description: "CMHC zone code"
           - name: geometry
-            description: "PostGIS geometry — NOT YET POPULATED (NULL for CMA-level zone)"
+            description: "PostGIS MULTIPOLYGON geometry (SRID 4326). Contains TORCMA aggregate zone boundary."
 
       - name: dim_neighbourhood
         description: "City of Toronto neighbourhoods (158 official boundaries)"
@@ -98,3 +102,23 @@ sources:
             description: "Neighbourhood ID"
           - name: weight
             description: "Proportional area weight (0-1)"
+
+      - name: fact_neighbourhood_profile
+        description: >
+          Neighbourhood community profile data (immigration, visible minorities,
+          languages, ethnic origin, etc.) from Statistics Canada 2021 Census
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: neighbourhood_id
+            description: "Foreign key to dim_neighbourhood"
+          - name: census_year
+            description: "Census year (2021)"
+          - name: category
+            description: "Profile category (immigration_status, visible_minority, mother_tongue, etc.)"
+          - name: subcategory
+            description: "Specific subcategory within the category"
+          - name: count
+            description: "Count value (NULL = Statistics Canada suppressed)"
+          - name: level
+            description: "Hierarchy level for place_of_birth (continent or country); empty for other categories"

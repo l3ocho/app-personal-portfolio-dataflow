@@ -36,11 +36,7 @@ amenity_scores as (
         n.neighbourhood_name,
         n.geometry,
         c.population,
-        case
-            when c.population_density > 0
-            then round(c.population::numeric / c.population_density, 2)
-            else null
-        end as land_area_sqkm,
+        n.land_area_sqkm,
 
         coalesce(a.year, 2021) as year,
 
@@ -75,18 +71,21 @@ amenity_scores as (
         end as total_amenities_per_1000,
 
         -- Per square km
-        case when c.population_density > 0
-            then round(
-                a.total_amenities::numeric
-                / (c.population::numeric / c.population_density),
-                2
-            )
+        case when n.land_area_sqkm > 0
+            then round(a.total_amenities::numeric / n.land_area_sqkm, 2)
             else null
         end as amenities_per_sqkm
 
     from neighbourhoods n
-    left join census c on n.neighbourhood_id = c.neighbourhood_id
     left join amenities_by_year a on n.neighbourhood_id = a.neighbourhood_id
+    -- Use most recent census data available for each year
+    left join census c on n.neighbourhood_id = c.neighbourhood_id
+        and c.census_year = (
+            select max(c2.census_year)
+            from {{ ref('stg_toronto__census') }} c2
+            where c2.neighbourhood_id = n.neighbourhood_id
+            and c2.census_year <= coalesce(a.year, 2024)
+        )
 )
 
 select * from amenity_scores

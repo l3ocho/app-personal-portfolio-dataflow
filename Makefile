@@ -1,4 +1,4 @@
-.PHONY: setup docker-up docker-down db-init load-data load-all load-toronto load-toronto-only seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto
+.PHONY: setup docker-up docker-down db-init local-dev load-data load-all load-toronto load-toronto-only seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto
 
 # Default target
 .DEFAULT_GOAL := help
@@ -61,8 +61,41 @@ docker-down: ## Stop containers
 	@echo "$(YELLOW)Stopping containers...$(NC)"
 	$(DOCKER_COMPOSE) down
 
+local-dev: docker-up db-init pgweb-up ## Start everything for local development (docker, database, pgweb)
+	@echo "$(GREEN)================================$(NC)"
+	@echo "$(GREEN)✅ Local development environment ready!$(NC)"
+	@echo "$(GREEN)================================$(NC)"
+	@echo ""
+	@echo "$(BLUE)Database:$(NC) postgresql://portfolio:portfolio_dev@localhost:5432/portfolio"
+	@echo "$(BLUE)pgweb:$(NC) http://localhost:8081"
+	@echo "$(BLUE)pgweb (LAN):$(NC) http://$$(hostname -I | awk '{print $$1}'):8081"
+	@echo ""
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Load data: make load-toronto"
+	@echo "  2. Run dbt: make dbt-run"
+	@echo "  3. Stop all: make docker-down"
+	@echo ""
+
 docker-logs: ## View container logs
 	$(DOCKER_COMPOSE) logs -f
+
+# =============================================================================
+# Development Tools
+# =============================================================================
+
+pgweb-up: ## Start pgweb database browser (dev only)
+	@echo "$(GREEN)Starting pgweb on http://localhost:8081...$(NC)"
+	$(DOCKER_COMPOSE) --profile dev up pgweb -d
+	@echo "$(GREEN)pgweb started!$(NC)"
+	@echo "$(BLUE)Access from localhost: http://localhost:8081$(NC)"
+	@echo "$(BLUE)Access from LAN: http://$$(hostname -I | awk '{print $$1}'):8081$(NC)"
+
+pgweb-down: ## Stop pgweb
+	@echo "$(YELLOW)Stopping pgweb...$(NC)"
+	$(DOCKER_COMPOSE) --profile dev down
+
+pgweb-logs: ## View pgweb logs
+	$(DOCKER_COMPOSE) --profile dev logs -f pgweb
 
 # =============================================================================
 # Database
@@ -119,15 +152,15 @@ test-cov: ## Run pytest with coverage
 
 dbt-run: ## Run dbt models
 	@echo "$(GREEN)Running dbt models...$(NC)"
-	@set -a && . ./.env && set +a && cd dbt && dbt run --profiles-dir .
+	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt run --profiles-dir .
 
 dbt-test: ## Run dbt tests
 	@echo "$(GREEN)Running dbt tests...$(NC)"
-	@set -a && . ./.env && set +a && cd dbt && dbt test --profiles-dir .
+	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt test --profiles-dir .
 
 dbt-docs: ## Generate dbt documentation
 	@echo "$(GREEN)Generating dbt docs...$(NC)"
-	@set -a && . ./.env && set +a && cd dbt && dbt docs generate --profiles-dir . && dbt docs serve --profiles-dir .
+	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt docs generate --profiles-dir . && ../.venv/bin/dbt docs serve --profiles-dir .
 
 # =============================================================================
 # Code Quality
@@ -170,9 +203,9 @@ etl-toronto: ## Run Toronto ETL pipeline (usage: make etl-toronto MODE=--full)
 # Deployment
 # =============================================================================
 
-deploy: ## Deploy to production
-	@echo "$(YELLOW)Deployment not yet configured$(NC)"
-	@echo "TODO: Add deployment script"
+deploy: ## Deploy to production VPS
+	@echo "$(BLUE)Deploying to VPS...$(NC)"
+	./scripts/deploy/deploy-to-vps.sh
 
 # =============================================================================
 # Cleanup

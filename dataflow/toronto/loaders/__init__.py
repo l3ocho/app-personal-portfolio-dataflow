@@ -7,7 +7,9 @@ from .cmhc import (
     ensure_toronto_cma_zone,
     load_cmhc_record,
     load_cmhc_rentals,
+    load_excel_rental_data,
     load_statcan_cmhc_data,
+    update_universe_from_excel,
 )
 from .cmhc_crosswalk import (
     build_cmhc_neighbourhood_crosswalk,
@@ -22,6 +24,7 @@ from .dimensions import (
     load_policy_events,
     load_time_dimension,
 )
+from .profile_loader import load_profile_data
 
 __all__ = [
     # Base utilities
@@ -37,13 +40,16 @@ __all__ = [
     # Fact loaders
     "load_cmhc_rentals",
     "load_cmhc_record",
+    "load_excel_rental_data",
     "load_statcan_cmhc_data",
+    "update_universe_from_excel",
     "ensure_toronto_cma_zone",
     # Phase 3 loaders
     "load_census_data",
     "load_crime_data",
     "load_amenities",
     "load_amenity_counts",
+    "load_profile_data",
     # CMHC crosswalk
     "build_cmhc_neighbourhood_crosswalk",
     "get_neighbourhood_weights_for_zone",

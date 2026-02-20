@@ -19,9 +19,7 @@ staged as (
         bedroom_type,
         universe as rental_universe,
         avg_rent,
-        median_rent,
         vacancy_rate,
-        availability_rate,
         turnover_rate,
         rent_change_pct as year_over_year_rent_change,
         reliability_code
