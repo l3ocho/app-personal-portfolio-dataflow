@@ -16,7 +16,6 @@ from sqlalchemy import text
 
 from dataflow.toronto.models import get_engine
 
-
 RENAMED_TABLES = [
     # (schema, old_name)
     ("mart_toronto", "mart_toronto__neighbourhood_profile"),
