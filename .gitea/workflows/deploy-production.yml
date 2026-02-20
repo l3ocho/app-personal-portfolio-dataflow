@@ -37,6 +37,9 @@ jobs:
             echo "Applying schema migrations..."
             python scripts/db/init_schema.py
 
+            echo "Cleaning up renamed mart tables..."
+            python scripts/db/migrations/drop_renamed_marts.py
+
             echo "Running dbt models..."
             cd dbt && dbt run --profiles-dir . && cd ..
 
