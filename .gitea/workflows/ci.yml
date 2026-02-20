@@ -30,5 +30,8 @@ jobs:
       - name: Run linter
         run: ruff check .
 
+      - name: Run type checker
+        run: mypy dataflow
+
       - name: Run tests
         run: pytest tests/ -v --tb=short

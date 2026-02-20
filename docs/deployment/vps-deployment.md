@@ -13,17 +13,17 @@ Complete guide for deploying portfolio-dataflow to a VPS with shared PostgreSQL 
 ## Architecture Overview
 
 ```
-VPS: /opt/apps/ (or ~/apps/)
+VPS: ~/apps/
 ├── docker-compose.yml          # Main orchestrator (postgres, gitea, cloudbeaver)
 ├── gitea/
 ├── cloudbeaver/
-└── portfolio-dataflow/         # This application
-    ├── .venv/                  # Python virtual environment
-    ├── dataflow/               # Data pipeline code
-    ├── dbt/                    # dbt models
-    ├── scripts/                # ETL scripts
-    ├── data/                   # Raw data files
-    └── .env                    # Environment configuration
+└── personal-portfolio-dataflow/  # This application
+    ├── .venv/                    # Python virtual environment
+    ├── dataflow/                 # Data pipeline code
+    ├── dbt/                      # dbt models
+    ├── scripts/                  # ETL scripts
+    ├── data/                     # Raw data files
+    └── .env                      # Environment configuration
 ```
 
 **Deployment Model**: Not a containerized service, runs via **cron jobs** for scheduled ETL.
@@ -39,8 +39,8 @@ VPS: /opt/apps/ (or ~/apps/)
 cd /opt/apps  # or ~/apps depending on your setup
 
 # Clone repository
-git clone https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow.git
-cd portfolio-dataflow
+git clone https://gitea.hotserv.cloud/personal-projects/app-personal-portfolio-dataflow.git personal-portfolio-dataflow
+cd personal-portfolio-dataflow
 
 # Checkout desired branch
 git checkout main  # or staging for staging environment
@@ -193,16 +193,16 @@ crontab -e
 ```bash
 # Portfolio Dataflow - Toronto Data ETL
 # Run every day at 2 AM (data refresh)
-0 2 * * * cd /opt/apps/portfolio-dataflow && /opt/apps/portfolio-dataflow/.venv/bin/python scripts/data/load_toronto_data.py >> /var/log/portfolio-dataflow/etl.log 2>&1
+0 2 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/python scripts/data/load_toronto_data.py >> /var/log/portfolio-dataflow/etl.log 2>&1
 
 # Run dbt models every day at 3 AM (after data loads)
-0 3 * * * cd /opt/apps/portfolio-dataflow && /opt/apps/portfolio-dataflow/.venv/bin/make dbt-run >> /var/log/portfolio-dataflow/dbt.log 2>&1
+0 3 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make dbt-run >> /var/log/portfolio-dataflow/dbt.log 2>&1
 
 # Run dbt tests every day at 4 AM (after models run)
-0 4 * * * cd /opt/apps/portfolio-dataflow && /opt/apps/portfolio-dataflow/.venv/bin/make dbt-test >> /var/log/portfolio-dataflow/dbt-test.log 2>&1
+0 4 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make dbt-test >> /var/log/portfolio-dataflow/dbt-test.log 2>&1
 
 # Weekly full refresh (Sundays at 1 AM)
-0 1 * * 0 cd /opt/apps/portfolio-dataflow && /opt/apps/portfolio-dataflow/.venv/bin/make db-reset && /opt/apps/portfolio-dataflow/.venv/bin/make load-toronto >> /var/log/portfolio-dataflow/weekly-refresh.log 2>&1
+0 1 * * 0 cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make db-reset && ~/apps/personal-portfolio-dataflow/.venv/bin/make load-toronto >> /var/log/portfolio-dataflow/weekly-refresh.log 2>&1
 ```
 
 **Notes:**
@@ -280,7 +280,7 @@ ORDER BY n_live_tup DESC;
 
 ```bash
 # Navigate to directory
-cd /opt/apps/portfolio-dataflow
+cd ~/apps/personal-portfolio-dataflow
 
 # Pull latest changes
 git fetch origin
@@ -321,7 +321,7 @@ grep CRON /var/log/syslog | tail -20
 
 **Run manually to test:**
 ```bash
-cd /opt/apps/portfolio-dataflow
+cd ~/apps/personal-portfolio-dataflow
 source .venv/bin/activate
 python scripts/data/load_toronto_data.py
 ```
@@ -340,7 +340,7 @@ docker exec -it postgres psql -U postgres -d portfolio
 
 **Check DATABASE_URL:**
 ```bash
-cd /opt/apps/portfolio-dataflow
+cd ~/apps/personal-portfolio-dataflow
 cat .env | grep DATABASE_URL
 ```
 
@@ -353,7 +353,7 @@ cat .env | grep DATABASE_URL
 
 **Check dbt profile:**
 ```bash
-cd /opt/apps/portfolio-dataflow/dbt
+cd ~/apps/personal-portfolio-dataflow/dbt
 cat profiles.yml
 ```
 
@@ -395,7 +395,7 @@ docker system prune -af
 
 **Recreate virtual environment:**
 ```bash
-cd /opt/apps/portfolio-dataflow
+cd ~/apps/personal-portfolio-dataflow
 rm -rf .venv
 python3 -m venv .venv
 source .venv/bin/activate
@@ -410,7 +410,7 @@ If deployment fails:
 
 ```bash
 # Navigate to directory
-cd /opt/apps/portfolio-dataflow
+cd ~/apps/personal-portfolio-dataflow
 
 # Revert to previous commit
 git log --oneline -5  # Find previous commit hash
