@@ -1,9 +1,3 @@
-{{
-  config(
-    tags=['football', 'fact']
-  )
-}}
-
 select
   id,
   player_id,
@@ -12,8 +6,6 @@ select
   transfer_date,
   fee_eur,
   is_loan,
-  season,
+  season
 from {{ source('raw_football', 'fact_transfer') }}
-where player_id is not null
-  and to_club_id is not null
-  and transfer_date is not null
+where player_id is not null and to_club_id is not null and transfer_date is not null

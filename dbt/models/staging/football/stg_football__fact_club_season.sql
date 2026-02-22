@@ -1,9 +1,3 @@
-{{
-  config(
-    tags=['football', 'fact']
-  )
-}}
-
 select
   id,
   club_id,
@@ -16,8 +10,6 @@ select
   losses,
   goals_for,
   goals_against,
-  points,
+  points
 from {{ source('raw_football', 'fact_club_season') }}
-where club_id is not null
-  and league_id is not null
-  and season is not null
+where club_id is not null and league_id is not null and season is not null

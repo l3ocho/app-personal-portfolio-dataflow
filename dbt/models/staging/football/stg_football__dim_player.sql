@@ -1,9 +1,3 @@
-{{
-  config(
-    tags=['football', 'dimension']
-  )
-}}
-
 select
   player_id,
   player_name,
@@ -11,6 +5,6 @@ select
   nationality,
   height_cm,
   position,
-  preferred_foot,
+  preferred_foot
 from {{ source('raw_football', 'dim_player') }}
 where player_id is not null
