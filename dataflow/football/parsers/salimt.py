@@ -156,10 +156,19 @@ class SalimtParser:
         """Initialize parser with datalake root directory.
 
         Args:
-            datalake_root: Path to datalake/ directory containing transfermarkt/raw/
+            datalake_root: Path to datalake/ directory or parent of salimt/ directory
         """
-        self.datalake_root = Path(datalake_root)
-        self.salimt_root = self.datalake_root / "transfermarkt" / "raw"
+        datalake_root = Path(datalake_root)
+
+        # Support both structures:
+        # 1. If datalake_root points to salimt/, use that
+        if (datalake_root / "datalake").exists():
+            self.salimt_root = datalake_root / "datalake" / "transfermarkt"
+        elif (datalake_root / "transfermarkt").exists():
+            self.salimt_root = datalake_root / "transfermarkt"
+        else:
+            self.salimt_root = datalake_root
+
         self._validate_paths()
 
     def _validate_paths(self) -> None:
@@ -167,49 +176,63 @@ class SalimtParser:
         if not self.salimt_root.exists():
             raise FileNotFoundError(
                 f"Salimt datalake not found at {self.salimt_root}. "
-                f"Expected structure: datalake/transfermarkt/raw/"
+                f"Expected structure: datalake/transfermarkt/ with table subdirectories"
             )
 
     def parse_leagues(self) -> list[LeagueRecord]:
-        """Parse leagues.csv and filter to target leagues."""
-        csv_path = self.salimt_root / "leagues" / "leagues.csv"
+        """Extract leagues from team_competitions_seasons.csv."""
+        csv_path = self.salimt_root / "team_competitions_seasons" / "team_competitions_seasons.csv"
         if not csv_path.exists():
-            logger.warning(f"Leagues CSV not found at {csv_path}")
+            logger.warning(f"Team competitions CSV not found at {csv_path}")
             return []
 
-        df = pd.read_csv(csv_path)
-
-        # Filter to target leagues
-        if "league_code" in df.columns:
-            df = df[df["league_code"].isin(TARGET_LEAGUES)]
-        else:
-            logger.warning("'league_code' column not found in leagues.csv")
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.error(f"Error reading team_competitions_seasons: {e}")
             return []
+
+        # Extract unique leagues using 'competition_code' column
+        if "competition_code" not in df.columns:
+            logger.warning("'competition_code' column not found in team_competitions_seasons")
+            return []
+
+        # Filter to target competitions
+        df = df[df["competition_code"].isin(TARGET_LEAGUES)]
+
+        # Get unique competition codes
+        unique_leagues = df[["competition_code"]].drop_duplicates()
 
         records = []
-        for _, row in df.iterrows():
+        for _, row in unique_leagues.iterrows():
             try:
+                comp_code = str(row.get("competition_code", ""))
                 record = LeagueRecord(
-                    league_id=str(row.get("league_code", "")),
-                    league_name=str(row.get("league_name", "")),
-                    country=str(row.get("country", "")),
-                    season_start_year=int(row.get("season_start_year", 2023)),
+                    league_id=comp_code,
+                    league_name=comp_code,  # Use code as name (no separate league table)
+                    country="",
+                    season_start_year=2023,
                 )
                 records.append(record)
             except Exception as e:
-                logger.warning(f"Could not parse league row: {row.to_dict()}: {e}")
+                logger.warning(f"Could not parse league {comp_code}: {e}")
 
-        logger.info(f"Parsed {len(records)} leagues (filtered to {TARGET_LEAGUES})")
+        logger.info(f"Parsed {len(records)} unique leagues from competitions (filtered to {TARGET_LEAGUES})")
         return records
 
     def parse_clubs(self) -> list[ClubRecord]:
-        """Parse clubs.csv."""
-        csv_path = self.salimt_root / "clubs" / "clubs.csv"
+        """Parse team_details.csv."""
+        csv_path = self.salimt_root / "team_details" / "team_details.csv"
         if not csv_path.exists():
-            logger.warning(f"Clubs CSV not found at {csv_path}")
+            logger.warning(f"Team details CSV not found at {csv_path}")
             return []
 
-        df = pd.read_csv(csv_path)
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.error(f"Error reading team_details: {e}")
+            return []
+
         records = []
 
         for _, row in df.iterrows():
@@ -230,13 +253,18 @@ class SalimtParser:
         return records
 
     def parse_players(self) -> list[PlayerRecord]:
-        """Parse players.csv with height conversion."""
-        csv_path = self.salimt_root / "players" / "players.csv"
+        """Parse player_profiles.csv with height conversion."""
+        csv_path = self.salimt_root / "player_profiles" / "player_profiles.csv"
         if not csv_path.exists():
-            logger.warning(f"Players CSV not found at {csv_path}")
+            logger.warning(f"Player profiles CSV not found at {csv_path}")
             return []
 
-        df = pd.read_csv(csv_path)
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.error(f"Error reading player_profiles: {e}")
+            return []
+
         records = []
 
         for _, row in df.iterrows():
@@ -258,19 +286,24 @@ class SalimtParser:
         return records
 
     def parse_player_market_values(self) -> list[PlayerMarketValueRecord]:
-        """Parse player_market_values.csv with date_unix conversion.
+        """Parse player_market_value.csv with date_unix conversion.
 
         Note: Can return millions of rows. Call with chunking if needed.
         """
-        csv_path = self.salimt_root / "player_market_values" / "player_market_values.csv"
+        csv_path = self.salimt_root / "player_market_value" / "player_market_value.csv"
         if not csv_path.exists():
-            logger.warning(f"Player market values CSV not found at {csv_path}")
+            logger.warning(f"Player market value CSV not found at {csv_path}")
             return []
 
-        df = pd.read_csv(csv_path)
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.error(f"Error reading player_market_value: {e}")
+            return []
+
         records = []
 
-        for _, row in df.iterrows():
+        for idx, row in df.iterrows():
             try:
                 market_value_date = parse_date_unix(row.get("date_unix"))
                 if market_value_date is None:
@@ -279,25 +312,33 @@ class SalimtParser:
                 record = PlayerMarketValueRecord(
                     player_id=str(row.get("player_id", "")),
                     club_id=row.get("club_id"),
-                    value_eur=row.get("value_eur"),
+                    value_eur=row.get("market_value_in_eur"),
                     market_value_date=market_value_date,
                     season=parse_season(row.get("season")),
                 )
                 records.append(record)
-            except Exception as e:
-                logger.warning(f"Could not parse market value row: {row.to_dict()}: {e}")
 
-        logger.info(f"Parsed {len(records)} player market values")
+                if (idx + 1) % 100000 == 0:
+                    logger.info(f"  Parsed {idx + 1} market value records...")
+            except Exception as e:
+                logger.debug(f"Could not parse market value row {idx}: {e}")
+
+        logger.info(f"Parsed {len(records)} player market values total")
         return records
 
     def parse_transfers(self) -> list[TransferHistoryRecord]:
-        """Parse transfers.csv with fee parsing."""
-        csv_path = self.salimt_root / "transfers" / "transfers.csv"
+        """Parse transfer_history.csv with fee parsing."""
+        csv_path = self.salimt_root / "transfer_history" / "transfer_history.csv"
         if not csv_path.exists():
-            logger.warning(f"Transfers CSV not found at {csv_path}")
+            logger.warning(f"Transfer history CSV not found at {csv_path}")
             return []
 
-        df = pd.read_csv(csv_path)
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.error(f"Error reading transfer_history: {e}")
+            return []
+
         records = []
 
         for _, row in df.iterrows():
@@ -315,39 +356,47 @@ class SalimtParser:
                 )
                 records.append(record)
             except Exception as e:
-                logger.warning(f"Could not parse transfer row: {row.to_dict()}: {e}")
+                logger.debug(f"Could not parse transfer row: {e}")
 
         logger.info(f"Parsed {len(records)} transfers")
         return records
 
     def parse_club_season_stats(self) -> list[ClubSeasonRecord]:
-        """Parse club_season_stats.csv."""
-        csv_path = self.salimt_root / "club_season_stats" / "club_season_stats.csv"
+        """Parse team_competitions_seasons.csv for club season stats."""
+        csv_path = self.salimt_root / "team_competitions_seasons" / "team_competitions_seasons.csv"
         if not csv_path.exists():
-            logger.warning(f"Club season stats CSV not found at {csv_path}")
+            logger.warning(f"Team competitions CSV not found at {csv_path}")
             return []
 
-        df = pd.read_csv(csv_path)
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.error(f"Error reading team_competitions_seasons: {e}")
+            return []
+
+        # Filter to target leagues only
+        df = df[df["competition_code"].isin(TARGET_LEAGUES)]
+
         records = []
 
         for _, row in df.iterrows():
             try:
                 record = ClubSeasonRecord(
                     club_id=str(row.get("club_id", "")),
-                    league_id=str(row.get("league_id", "")),
+                    league_id=str(row.get("competition_code", "")),
                     season=int(row.get("season", 2023)),
-                    position=row.get("position"),
-                    matches_played=row.get("matches_played"),
-                    wins=row.get("wins"),
-                    draws=row.get("draws"),
-                    losses=row.get("losses"),
-                    goals_for=row.get("goals_for"),
-                    goals_against=row.get("goals_against"),
-                    points=row.get("points"),
+                    position=row.get("tier"),  # Tier = position in league
+                    matches_played=None,
+                    wins=None,
+                    draws=None,
+                    losses=None,
+                    goals_for=None,
+                    goals_against=None,
+                    points=None,
                 )
                 records.append(record)
             except Exception as e:
-                logger.warning(f"Could not parse club season row: {row.to_dict()}: {e}")
+                logger.debug(f"Could not parse club season row: {e}")
 
-        logger.info(f"Parsed {len(records)} club seasons")
+        logger.info(f"Parsed {len(records)} club seasons (from {len(TARGET_LEAGUES)} target leagues)")
         return records
