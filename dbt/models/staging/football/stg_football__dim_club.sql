@@ -11,6 +11,5 @@ select
   country,
   founded_year,
   city,
-  current_timestamp() as dbt_created_at
 from {{ source('raw_football', 'dim_club') }}
 where club_id is not null

@@ -13,7 +13,6 @@ select
   season,
   salary_usd,
   guaranteed_compensation_usd,
-  current_timestamp() as dbt_created_at
 from {{ source('raw_football', 'fact_mls_salary') }}
 where player_id is not null
   and club_id is not null

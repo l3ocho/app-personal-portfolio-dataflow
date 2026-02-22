@@ -12,6 +12,5 @@ select
   height_cm,
   position,
   preferred_foot,
-  current_timestamp() as dbt_created_at
 from {{ source('raw_football', 'dim_player') }}
 where player_id is not null
