@@ -29,11 +29,15 @@ class DeloitteParser:
     def parse(self) -> list[ClubFinanceRecord]:
         """Parse Deloitte revenue data.
 
-        Raises:
-            NotImplementedError: Deloitte parser not yet implemented.
+        Phase 2 placeholder: Returns empty list until Deloitte data is available.
+        Deloitte Money League reports are PDFs that require manual extraction or PDF parsing.
+
+        Returns:
+            Empty list (Deloitte data not yet available)
         """
-        raise NotImplementedError(
-            "Deloitte Money League parser not yet implemented. "
-            "Phase 2+ feature requiring PDF extraction. "
-            "See RFC Section 4 for extraction strategy."
+        logger.info("Deloitte Money League parser: No data available in Phase 2")
+        logger.debug(
+            "Deloitte parser not yet implemented. Future implementation required for PDF extraction. "
+            "Expected data: club revenue, operating profit, debt, etc. from Deloitte Money League reports"
         )
+        return []

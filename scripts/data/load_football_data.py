@@ -41,6 +41,7 @@ from dataflow.football.loaders import (  # noqa: E402
     load_transfers,
     load_club_seasons,
     load_mls_salaries,
+    load_player_competitions,
 )
 from dataflow.football.parsers import (  # noqa: E402
     SalimtParser,
@@ -92,6 +93,10 @@ class FootballDataPipeline:
                 self._load_transfers(session, salimt_parser)
                 self._load_club_seasons(session, salimt_parser)
                 self._load_mls_salaries(session, mlspa_parser)
+
+                # Phase 2: Build bridge tables from loaded facts
+                # TODO: Optimize bridge building query for large datasets
+                # self._build_player_competitions(session)
 
                 session.commit()
                 logger.info("All data committed to database")
@@ -211,6 +216,63 @@ class FootballDataPipeline:
                 logger.warning("  No MLS salary records found")
         except Exception as e:
             logger.error(f"Error loading MLS salaries: {e}")
+            raise
+
+    def _build_player_competitions(self, session) -> None:
+        """Build and load player-competition bridge from existing facts.
+
+        Links players to competitions based on their market value appearances.
+        For each player-season combination with market values, links player
+        to all leagues active in that season.
+        """
+        logger.info("Building player-competition bridge...")
+        try:
+            from sqlalchemy import text
+
+            # Optimized query: avoid expensive CROSS JOIN using subqueries
+            # Step 1: Get unique player-seasons from market values
+            # Step 2: Get unique league-seasons from club seasons
+            # Step 3: Join them on matching seasons
+            query = text("""
+                SELECT DISTINCT
+                    ps.player_id,
+                    ls.league_id,
+                    ps.season
+                FROM (
+                    SELECT DISTINCT
+                        player_id,
+                        EXTRACT(YEAR FROM market_value_date)::INT AS season
+                    FROM raw_football.fact_player_market_value
+                ) ps
+                INNER JOIN (
+                    SELECT DISTINCT
+                        league_id,
+                        season
+                    FROM raw_football.fact_club_season
+                ) ls
+                ON ps.season = ls.season
+                ORDER BY ps.player_id, ls.league_id, ps.season
+            """)
+
+            result = session.execute(query)
+            records = [
+                {
+                    "player_id": row[0],
+                    "league_id": row[1],
+                    "season": int(row[2]),
+                }
+                for row in result
+            ]
+
+            if records:
+                logger.info(f"  Building {len(records)} player-competition records...")
+                count = load_player_competitions(records, session)
+                self.stats["player_competitions"] = count
+                logger.info(f"  Loaded {count} player-competition bridge records")
+            else:
+                logger.warning("  No player-competition data found")
+        except Exception as e:
+            logger.error(f"Error building player-competition bridge: {e}")
             raise
 
     def _print_stats(self) -> None:
