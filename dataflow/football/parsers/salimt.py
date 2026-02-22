@@ -343,12 +343,17 @@ class SalimtParser:
                     except (ValueError, TypeError):
                         pass
 
+                # Extract season from market_value_date year
+                season = None
+                if market_value_date:
+                    season = market_value_date.year
+
                 record = PlayerMarketValueRecord(
                     player_id=str(row.get("player_id", "")),
                     club_id=None,  # Not available in this CSV
                     value_eur=value_eur,
                     market_value_date=market_value_date,
-                    season=None,  # Not available in this CSV
+                    season=season,
                 )
                 records.append(record)
 
