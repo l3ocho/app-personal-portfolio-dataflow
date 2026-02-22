@@ -57,12 +57,13 @@ class TransferHistoryRecord(BaseModel):
 
     Handles multiple fee formats: '€12.5m', 'free transfer', 'Loan', '?', '-', None
     Unparseable values set fee_eur=NULL, is_loan=False
+    Note: transfer_date is optional since transfer_history.csv is stored in Git LFS
     """
 
     player_id: str = Field(max_length=20)
     from_club_id: Optional[str] = Field(default=None, max_length=20)
     to_club_id: str = Field(max_length=20)
-    transfer_date: date
+    transfer_date: Optional[date] = Field(default=None)
     fee_eur: Optional[int] = Field(default=None, ge=0, description="Parsed fee in EUR or NULL if unparseable")
     is_loan: bool = Field(default=False, description="True if 'Loan' in original, False if free or unparseable")
     season: Optional[int] = Field(default=None, ge=1900, le=2100)

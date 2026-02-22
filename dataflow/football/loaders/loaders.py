@@ -25,7 +25,7 @@ from dataflow.football.schemas.salimt import (
 from dataflow.football.schemas.mlspa import MLSPASalaryRecord
 from dataflow.football.schemas.deloitte import ClubFinanceRecord
 
-from .base import get_session, upsert_by_key
+from .base import get_session, bulk_insert, upsert_by_key
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def load_leagues(
     records: list[LeagueRecord],
     session: Session | None = None,
 ) -> int:
-    """Load league records to dim_league table."""
+    """Load league records to dim_league table (bulk insert for speed)."""
 
     def _load(sess: Session) -> int:
         models = [
@@ -46,9 +46,10 @@ def load_leagues(
             )
             for r in records
         ]
-        inserted, updated = upsert_by_key(sess, DimLeague, models, ["league_id"])
-        logger.info(f"Leagues: {inserted} inserted, {updated} updated")
-        return inserted + updated
+        # Use bulk_insert for speed (no updates needed for raw dimensions)
+        count = bulk_insert(sess, models)
+        logger.info(f"Leagues: {count} inserted")
+        return count
 
     if session:
         return _load(session)
@@ -60,7 +61,7 @@ def load_clubs(
     records: list[ClubRecord],
     session: Session | None = None,
 ) -> int:
-    """Load club records to dim_club table."""
+    """Load club records to dim_club table (bulk insert for speed)."""
 
     def _load(sess: Session) -> int:
         models = [
@@ -74,9 +75,10 @@ def load_clubs(
             )
             for r in records
         ]
-        inserted, updated = upsert_by_key(sess, DimClub, models, ["club_id"])
-        logger.info(f"Clubs: {inserted} inserted, {updated} updated")
-        return inserted + updated
+        # Use bulk_insert for speed (no updates needed for raw dimensions)
+        count = bulk_insert(sess, models)
+        logger.info(f"Clubs: {count} inserted")
+        return count
 
     if session:
         return _load(session)
@@ -88,7 +90,7 @@ def load_players(
     records: list[PlayerRecord],
     session: Session | None = None,
 ) -> int:
-    """Load player records to dim_player table."""
+    """Load player records to dim_player table (bulk insert for speed)."""
 
     def _load(sess: Session) -> int:
         models = [
@@ -103,9 +105,10 @@ def load_players(
             )
             for r in records
         ]
-        inserted, updated = upsert_by_key(sess, DimPlayer, models, ["player_id"])
-        logger.info(f"Players: {inserted} inserted, {updated} updated")
-        return inserted + updated
+        # Use bulk_insert for speed (no updates needed for raw dimensions)
+        count = bulk_insert(sess, models)
+        logger.info(f"Players: {count} inserted")
+        return count
 
     if session:
         return _load(session)

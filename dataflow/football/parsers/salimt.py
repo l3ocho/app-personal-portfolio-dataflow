@@ -71,11 +71,11 @@ def parse_transfer_fee(fee_str: Optional[str]) -> tuple[Optional[int], bool]:
         return None, False
 
 
-def parse_date_unix(unix_timestamp: Optional[int | float]) -> Optional[date]:
-    """Convert Unix timestamp to date.
+def parse_date_unix(unix_timestamp: Optional[int | float | str]) -> Optional[date]:
+    """Convert Unix timestamp or ISO date string to date.
 
     Args:
-        unix_timestamp: Seconds since epoch (or None)
+        unix_timestamp: Seconds since epoch, ISO date string, or None
 
     Returns:
         Parsed date or None if unparseable
@@ -84,9 +84,13 @@ def parse_date_unix(unix_timestamp: Optional[int | float]) -> Optional[date]:
         return None
 
     try:
+        # Try ISO date format first (YYYY-MM-DD)
+        if isinstance(unix_timestamp, str):
+            return datetime.fromisoformat(unix_timestamp).date()
+        # Try Unix timestamp
         return datetime.fromtimestamp(int(unix_timestamp)).date()
-    except (ValueError, OSError, OverflowError) as e:
-        logger.warning(f"Could not parse Unix timestamp: {unix_timestamp}: {e}")
+    except (ValueError, OSError, OverflowError, TypeError) as e:
+        logger.debug(f"Could not parse date: {unix_timestamp}")
         return None
 
 
@@ -126,7 +130,7 @@ def parse_height(height_str: Optional[str]) -> Optional[int]:
 def parse_season(season_str: Optional[str]) -> Optional[int]:
     """Parse season string to start year.
 
-    Handles: '23/24' → 2023, '2023/24' → 2023, etc.
+    Handles: '23/24' → 2023, '2023/24' → 2023, '92/93' → 1992, etc.
     """
     if season_str is None or season_str == "":
         return None
@@ -135,13 +139,18 @@ def parse_season(season_str: Optional[str]) -> Optional[int]:
         season_str = str(season_str).strip()
         start_year = season_str.split("/")[0]
 
-        # If 2-digit year, expand to 20xx
+        # If 2-digit year, expand using 30-year cutoff
+        # 00-30 → 2000-2030, 31-99 → 1931-1999
         if len(start_year) == 2:
-            return 2000 + int(start_year)
+            year_int = int(start_year)
+            if year_int <= 30:
+                return 2000 + year_int
+            else:
+                return 1900 + year_int
         else:
             return int(start_year)
     except (ValueError, IndexError):
-        logger.warning(f"Could not parse season: {season_str}")
+        logger.debug(f"Could not parse season: {season_str}")
         return None
 
 
@@ -192,30 +201,31 @@ class SalimtParser:
             logger.error(f"Error reading team_competitions_seasons: {e}")
             return []
 
-        # Extract unique leagues using 'competition_code' column
-        if "competition_code" not in df.columns:
-            logger.warning("'competition_code' column not found in team_competitions_seasons")
+        # Extract unique leagues using 'competition_id' column
+        if "competition_id" not in df.columns:
+            logger.warning("'competition_id' column not found in team_competitions_seasons")
             return []
 
         # Filter to target competitions
-        df = df[df["competition_code"].isin(TARGET_LEAGUES)]
+        df = df[df["competition_id"].isin(TARGET_LEAGUES)]
 
-        # Get unique competition codes
-        unique_leagues = df[["competition_code"]].drop_duplicates()
+        # Get unique competition IDs (keep first occurrence of each)
+        unique_leagues = df[["competition_id", "competition_name"]].drop_duplicates(subset=["competition_id"], keep="first")
 
         records = []
         for _, row in unique_leagues.iterrows():
             try:
-                comp_code = str(row.get("competition_code", ""))
+                comp_id = str(row.get("competition_id", ""))
+                comp_name = str(row.get("competition_name", comp_id))
                 record = LeagueRecord(
-                    league_id=comp_code,
-                    league_name=comp_code,  # Use code as name (no separate league table)
+                    league_id=comp_id,
+                    league_name=comp_name,
                     country="",
                     season_start_year=2023,
                 )
                 records.append(record)
             except Exception as e:
-                logger.warning(f"Could not parse league {comp_code}: {e}")
+                logger.warning(f"Could not parse league {comp_id}: {e}")
 
         logger.info(f"Parsed {len(records)} unique leagues from competitions (filtered to {TARGET_LEAGUES})")
         return records
@@ -324,12 +334,21 @@ class SalimtParser:
                 if market_value_date is None:
                     continue
 
+                # Parse value (may be float, convert to int)
+                value_eur = None
+                raw_value = row.get("value")
+                if raw_value is not None:
+                    try:
+                        value_eur = int(float(raw_value))
+                    except (ValueError, TypeError):
+                        pass
+
                 record = PlayerMarketValueRecord(
                     player_id=str(row.get("player_id", "")),
-                    club_id=row.get("club_id"),
-                    value_eur=row.get("market_value_in_eur"),
+                    club_id=None,  # Not available in this CSV
+                    value_eur=value_eur,
                     market_value_date=market_value_date,
-                    season=parse_season(row.get("season")),
+                    season=None,  # Not available in this CSV
                 )
                 records.append(record)
 
@@ -342,7 +361,10 @@ class SalimtParser:
         return records
 
     def parse_transfers(self) -> list[TransferHistoryRecord]:
-        """Parse transfer_history.csv with fee parsing."""
+        """Parse transfer_history.csv with fee parsing.
+
+        Note: transfer_history.csv is stored in Git LFS and may not be available.
+        """
         csv_path = self.salimt_root / "transfer_history" / "transfer_history.csv"
         if not csv_path.exists():
             logger.warning(f"Transfer history CSV not found at {csv_path}")
@@ -358,13 +380,18 @@ class SalimtParser:
 
         for _, row in df.iterrows():
             try:
+                transfer_date = row.get("transfer_date")
+                # Skip rows with missing transfer_date (e.g., Git LFS pointer files)
+                if transfer_date is None or (isinstance(transfer_date, float) and transfer_date != transfer_date):  # NaN check
+                    continue
+
                 fee_eur, is_loan = parse_transfer_fee(row.get("transfer_fee"))
 
                 record = TransferHistoryRecord(
                     player_id=str(row.get("player_id", "")),
                     from_club_id=row.get("from_club_id"),
                     to_club_id=str(row.get("to_club_id", "")),
-                    transfer_date=row.get("transfer_date"),
+                    transfer_date=transfer_date,
                     fee_eur=fee_eur,
                     is_loan=is_loan,
                     season=parse_season(row.get("season")),
@@ -390,7 +417,7 @@ class SalimtParser:
             return []
 
         # Filter to target leagues only
-        df = df[df["competition_code"].isin(TARGET_LEAGUES)]
+        df = df[df["competition_id"].isin(TARGET_LEAGUES)]
 
         records = []
 
@@ -398,16 +425,16 @@ class SalimtParser:
             try:
                 record = ClubSeasonRecord(
                     club_id=str(row.get("club_id", "")),
-                    league_id=str(row.get("competition_code", "")),
-                    season=int(row.get("season", 2023)),
-                    position=row.get("tier"),  # Tier = position in league
-                    matches_played=None,
-                    wins=None,
-                    draws=None,
-                    losses=None,
-                    goals_for=None,
-                    goals_against=None,
-                    points=None,
+                    league_id=str(row.get("competition_id", "")),
+                    season=parse_season(row.get("season_season")),
+                    position=row.get("season_rank"),
+                    matches_played=row.get("season_total_matches"),
+                    wins=row.get("season_wins"),
+                    draws=row.get("season_draws"),
+                    losses=row.get("season_losses"),
+                    goals_for=row.get("season_goals_for"),
+                    goals_against=row.get("season_goals_against"),
+                    points=row.get("season_points"),
                 )
                 records.append(record)
             except Exception as e:
