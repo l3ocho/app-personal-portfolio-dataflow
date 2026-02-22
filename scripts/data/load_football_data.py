@@ -95,8 +95,7 @@ class FootballDataPipeline:
                 self._load_mls_salaries(session, mlspa_parser)
 
                 # Phase 2: Build bridge tables from loaded facts
-                # TODO: Optimize bridge building query for large datasets
-                # self._build_player_competitions(session)
+                self._build_player_competitions(session)
 
                 session.commit()
                 logger.info("All data committed to database")

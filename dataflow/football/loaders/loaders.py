@@ -34,7 +34,7 @@ def load_leagues(
     records: list[LeagueRecord],
     session: Session | None = None,
 ) -> int:
-    """Load league records to dim_league table (bulk insert for speed)."""
+    """Load league records to dim_league table (upsert for idempotency)."""
 
     def _load(sess: Session) -> int:
         models = [
@@ -46,10 +46,10 @@ def load_leagues(
             )
             for r in records
         ]
-        # Use bulk_insert for speed (no updates needed for raw dimensions)
-        count = bulk_insert(sess, models)
-        logger.info(f"Leagues: {count} inserted")
-        return count
+        # Use upsert_by_key so ETL can run idempotently when Phase 1 data exists
+        inserted, updated = upsert_by_key(sess, DimLeague, models, ["league_id"])
+        logger.info(f"Leagues: {inserted} inserted, {updated} updated")
+        return inserted + updated
 
     if session:
         return _load(session)
@@ -61,7 +61,7 @@ def load_clubs(
     records: list[ClubRecord],
     session: Session | None = None,
 ) -> int:
-    """Load club records to dim_club table (bulk insert for speed)."""
+    """Load club records to dim_club table (upsert for idempotency)."""
 
     def _load(sess: Session) -> int:
         models = [
@@ -75,10 +75,10 @@ def load_clubs(
             )
             for r in records
         ]
-        # Use bulk_insert for speed (no updates needed for raw dimensions)
-        count = bulk_insert(sess, models)
-        logger.info(f"Clubs: {count} inserted")
-        return count
+        # Use upsert_by_key so ETL can run idempotently when Phase 1 data exists
+        inserted, updated = upsert_by_key(sess, DimClub, models, ["club_id"])
+        logger.info(f"Clubs: {inserted} inserted, {updated} updated")
+        return inserted + updated
 
     if session:
         return _load(session)
@@ -90,7 +90,7 @@ def load_players(
     records: list[PlayerRecord],
     session: Session | None = None,
 ) -> int:
-    """Load player records to dim_player table (bulk insert for speed)."""
+    """Load player records to dim_player table (upsert for idempotency)."""
 
     def _load(sess: Session) -> int:
         models = [
@@ -105,10 +105,10 @@ def load_players(
             )
             for r in records
         ]
-        # Use bulk_insert for speed (no updates needed for raw dimensions)
-        count = bulk_insert(sess, models)
-        logger.info(f"Players: {count} inserted")
-        return count
+        # Use upsert_by_key so ETL can run idempotently when Phase 1 data exists
+        inserted, updated = upsert_by_key(sess, DimPlayer, models, ["player_id"])
+        logger.info(f"Players: {inserted} inserted, {updated} updated")
+        return inserted + updated
 
     if session:
         return _load(session)
