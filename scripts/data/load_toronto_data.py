@@ -483,12 +483,29 @@ class DataPipeline:
             return False
 
         if self.dry_run:
+            logger.info("  [DRY RUN] Would drop renamed mart tables")
             logger.info("  [DRY RUN] Would run: dbt deps")
             logger.info("  [DRY RUN] Would run: dbt run")
             logger.info("  [DRY RUN] Would run: dbt test")
             return True
 
         try:
+            # Drop renamed mart tables before dbt run to avoid conflicts
+            logger.info("  Dropping renamed mart tables...")
+            drop_script = PROJECT_ROOT / "scripts" / "db" / "migrations" / "drop_renamed_marts.py"
+            if drop_script.exists():
+                result = subprocess.run(
+                    [sys.executable, str(drop_script)],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    logger.warning(f"Drop renamed marts script had issues:\n{result.stderr}")
+                    # Don't fail - old table may not exist
+                else:
+                    logger.info(f"  {result.stdout}")
+            else:
+                logger.warning(f"  Drop script not found: {drop_script}")
             # Install dbt packages if needed
             logger.info("  Running dbt deps...")
             result = subprocess.run(
