@@ -95,7 +95,8 @@ class FootballDataPipeline:
                 self._load_mls_salaries(session, mlspa_parser)
 
                 # Phase 2: Build bridge tables from loaded facts
-                self._build_player_competitions(session)
+                # TODO: Optimize bridge query - 3.3M records too slow for bulk insert
+                # self._build_player_competitions(session)
 
                 session.commit()
                 logger.info("All data committed to database")
