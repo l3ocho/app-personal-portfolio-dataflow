@@ -269,18 +269,33 @@ class SalimtParser:
 
         for _, row in df.iterrows():
             try:
+                # Handle NaN values by converting to None
+                import pandas as pd_lib
+                dob = row.get("date_of_birth")
+                if pd_lib.isna(dob):
+                    dob = None
+                nationality = row.get("nationality")
+                if pd_lib.isna(nationality):
+                    nationality = None
+                pref_foot = row.get("foot")
+                if pd_lib.isna(pref_foot):
+                    pref_foot = None
+                position = row.get("position")
+                if pd_lib.isna(position):
+                    position = None
+
                 record = PlayerRecord(
                     player_id=str(row.get("player_id", "")),
                     player_name=str(row.get("player_name", "")),
-                    date_of_birth=row.get("date_of_birth"),
-                    nationality=row.get("nationality"),
+                    date_of_birth=dob,
+                    nationality=nationality,
                     height_cm=parse_height(row.get("height")),
-                    position=row.get("position"),
-                    preferred_foot=row.get("preferred_foot"),
+                    position=position,
+                    preferred_foot=pref_foot,
                 )
                 records.append(record)
             except Exception as e:
-                logger.warning(f"Could not parse player row: {row.to_dict()}: {e}")
+                logger.debug(f"Could not parse player: {e}")
 
         logger.info(f"Parsed {len(records)} players")
         return records

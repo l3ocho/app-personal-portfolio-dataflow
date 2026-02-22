@@ -77,8 +77,8 @@ class FootballDataPipeline:
 
         try:
             # Initialize parsers
-            datalake_root = PROJECT_ROOT / "data" / "raw" / "football" / "salimt"
-            salimt_parser = SalimtParser(datalake_root.parent)
+            salimt_root = PROJECT_ROOT / "data" / "raw" / "football" / "salimt"
+            salimt_parser = SalimtParser(salimt_root)
             mlspa_parser = MLSPAParser(self.data_root)
 
             with get_session() as session:
