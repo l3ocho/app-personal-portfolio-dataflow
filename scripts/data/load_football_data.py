@@ -34,6 +34,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from dataflow.football.loaders import (  # noqa: E402
     get_session,
+    load_club_finances,
     load_club_seasons,
     load_clubs,
     load_leagues,
@@ -44,6 +45,7 @@ from dataflow.football.loaders import (  # noqa: E402
     load_transfers,
 )
 from dataflow.football.parsers import (  # noqa: E402
+    DeloitteParser,
     MLSPAParser,
     SalimtParser,
 )
@@ -81,6 +83,7 @@ class FootballDataPipeline:
             salimt_root = PROJECT_ROOT / "data" / "raw" / "football" / "salimt"
             salimt_parser = SalimtParser(salimt_root)
             mlspa_parser = MLSPAParser(self.data_root)
+            deloitte_parser = DeloitteParser(self.data_root)
 
             with get_session() as session:
                 # Load dimension tables first (no dependencies)
@@ -93,6 +96,7 @@ class FootballDataPipeline:
                 self._load_transfers(session, salimt_parser)
                 self._load_club_seasons(session, salimt_parser)
                 self._load_mls_salaries(session, mlspa_parser)
+                self._load_club_finances(session, deloitte_parser)
 
                 # Phase 2: Build bridge tables from loaded facts
                 # TODO: Optimize bridge query - 3.3M records too slow for bulk insert
@@ -216,6 +220,21 @@ class FootballDataPipeline:
                 logger.warning("  No MLS salary records found")
         except Exception as e:
             logger.error(f"Error loading MLS salaries: {e}")
+            raise
+
+    def _load_club_finances(self, session, parser) -> None:
+        """Load club finance fact table (Deloitte Money League)."""
+        logger.info("Loading club finances (Deloitte)...")
+        try:
+            records = parser.parse()
+            if records:
+                count = load_club_finances(records, session)
+                self.stats["club_finances"] = count
+                logger.info(f"  Loaded {count} club finance records")
+            else:
+                logger.warning("  No club finance records found")
+        except Exception as e:
+            logger.error(f"Error loading club finances: {e}")
             raise
 
     def _build_player_competitions(self, session) -> None:
