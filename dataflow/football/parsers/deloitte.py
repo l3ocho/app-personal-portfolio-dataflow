@@ -8,6 +8,7 @@ import logging
 import re
 from io import StringIO
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pandas as pd
@@ -78,7 +79,7 @@ class DeloitteParser:
             return {}
 
         try:
-            return json.loads(self.mapping_file.read_text())
+            return dict(json.loads(self.mapping_file.read_text()))
         except Exception as e:
             logger.error(f"Failed to load club mapping: {e}")
             return {}
@@ -153,9 +154,7 @@ class DeloitteParser:
         except (ValueError, TypeError):
             return None
 
-    def _find_tables_with_seasons(
-        self, html: str
-    ) -> list[tuple[int, BeautifulSoup]]:
+    def _find_tables_with_seasons(self, html: str) -> list[tuple[int, Any]]:
         """Find all revenue tables and associate with their season years.
 
         Walks DOM to pair section headings with following tables.
@@ -167,7 +166,7 @@ class DeloitteParser:
             List of (season_year, table_soup) tuples
         """
         soup = BeautifulSoup(html, "lxml")
-        tables_with_seasons: list[tuple[int, BeautifulSoup]] = []
+        tables_with_seasons: list[tuple[int, Any]] = []
 
         # Find all heading tags (h2, h3)
         for heading in soup.find_all(["h2", "h3"]):
@@ -197,7 +196,7 @@ class DeloitteParser:
         return tables_with_seasons
 
     def _parse_table(
-        self, season: int, table_soup: BeautifulSoup, mapping: dict[str, str]
+        self, season: int, table_soup: Any, mapping: dict[str, str]
     ) -> list[ClubFinanceRecord]:
         """Parse a single revenue table.
 
