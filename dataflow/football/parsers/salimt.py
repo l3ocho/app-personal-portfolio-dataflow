@@ -298,7 +298,7 @@ class SalimtParser:
                 dob = row.get("date_of_birth")
                 if pd_lib.isna(dob):
                     dob = None
-                nationality = row.get("nationality")
+                nationality = row.get("citizenship")
                 if pd_lib.isna(nationality):
                     nationality = None
                 pref_foot = row.get("foot")
