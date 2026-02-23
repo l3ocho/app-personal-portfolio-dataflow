@@ -12,14 +12,16 @@ with profiles as (
 ),
 
 -- Compute category-level totals per neighbourhood (for pct_of_neighbourhood)
+-- Uses category_total from section header rows (indent_level=0) as the true denominator.
+-- Previous implementation used SUM(count) which inflated totals 1.5-2x by including subtotals.
 neighbourhood_category_totals as (
     select
         neighbourhood_id,
         census_year,
         category,
-        sum(count) as neighbourhood_category_total
+        max(category_total) as neighbourhood_category_total
     from profiles
-    where count is not null
+    where category_total is not null
     group by neighbourhood_id, census_year, category
 ),
 
@@ -69,6 +71,7 @@ enriched as (
         p.category,
         p.subcategory,
         p.level,
+        p.indent_level,
         p.count,
 
         -- Percentage within this neighbourhood + category

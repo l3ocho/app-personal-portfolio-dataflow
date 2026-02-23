@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Sprint 13 — Toronto Restructure Phase 2: dbt Layer)
+- `stg_toronto__census_extended` — 1:1 staging model for `fact_census_extended` (~55 scalar columns)
+- `int_neighbourhood__foundation` — new intermediate superseding `int_neighbourhood__demographics`; CPI imputation + LEFT JOIN to `stg_toronto__census_extended` for 50+ extended scalar columns
+- 50+ extended census scalar columns surfaced in `mart_neighbourhood_demographics`: population age groups, household metrics, housing costs, education breakdowns, labour force, extended income, immigration/diversity, language, mobility, commuting, family/housing quality, occupations
+
+### Fixed (Sprint 13)
+- `int_toronto__neighbourhood_profile` denominator bug: `neighbourhood_category_totals` now uses `MAX(category_total)` from section header rows instead of `SUM(count)` — eliminates 1.5–2x inflation from subtotal contamination; `pct_of_neighbourhood` now correctly sums to ~100% per category
+- `stg_toronto__profiles` now exposes `category_total` and `indent_level` columns (were silently stripped from explicit column list)
+
+### Changed (Sprint 13)
+- `mart_neighbourhood_demographics` now reads from `int_neighbourhood__foundation` instead of `int_neighbourhood__demographics`
+- `int_neighbourhood__demographics` soft-deprecated (`meta: deprecated: true`); kept for backward compatibility until webapp switchover
+
 ### Added (Sprint 12 — Toronto Restructure Phase 1)
 - `fact_census_extended` table in `raw_toronto` schema with ~55 scalar indicators per neighbourhood per census year
 - `category_total` and `indent_level` columns to `fact_neighbourhood_profile` (denominator bug fix foundation)

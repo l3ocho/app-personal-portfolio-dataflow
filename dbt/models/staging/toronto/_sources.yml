@@ -122,3 +122,21 @@ sources:
             description: "Count value (NULL = Statistics Canada suppressed)"
           - name: level
             description: "Hierarchy level for place_of_birth (continent or country); empty for other categories"
+          - name: category_total
+            description: "Section header total count (set only on indent_level=0 rows; NULL on all detail rows). Used as denominator for pct_of_neighbourhood."
+          - name: indent_level
+            description: "XLSX hierarchy depth: 0=section header, 2=subtotal, 4=leaf detail row"
+
+      - name: fact_census_extended
+        description: >
+          Wide-format scalar census indicators per neighbourhood (Path B extraction).
+          ~55 pre-computed scalar indicators extracted directly from the Statistics Canada
+          2021 Neighbourhood Profile XLSX. Grain: one row per (neighbourhood_id, census_year).
+          All indicator columns nullable for Statistics Canada suppression.
+        columns:
+          - name: id
+            description: "Primary key"
+          - name: neighbourhood_id
+            description: "Foreign key to dim_neighbourhood"
+          - name: census_year
+            description: "Census year (2021)"

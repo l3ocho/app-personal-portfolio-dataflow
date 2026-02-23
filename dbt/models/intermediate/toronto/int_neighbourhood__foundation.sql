@@ -1,10 +1,6 @@
--- DEPRECATED (Sprint 13) — Use int_neighbourhood__foundation instead.
--- This model is kept for backward compatibility until webapp confirms switchover.
--- Do NOT add new columns here. Do NOT reference from new models.
---
--- Intermediate: Combined census demographics by neighbourhood
--- Joins neighbourhoods with census data for demographic analysis
+-- Intermediate: Neighbourhood foundation — scalar demographics + extended indicators
 -- Grain: One row per neighbourhood per census year
+-- Supersedes: int_neighbourhood__demographics (kept for backward compat, Sprint 13)
 --
 -- DATA QUALITY NOTE: Income Imputation for 2016-2020
 -- ====================================================
@@ -22,7 +18,10 @@
 -- - 2018: 133.4    - 2021: 141.6 (baseline)
 --
 -- Important: These are ESTIMATES, not observed census values.
--- The 'is_income_imputed' flag marks imputed values for transparency.
+-- The 'is_imputed' flag marks imputed values for transparency.
+--
+-- Extended Scalars: ~55 pre-computed indicators from fact_census_extended (Path B).
+-- All extended columns are nullable (Statistics Canada suppression).
 
 with neighbourhoods as (
     select * from {{ ref('stg_toronto__neighbourhoods') }}
@@ -30,6 +29,10 @@ with neighbourhoods as (
 
 census as (
     select * from {{ ref('stg_toronto__census') }}
+),
+
+census_extended as (
+    select * from {{ ref('stg_toronto__census_extended') }}
 ),
 
 -- CPI inflation factors (relative to 2021 baseline)
@@ -54,7 +57,7 @@ census_2021_baseline as (
     where census_year = 2021
 ),
 
-demographics as (
+foundation as (
     select
         n.neighbourhood_id,
         n.neighbourhood_name,
@@ -111,7 +114,6 @@ demographics as (
         end as average_dwelling_value,
 
         -- Flag to indicate imputed values for transparency
-        -- TRUE if any of: income, education, or dwelling value is imputed
         case
             when c.census_year < 2021
                 and (
@@ -128,7 +130,6 @@ demographics as (
         c.pct_renter_occupied,
 
         -- Income quintile (city-wide comparison; NULL when no census data)
-        -- Note: Quintiles are calculated AFTER imputation, using adjusted values
         case
             when c.median_household_income is not null
                 or (c.census_year < 2021 and c2021.median_income_2021 is not null)
@@ -143,12 +144,87 @@ demographics as (
                     end
             )
             else null
-        end as income_quintile
+        end as income_quintile,
+
+        -- === Extended scalars from census_extended (all nullable) ===
+        -- Population
+        ce.pop_0_to_14,
+        ce.pop_15_to_24,
+        ce.pop_25_to_64,
+        ce.pop_65_plus,
+
+        -- Households
+        ce.total_private_dwellings,
+        ce.occupied_private_dwellings,
+        ce.avg_household_size,
+        ce.avg_household_income_after_tax,
+
+        -- Housing tenure and costs
+        ce.pct_suitable_housing,
+        ce.avg_shelter_cost_owner,
+        ce.avg_shelter_cost_renter,
+        ce.pct_shelter_cost_30pct,
+
+        -- Education
+        ce.pct_no_certificate,
+        ce.pct_high_school,
+        ce.pct_college,
+        ce.pct_university,
+        ce.pct_postsecondary,
+
+        -- Labour force
+        ce.participation_rate,
+        ce.employment_rate,
+        ce.pct_employed_full_time,
+
+        -- Income (extended)
+        ce.median_after_tax_income,
+        ce.median_employment_income,
+        ce.lico_at_rate,
+        ce.market_basket_measure_rate,
+
+        -- Diversity / immigration
+        ce.pct_immigrants,
+        ce.pct_recent_immigrants,
+        ce.pct_visible_minority,
+        ce.pct_indigenous,
+
+        -- Language
+        ce.pct_english_only,
+        ce.pct_french_only,
+        ce.pct_neither_official_lang,
+        ce.pct_bilingual,
+
+        -- Mobility / migration
+        ce.pct_non_movers,
+        ce.pct_movers_within_city,
+        ce.pct_movers_from_other_city,
+
+        -- Commuting / transport
+        ce.pct_car_commuters,
+        ce.pct_transit_commuters,
+        ce.pct_active_commuters,
+        ce.pct_work_from_home,
+        ce.median_commute_minutes,
+
+        -- Additional indicators
+        ce.pct_lone_parent_families,
+        ce.avg_number_of_children,
+        ce.pct_dwellings_in_need_of_repair,
+        ce.pct_unaffordable_housing,
+        ce.pct_overcrowded_housing,
+        ce.pct_management_occupation,
+        ce.pct_business_finance_admin,
+        ce.pct_service_sector,
+        ce.pct_trades_transport
 
     from neighbourhoods n
     left join census c on n.neighbourhood_id = c.neighbourhood_id
     left join census_2021_baseline c2021 on n.neighbourhood_id = c2021.neighbourhood_id
     left join cpi_factors cpi on coalesce(c.census_year, n.census_year, 2021) = cpi.year
+    left join census_extended ce
+        on n.neighbourhood_id = ce.neighbourhood_id
+        and coalesce(c.census_year, n.census_year, 2021) = ce.census_year
 )
 
-select * from demographics
+select * from foundation
