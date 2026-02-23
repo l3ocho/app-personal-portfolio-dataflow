@@ -1,3 +1,7 @@
+-- DEPRECATED (Sprint 13) — Use int_neighbourhood__foundation instead.
+-- This model is kept for backward compatibility until webapp confirms switchover.
+-- Do NOT add new columns here. Do NOT reference from new models.
+--
 -- Intermediate: Combined census demographics by neighbourhood
 -- Joins neighbourhoods with census data for demographic analysis
 -- Grain: One row per neighbourhood per census year

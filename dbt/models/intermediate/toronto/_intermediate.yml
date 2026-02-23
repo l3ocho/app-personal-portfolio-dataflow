@@ -35,7 +35,10 @@ models:
         description: "True if income/education/dwelling values are CPI-adjusted estimates (2016-2020)"
 
   - name: int_neighbourhood__demographics
-    description: "Combined census demographics with neighbourhood attributes"
+    description: "DEPRECATED (Sprint 13) — superseded by int_neighbourhood__foundation. Kept for backward compatibility."
+    meta:
+      deprecated: true
+      superseded_by: int_neighbourhood__foundation
     columns:
       - name: neighbourhood_id
         description: "Neighbourhood identifier"
