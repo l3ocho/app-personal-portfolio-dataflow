@@ -40,6 +40,22 @@ club_season_values as (
   from player_values_deduped pv
   left join {{ ref('stg_football__dim_club') }} c on pv.club_id = c.club_id
   group by pv.club_id, c.club_name, pv.season
+),
+
+filtered_to_in_scope_clubs as (
+  -- INNER JOIN with bridge to only include clubs in the 7 target leagues
+  select
+    csv.club_id,
+    csv.club_name,
+    csv.season,
+    csv.total_squad_value_eur,
+    csv.avg_player_value_eur,
+    csv.max_player_value_eur,
+    csv.squad_size
+  from club_season_values csv
+  inner join {{ ref('int_football__club_league_bridge') }} clb
+    on csv.club_id = clb.club_id
+    and csv.season = clb.season
 )
 
 select
@@ -50,4 +66,4 @@ select
   avg_player_value_eur,
   max_player_value_eur,
   squad_size
-from club_season_values
+from filtered_to_in_scope_clubs

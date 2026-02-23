@@ -68,10 +68,10 @@ models:
         description: "Number of outgoing transfers"
 
   - name: int_football__club_league_bridge
-    description: "Club-league resolution table - fills gaps in league_id by carrying forward/backward from adjacent seasons"
+    description: "Club-league resolution table for the 7 in-scope leagues (GB1, ES1, L1, IT1, FR1, BRA1, MLS1). Only includes clubs appearing in one of these leagues. Fills gaps in league_id by carrying forward/backward from adjacent seasons."
     columns:
       - name: club_id
-        description: "Club identifier"
+        description: "Club identifier (only clubs in-scope to the 7 target leagues)"
         data_tests:
           - not_null
       - name: season
@@ -79,4 +79,6 @@ models:
         data_tests:
           - not_null
       - name: league_id
-        description: "League identifier (resolved - carries forward/backward from known seasons, nullable if club has no known league)"
+        description: "League identifier - one of: GB1, ES1, L1, IT1, FR1, BRA1, MLS1 (resolved via carry-forward/backward from known seasons)"
+        data_tests:
+          - not_null
