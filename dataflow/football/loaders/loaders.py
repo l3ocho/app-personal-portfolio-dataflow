@@ -68,10 +68,10 @@ def load_clubs(
             DimClub(
                 club_id=r.club_id,
                 club_name=r.club_name,
-                club_code=r.club_code,
                 country=r.country,
-                founded_year=r.founded_year,
-                city=r.city,
+                club_slug=r.club_slug,
+                logo_url=r.logo_url,
+                source_url=r.source_url,
             )
             for r in records
         ]

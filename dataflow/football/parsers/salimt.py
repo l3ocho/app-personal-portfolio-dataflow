@@ -324,9 +324,38 @@ class SalimtParser:
         logger.info(f"Parsed {len(records)} players")
         return records
 
-    def parse_player_market_values(self) -> list[PlayerMarketValueRecord]:
-        """Parse player_market_value.csv with date_unix conversion.
+    def _build_player_club_mapping(self) -> dict[str, Optional[str]]:
+        """Build player_id -> current_club_id mapping from player_profiles.csv.
 
+        Returns:
+            Dictionary mapping player_id (str) to current_club_id (str or None)
+        """
+        csv_path = self.salimt_root / "player_profiles" / "player_profiles.csv"
+        if not csv_path.exists():
+            logger.warning(f"Player profiles CSV not found for club mapping at {csv_path}")
+            return {}
+
+        try:
+            df = pd.read_csv(csv_path, usecols=["player_id", "current_club_id"])
+        except Exception as e:
+            logger.error(f"Error reading player_profiles for club mapping: {e}")
+            return {}
+
+        mapping = {}
+        for _, row in df.iterrows():
+            player_id = str(row.get("player_id", ""))
+            club_id = row.get("current_club_id")
+            # Convert to string if present, keep None if missing
+            club_id = str(club_id) if pd.notna(club_id) else None
+            mapping[player_id] = club_id
+
+        logger.info(f"Built player-club mapping with {len(mapping)} entries ({sum(1 for v in mapping.values() if v is not None)} with clubs)")
+        return mapping
+
+    def parse_player_market_values(self) -> list[PlayerMarketValueRecord]:
+        """Parse player_market_value.csv with date_unix conversion and club_id mapping.
+
+        Populates club_id from player_profiles.csv current_club_id.
         Note: Can return millions of rows. Call with chunking if needed.
         """
         csv_path = self.salimt_root / "player_market_value" / "player_market_value.csv"
@@ -339,6 +368,10 @@ class SalimtParser:
         except Exception as e:
             logger.error(f"Error reading player_market_value: {e}")
             return []
+
+        # Build player-club mapping for lookup
+        logger.info("Building player-club mapping from profiles...")
+        player_club_mapping = self._build_player_club_mapping()
 
         records = []
 
@@ -362,9 +395,13 @@ class SalimtParser:
                 if market_value_date:
                     season = market_value_date.year
 
+                # Look up club_id from player_profiles mapping
+                player_id = str(row.get("player_id", ""))
+                club_id = player_club_mapping.get(player_id)
+
                 record = PlayerMarketValueRecord(
-                    player_id=str(row.get("player_id", "")),
-                    club_id=None,  # Not available in this CSV
+                    player_id=player_id,
+                    club_id=club_id,
                     value_eur=value_eur,
                     market_value_date=market_value_date,
                     season=season,
