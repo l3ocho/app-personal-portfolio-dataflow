@@ -5,20 +5,20 @@
 }}
 
 with club_base as (
-  -- Get club base data with squad values
+  -- Get club base data with squad values (using bridge for resolved leagues)
   select
     sv.club_id,
     sv.club_name,
-    fcs.league_id,
+    clb.league_id,
     sv.season,
     sv.total_squad_value_eur,
     sv.avg_player_value_eur,
     sv.max_player_value_eur,
     lag(sv.total_squad_value_eur) over (partition by sv.club_id order by sv.season) as prev_year_squad_value
   from {{ ref('int_football__squad_values') }} sv
-  left join {{ ref('stg_football__fact_club_season') }} fcs
-    on sv.club_id = fcs.club_id
-    and sv.season = fcs.season
+  left join {{ ref('int_football__club_league_bridge') }} clb
+    on sv.club_id = clb.club_id
+    and sv.season = clb.season
 ),
 
 with_yoy_change as (

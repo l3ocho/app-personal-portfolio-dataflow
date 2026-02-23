@@ -5,19 +5,19 @@
 }}
 
 with club_with_league as (
-  -- Enrich squad values with league information
+  -- Enrich squad values with league information (using bridge for resolved leagues)
   select
     sv.club_id,
     sv.club_name,
     sv.season,
     sv.total_squad_value_eur,
-    fcs.league_id,
+    clb.league_id,
     ld.league_name
   from {{ ref('int_football__squad_values') }} sv
-  left join {{ ref('stg_football__fact_club_season') }} fcs
-    on sv.club_id = fcs.club_id
-    and sv.season = fcs.season
-  left join {{ ref('stg_football__dim_league') }} ld on fcs.league_id = ld.league_id
+  left join {{ ref('int_football__club_league_bridge') }} clb
+    on sv.club_id = clb.club_id
+    and sv.season = clb.season
+  left join {{ ref('stg_football__dim_league') }} ld on clb.league_id = ld.league_id
 ),
 
 ranked_clubs as (
