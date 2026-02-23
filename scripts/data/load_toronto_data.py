@@ -42,6 +42,7 @@ from dataflow.toronto.loaders import (  # noqa: E402
     get_session,
     load_amenities,
     load_census_data,
+    load_census_extended_data,
     load_cmhc_zones,
     load_crime_data,
     load_excel_rental_data,
@@ -102,6 +103,9 @@ class DataPipeline:
 
                 # 4. Load census data
                 self._load_census(session)
+
+                # 4b. Load census extended (Path B scalar indicators)
+                self._load_census_extended(session)
 
                 # 5. Load neighbourhood community profiles
                 self._load_profiles(session)
@@ -235,6 +239,30 @@ class DataPipeline:
             logger.warning("  No census records loaded")
         else:
             logger.info(f"  Total census records loaded: {total_count}")
+
+    def _load_census_extended(self, session: Any) -> None:
+        """Fetch and load census extended (Path B) scalar indicators for 2021."""
+        logger.info("Fetching census extended indicators from Toronto Open Data XLSX...")
+
+        if self.dry_run:
+            logger.info("  [DRY RUN] Would fetch and load census extended data (2021)")
+            return
+
+        parser = TorontoOpenDataParser()
+        try:
+            logger.info("  Fetching 2021 census extended indicators...")
+            extended_records = parser.get_census_extended(year=2021)
+            if extended_records:
+                count = load_census_extended_data(extended_records, session)
+                self.stats["census_extended"] = count
+                logger.info(f"  Loaded {count} census extended records for 2021")
+            else:
+                logger.warning("  No census extended records fetched")
+        except Exception as e:
+            logger.warning(f"  Failed to load census extended data: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
 
     def _load_profiles(self, session: Any) -> None:
         """Fetch and load neighbourhood community profile data for 2021."""
