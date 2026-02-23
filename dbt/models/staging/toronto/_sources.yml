@@ -122,3 +122,7 @@ sources:
             description: "Count value (NULL = Statistics Canada suppressed)"
           - name: level
             description: "Hierarchy level for place_of_birth (continent or country); empty for other categories"
+          - name: category_total
+            description: "Section header total count (set only on indent_level=0 rows; NULL on all detail rows). Used as denominator for pct_of_neighbourhood."
+          - name: indent_level
+            description: "XLSX hierarchy depth: 0=section header, 2=subtotal, 4=leaf detail row"

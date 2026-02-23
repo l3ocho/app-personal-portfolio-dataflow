@@ -15,7 +15,9 @@ staged as (
         lower(trim(category))                   as category,
         lower(trim(subcategory))                as subcategory,
         count,
-        level
+        level,
+        category_total,
+        indent_level
     from source
 )
 

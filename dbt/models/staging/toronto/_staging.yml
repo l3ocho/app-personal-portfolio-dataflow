@@ -195,3 +195,7 @@ models:
           - not_null
       - name: level
         description: "Hierarchy level (continent/country) for place_of_birth; empty for others"
+      - name: category_total
+        description: "Section header total count (denominator for pct_of_neighbourhood); NULL on all non-header rows"
+      - name: indent_level
+        description: "XLSX hierarchy depth: 0=section header, 2=subtotal, 4=leaf detail row"
