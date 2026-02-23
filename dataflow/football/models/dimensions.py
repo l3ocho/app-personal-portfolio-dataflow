@@ -31,6 +31,7 @@ class DimClub(Base):
 
     Grain: One row per club (static).
     All IDs are varchar (Transfermarkt string identifiers).
+    Additional columns sourced from team_details.csv.
     """
 
     __tablename__ = "dim_club"
@@ -42,6 +43,9 @@ class DimClub(Base):
     country: Mapped[str | None] = mapped_column(String(50), nullable=True)
     founded_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    club_slug: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
 class DimPlayer(Base):

@@ -25,6 +25,9 @@ class ClubRecord(BaseModel):
     country: Optional[str] = Field(default=None, max_length=50)
     founded_year: Optional[int] = Field(default=None, ge=1800, le=2100)
     city: Optional[str] = Field(default=None, max_length=100)
+    club_slug: Optional[str] = Field(default=None, max_length=150, description="URL-friendly slug")
+    logo_url: Optional[str] = Field(default=None, max_length=255)
+    source_url: Optional[str] = Field(default=None, max_length=255, description="Transfermarkt URL")
 
 
 class PlayerRecord(BaseModel):

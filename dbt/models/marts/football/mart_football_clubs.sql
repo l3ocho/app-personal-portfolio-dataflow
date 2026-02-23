@@ -10,5 +10,8 @@ select
   club_code,
   country,
   founded_year,
-  city
+  city,
+  club_slug,
+  logo_url,
+  source_url
 from {{ ref('stg_football__dim_club') }}

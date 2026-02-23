@@ -250,10 +250,13 @@ class SalimtParser:
                 record = ClubRecord(
                     club_id=str(row.get("club_id", "")),
                     club_name=str(row.get("club_name", "")),
-                    club_code=row.get("club_code"),
-                    country=row.get("country"),
-                    founded_year=row.get("founded_year"),
-                    city=row.get("city"),
+                    club_code=None,  # Not in team_details.csv
+                    country=row.get("country_name"),  # CSV has country_name, not country
+                    founded_year=None,  # Not in team_details.csv
+                    city=None,  # Not in team_details.csv
+                    club_slug=row.get("club_slug"),
+                    logo_url=row.get("logo_url"),
+                    source_url=row.get("source_url"),
                 )
                 records.append(record)
             except Exception as e:
