@@ -15,6 +15,25 @@ models:
               to: ref('stg_dimensions__cmhc_zones')
               field: zone_code
 
+  - name: int_neighbourhood__foundation
+    description: "Neighbourhood foundation: census demographics (with CPI imputation) + ~55 extended scalar indicators from fact_census_extended. Supersedes int_neighbourhood__demographics."
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: census_year
+        description: "Census year"
+        data_tests:
+          - not_null
+      - name: income_quintile
+        description: "Income quintile (1-5, city-wide)"
+      - name: is_imputed
+        description: "True if income/education/dwelling values are CPI-adjusted estimates (2016-2020)"
+
   - name: int_neighbourhood__demographics
     description: "Combined census demographics with neighbourhood attributes"
     columns:
