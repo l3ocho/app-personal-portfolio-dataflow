@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: mart_football__league_comparison
+  - name: mart_football_league_comparison
     description: "League-level comparison of squad values, financial metrics, and competitive concentration"
     columns:
       - name: league_id
@@ -23,7 +23,7 @@ models:
       - name: total_revenue_eur
         description: "Total revenue across clubs with financial data (EUR, nullable - no Deloitte data expected)"
 
-  - name: mart_football__club_rankings
+  - name: mart_football_club_rankings
     description: "Club global and league-specific rankings by squad value with financial indicators"
     columns:
       - name: club_id
@@ -51,7 +51,7 @@ models:
       - name: has_revenue_data
         description: "Boolean flag indicating if revenue data is available for this club-season"
 
-  - name: mart_football__club_deep_dive
+  - name: mart_football_club_deep_dive
     description: "Club-level deep dive with transfers, player analytics, and YoY performance trends"
     columns:
       - name: club_id
