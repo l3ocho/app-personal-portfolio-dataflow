@@ -374,8 +374,10 @@ class SalimtParser:
         player_club_mapping = self._build_player_club_mapping()
 
         records = []
+        row_count = 0
 
-        for idx, row in df.iterrows():
+        for _, row in df.iterrows():
+            row_count += 1
             try:
                 market_value_date = parse_date_unix(row.get("date_unix"))
                 if market_value_date is None:
@@ -406,10 +408,10 @@ class SalimtParser:
                 )
                 records.append(record)
 
-                if (idx + 1) % 100000 == 0:
-                    logger.info(f"  Parsed {idx + 1} market value records...")
+                if row_count % 100000 == 0:
+                    logger.info(f"  Parsed {row_count} market value records...")
             except Exception as e:
-                logger.debug(f"Could not parse market value row {idx}: {e}")
+                logger.debug(f"Could not parse market value row {row_count}: {e}")
 
         logger.info(f"Parsed {len(records)} player market values total")
         return records

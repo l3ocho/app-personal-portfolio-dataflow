@@ -1,6 +1,7 @@
 """Loaders for football domain tables."""
 
 import logging
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -291,7 +292,7 @@ def load_club_finances(
 
 
 def load_player_competitions(
-    records: list[dict],
+    records: list[dict[str, Any]],
     session: Session | None = None,
 ) -> int:
     """Load player-competition bridge records to bridge_player_competition table.
