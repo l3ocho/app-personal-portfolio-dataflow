@@ -1,31 +1,32 @@
 """Loaders for football domain tables."""
 
 import logging
+
 from sqlalchemy.orm import Session
 
 from dataflow.football.models import (
-    DimLeague,
+    BridgePlayerCompetition,
     DimClub,
+    DimLeague,
     DimPlayer,
-    FactPlayerMarketValue,
-    FactTransfer,
+    FactClubFinance,
     FactClubSeason,
     FactMLSSalary,
-    FactClubFinance,
-    BridgePlayerCompetition,
+    FactPlayerMarketValue,
+    FactTransfer,
 )
-from dataflow.football.schemas.salimt import (
-    LeagueRecord,
-    ClubRecord,
-    PlayerRecord,
-    PlayerMarketValueRecord,
-    TransferHistoryRecord,
-    ClubSeasonRecord,
-)
-from dataflow.football.schemas.mlspa import MLSPASalaryRecord
 from dataflow.football.schemas.deloitte import ClubFinanceRecord
+from dataflow.football.schemas.mlspa import MLSPASalaryRecord
+from dataflow.football.schemas.salimt import (
+    ClubRecord,
+    ClubSeasonRecord,
+    LeagueRecord,
+    PlayerMarketValueRecord,
+    PlayerRecord,
+    TransferHistoryRecord,
+)
 
-from .base import get_session, bulk_insert, upsert_by_key
+from .base import get_session, upsert_by_key
 
 logger = logging.getLogger(__name__)
 

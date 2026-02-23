@@ -4,20 +4,20 @@ Reads CSV files from datalake directory structure, filters to target leagues,
 and handles type conversions for Transfermarkt data quirks.
 """
 
+import contextlib
 import logging
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
 from dataflow.football.schemas.salimt import (
-    LeagueRecord,
     ClubRecord,
-    PlayerRecord,
-    PlayerMarketValueRecord,
-    TransferHistoryRecord,
     ClubSeasonRecord,
+    LeagueRecord,
+    PlayerMarketValueRecord,
+    PlayerRecord,
+    TransferHistoryRecord,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ SALIMT_TABLES = {
 }
 
 
-def parse_transfer_fee(fee_str: Optional[str]) -> tuple[Optional[int], bool]:
+def parse_transfer_fee(fee_str: str | None) -> tuple[int | None, bool]:
     """Parse transfer fee string to EUR and loan flag.
 
     Handles: '€12.5m', '€500k', 'free transfer', 'Loan', '?', '-', None
@@ -71,7 +71,7 @@ def parse_transfer_fee(fee_str: Optional[str]) -> tuple[Optional[int], bool]:
         return None, False
 
 
-def parse_date_unix(unix_timestamp: Optional[int | float | str]) -> Optional[date]:
+def parse_date_unix(unix_timestamp: int | float | str | None) -> date | None:
     """Convert Unix timestamp or ISO date string to date.
 
     Args:
@@ -89,12 +89,12 @@ def parse_date_unix(unix_timestamp: Optional[int | float | str]) -> Optional[dat
             return datetime.fromisoformat(unix_timestamp).date()
         # Try Unix timestamp
         return datetime.fromtimestamp(int(unix_timestamp)).date()
-    except (ValueError, OSError, OverflowError, TypeError) as e:
+    except (ValueError, OSError, OverflowError, TypeError):
         logger.debug(f"Could not parse date: {unix_timestamp}")
         return None
 
 
-def parse_height(height_str: Optional[str]) -> Optional[int]:
+def parse_height(height_str: str | None) -> int | None:
     """Parse height string to centimeters.
 
     Handles: '1,85 m', '1.80 m', '185', etc.
@@ -127,7 +127,7 @@ def parse_height(height_str: Optional[str]) -> Optional[int]:
         return None
 
 
-def parse_season(season_str: Optional[str]) -> Optional[int]:
+def parse_season(season_str: str | None) -> int | None:
     """Parse season string to start year.
 
     Handles: '23/24' → 2023, '2023/24' → 2023, '92/93' → 1992, etc.
@@ -324,7 +324,7 @@ class SalimtParser:
         logger.info(f"Parsed {len(records)} players")
         return records
 
-    def _build_player_club_mapping(self) -> dict[str, Optional[str]]:
+    def _build_player_club_mapping(self) -> dict[str, str | None]:
         """Build player_id -> current_club_id mapping from player_profiles.csv.
 
         Returns:
@@ -385,10 +385,8 @@ class SalimtParser:
                 value_eur = None
                 raw_value = row.get("value")
                 if raw_value is not None:
-                    try:
+                    with contextlib.suppress(ValueError, TypeError):
                         value_eur = int(float(raw_value))
-                    except (ValueError, TypeError):
-                        pass
 
                 # Extract season from market_value_date year
                 season = None

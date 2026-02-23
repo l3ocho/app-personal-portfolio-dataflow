@@ -3,7 +3,6 @@
 Note: PDF extraction not yet implemented (Phase 2+).
 """
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -17,5 +16,5 @@ class ClubFinanceRecord(BaseModel):
     club_id: str = Field(max_length=20)
     club_name: str = Field(max_length=150)
     season: int = Field(ge=1900, le=2100)
-    revenue_eur: Optional[int] = Field(default=None, ge=0, description="Annual revenue in EUR")
-    operating_profit_eur: Optional[int] = Field(default=None, description="Can be negative")
+    revenue_eur: int | None = Field(default=None, ge=0, description="Annual revenue in EUR")
+    operating_profit_eur: int | None = Field(default=None, description="Can be negative")

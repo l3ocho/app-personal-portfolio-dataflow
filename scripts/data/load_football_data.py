@@ -34,18 +34,18 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from dataflow.football.loaders import (  # noqa: E402
     get_session,
-    load_leagues,
-    load_clubs,
-    load_players,
-    load_player_market_values,
-    load_transfers,
     load_club_seasons,
+    load_clubs,
+    load_leagues,
     load_mls_salaries,
     load_player_competitions,
+    load_player_market_values,
+    load_players,
+    load_transfers,
 )
 from dataflow.football.parsers import (  # noqa: E402
-    SalimtParser,
     MLSPAParser,
+    SalimtParser,
 )
 
 # Configure logging

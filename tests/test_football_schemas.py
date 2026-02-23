@@ -1,18 +1,18 @@
 """Tests for football Pydantic schemas."""
 
-import pytest
 from datetime import date
 
+import pytest
+from pydantic import ValidationError
+
+from dataflow.football.schemas.deloitte import ClubFinanceRecord
+from dataflow.football.schemas.mlspa import MLSPASalaryRecord
 from dataflow.football.schemas.salimt import (
     LeagueRecord,
-    ClubRecord,
-    PlayerRecord,
     PlayerMarketValueRecord,
+    PlayerRecord,
     TransferHistoryRecord,
-    ClubSeasonRecord,
 )
-from dataflow.football.schemas.mlspa import MLSPASalaryRecord
-from dataflow.football.schemas.deloitte import ClubFinanceRecord
 
 
 class TestLeagueRecord:
@@ -31,7 +31,7 @@ class TestLeagueRecord:
 
     def test_invalid_season_year(self):
         """Test that invalid season year raises ValidationError."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             LeagueRecord(
                 league_id="GB1",
                 league_name="Premier League",

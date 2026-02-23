@@ -3,10 +3,10 @@
 from datetime import date
 
 from dataflow.football.parsers.salimt import (
-    parse_transfer_fee,
     parse_date_unix,
     parse_height,
     parse_season,
+    parse_transfer_fee,
 )
 
 

@@ -14,10 +14,11 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from dataflow.toronto.models import create_tables as create_toronto_tables, get_engine  # noqa: E402
-from dataflow.toronto.models.dimensions import RAW_TORONTO_SCHEMA  # noqa: E402
 from dataflow.football.models import Base as FootballBase  # noqa: E402
 from dataflow.football.models.dimensions import RAW_FOOTBALL_SCHEMA  # noqa: E402
+from dataflow.toronto.models import create_tables as create_toronto_tables  # noqa: E402
+from dataflow.toronto.models import get_engine
+from dataflow.toronto.models.dimensions import RAW_TORONTO_SCHEMA  # noqa: E402
 
 
 def main() -> int:
