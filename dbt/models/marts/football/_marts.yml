@@ -1,0 +1,84 @@
+version: 2
+
+models:
+  - name: mart_football__league_comparison
+    description: "League-level comparison of squad values, financial metrics, and competitive concentration"
+    columns:
+      - name: league_id
+        description: "League identifier"
+      - name: league_name
+        description: "League name"
+      - name: season
+        description: "Football season year"
+        data_tests:
+          - not_null
+      - name: total_squad_value_eur
+        description: "Total squad value across all clubs in league (EUR)"
+      - name: avg_squad_value_eur
+        description: "Average squad value per club in league (EUR)"
+      - name: top3_concentration_pct
+        description: "Percentage of total league squad value held by top 3 clubs"
+      - name: club_count
+        description: "Number of clubs in league"
+      - name: total_revenue_eur
+        description: "Total revenue across clubs with financial data (EUR, nullable - no Deloitte data expected)"
+
+  - name: mart_football__club_rankings
+    description: "Club global and league-specific rankings by squad value with financial indicators"
+    columns:
+      - name: club_id
+        description: "Club identifier"
+        data_tests:
+          - not_null
+      - name: club_name
+        description: "Club name (nullable if club has no seasons)"
+      - name: league_id
+        description: "League identifier"
+      - name: league_name
+        description: "League name"
+      - name: season
+        description: "Football season year"
+        data_tests:
+          - not_null
+      - name: squad_value_eur
+        description: "Total squad value in EUR"
+      - name: global_rank
+        description: "Club ranking globally across all leagues by squad value"
+      - name: league_rank
+        description: "Club ranking within league by squad value"
+      - name: revenue_eur
+        description: "Club revenue in EUR (nullable - Deloitte data not implemented)"
+      - name: has_revenue_data
+        description: "Boolean flag indicating if revenue data is available for this club-season"
+
+  - name: mart_football__club_deep_dive
+    description: "Club-level deep dive with transfers, player analytics, and YoY performance trends"
+    columns:
+      - name: club_id
+        description: "Club identifier"
+        data_tests:
+          - not_null
+      - name: club_name
+        description: "Club name (nullable if club has no seasons)"
+      - name: league_id
+        description: "League identifier"
+      - name: season
+        description: "Football season year"
+        data_tests:
+          - not_null
+      - name: squad_value_eur
+        description: "Total squad value in EUR"
+      - name: yoy_value_change_pct
+        description: "Year-over-year percentage change in squad value (nullable for first year)"
+      - name: net_transfer_spend_eur
+        description: "Net transfer spending (fees_in - fees_out) in EUR"
+      - name: transfers_in_count
+        description: "Number of incoming transfers"
+      - name: transfers_out_count
+        description: "Number of outgoing transfers"
+      - name: avg_player_value_eur
+        description: "Average player market value in EUR"
+      - name: top_player_name
+        description: "Name of highest-valued player at club in season"
+      - name: top_player_value_eur
+        description: "Market value of highest-valued player in EUR"

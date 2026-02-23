@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: int_football__squad_values
+    description: "Club squad value aggregations - latest market values per club-season"
+    columns:
+      - name: club_id
+        description: "Club identifier (primary key)"
+        data_tests:
+          - not_null
+      - name: club_name
+        description: "Club name"
+      - name: season
+        description: "Football season year"
+        data_tests:
+          - not_null
+      - name: total_squad_value_eur
+        description: "Sum of latest player market values in EUR"
+      - name: avg_player_value_eur
+        description: "Average player market value in EUR"
+      - name: max_player_value_eur
+        description: "Highest player market value in EUR"
+      - name: squad_size
+        description: "Number of players in squad"
+
+  - name: int_football__league_financials
+    description: "League-level financial aggregations from club finance data"
+    columns:
+      - name: league_id
+        description: "League identifier (primary key)"
+        data_tests:
+          - not_null
+      - name: league_name
+        description: "League name"
+      - name: country
+        description: "Country"
+      - name: season
+        description: "Football season year"
+      - name: total_revenue_eur
+        description: "Total league revenue in EUR (where data available)"
+      - name: avg_revenue_eur
+        description: "Average club revenue in EUR"
+      - name: max_revenue_eur
+        description: "Maximum club revenue in EUR"
+      - name: club_count_with_revenue
+        description: "Number of clubs with revenue data"
+
+  - name: int_football__transfer_flows
+    description: "Club transfer flow calculations per season"
+    columns:
+      - name: club_id
+        description: "Club identifier (primary key)"
+        data_tests:
+          - not_null
+      - name: season
+        description: "Football season year"
+        data_tests:
+          - not_null
+      - name: fees_in
+        description: "Total incoming transfer fees in EUR"
+      - name: fees_out
+        description: "Total outgoing transfer fees in EUR"
+      - name: net_transfer_spend_eur
+        description: "Net transfer spend (fees_in - fees_out) in EUR"
+      - name: transfers_in_count
+        description: "Number of incoming transfers"
+      - name: transfers_out_count
+        description: "Number of outgoing transfers"
