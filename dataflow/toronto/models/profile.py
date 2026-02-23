@@ -27,6 +27,7 @@ class FactNeighbourhoodProfile(Base):
             "category",
             "subcategory",
             "level",
+            "indent_level",
             name="uq_fact_profile_natural_key",
         ),
         Index(

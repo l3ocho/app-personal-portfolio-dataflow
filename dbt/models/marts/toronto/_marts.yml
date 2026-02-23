@@ -206,6 +206,18 @@ models:
                   - ethnic_origin
                   - mother_tongue
                   - official_language
+                  - language_at_home
+                  - indigenous_identity
+                  - religion
+                  - education_level
+                  - field_of_study
+                  - commute_mode
+                  - commute_duration
+                  - commute_destination
+                  - housing_suitability
+                  - dwelling_type
+                  - bedrooms
+                  - construction_period
       - name: subcategory
         description: "Specific subcategory"
         data_tests:

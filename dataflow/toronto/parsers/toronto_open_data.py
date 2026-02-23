@@ -608,9 +608,9 @@ class TorontoOpenDataParser:
     CENSUS_EXTENDED_MAPPING: dict[
         str, str | list[str] | tuple[str, str]
     ] = {
-        # Population
-        "population": "Total - Age groups of the population - 100% data",
-        "pop_0_to_14": "Under 15 years",
+        # Population (100% data row label is actually 25% sample in 2021 XLSX)
+        "population": "Total - Age groups of the population - 25% sample data",
+        "pop_0_to_14": "0 to 14 years",
         "pop_15_to_24": ["15 to 19 years", "20 to 24 years"],
         "pop_25_to_64": [
             "25 to 29 years", "30 to 34 years", "35 to 39 years",
@@ -618,11 +618,12 @@ class TorontoOpenDataParser:
             "55 to 59 years", "60 to 64 years",
         ],
         "pop_65_plus": "65 years and over",
-        # Households
-        "total_private_dwellings": "Total private dwellings",
-        "occupied_private_dwellings": "Private dwellings occupied by usual residents",
+        # Households (total private dwellings not available as standalone row;
+        # occupied count proxied from tenure total)
+        "total_private_dwellings": "Total - Occupied private dwellings by dwelling condition - 25% sample data",
+        "occupied_private_dwellings": "Total - Private households by tenure - 25% sample data",
         "avg_household_size": "Average household size",
-        "avg_household_income_after_tax": "Average after-tax income of households in 2020 ($)",
+        "avg_household_income_after_tax": "Average after-tax income of household in 2020 ($)",
         # Housing tenure and costs
         "pct_owner_occupied": (
             "Owner",
@@ -640,7 +641,7 @@ class TorontoOpenDataParser:
         "avg_shelter_cost_renter": "Average monthly shelter costs for rented dwellings ($)",
         "pct_shelter_cost_30pct": (
             "Spending 30% or more of income on shelter costs",
-            "Total - Private households by housing suitability - 25% sample data",
+            "Total - Owner and tenant households with household total income greater than zero, in non-farm, non-reserve private dwellings by shelter-cost-to-income ratio - 25% sample data",
         ),
         # Education
         "pct_no_certificate": (
@@ -656,6 +657,7 @@ class TorontoOpenDataParser:
             "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
         ),
         "pct_university": (
+            # Smart quote (U+2019) in XLSX normalised to ASCII apostrophe by _normalize_key
             "Bachelor's degree or higher",
             "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
         ),
@@ -668,19 +670,21 @@ class TorontoOpenDataParser:
         "employment_rate": "Employment rate",
         "unemployment_rate": "Unemployment rate",
         "pct_employed_full_time": (
-            "Worked full year, full time",
-            "Total - Experienced labour force aged 15 years and over by work activity in 2020 - 25% sample data",
+            # No commas in XLSX label; denominator changed from "Experienced labour force" section
+            "Worked full year full time",
+            "Total - Population aged 15 years and over by work activity during the reference year - 25% sample data",
         ),
         # Income
-        "median_after_tax_income": "Median after-tax income of households in 2020 ($)",
+        "median_after_tax_income": "Median after-tax income of household in 2020 ($)",
         "median_employment_income": "Median employment income in 2020 among recipients ($)",
         "lico_at_rate": (
             "In low income based on the Low-income cut-offs, after tax (LICO-AT)",
-            "Total - Low-income status in 2020 for the population in private households to whom the low-income concept is applicable - 100% data",
+            "Total - LICO low-income status in 2020 for the population in private households to whom the low-income concept is applicable - 25% sample data",
         ),
+        # market_basket_measure_rate not available in 2021 Toronto neighbourhood profiles XLSX
         "market_basket_measure_rate": (
             "In low income based on the Market Basket Measure (MBM)",
-            "Total - Low-income status in 2020 for the population in private households to whom the low-income concept is applicable - 100% data",
+            "Total - LICO low-income status in 2020 for the population in private households to whom the low-income concept is applicable - 25% sample data",
         ),
         # Diversity / immigration
         "pct_immigrants": (
@@ -696,7 +700,7 @@ class TorontoOpenDataParser:
             "Total - Visible minority for the population in private households - 25% sample data",
         ),
         "pct_indigenous": (
-            "Total - Indigenous identity",
+            "Indigenous identity",
             "Total - Indigenous identity for the population in private households - 25% sample data",
         ),
         # Language
@@ -722,7 +726,8 @@ class TorontoOpenDataParser:
             "Total - Mobility status 5 years ago - 25% sample data",
         ),
         "pct_movers_within_city": (
-            "Movers within census subdivision (CSD)",
+            # "Non-migrants" = movers who stayed within the same CSD (City of Toronto)
+            "Non-migrants",
             "Total - Mobility status 5 years ago - 25% sample data",
         ),
         "pct_movers_from_other_city": (
@@ -731,57 +736,59 @@ class TorontoOpenDataParser:
         ),
         # Commuting / transport
         "pct_car_commuters": (
-            "Car, truck or van - as a driver or passenger",
-            "Total - Main mode of commuting for the employed labour force aged 15 years and over in private households with a usual place of work or no fixed workplace address - 25% sample data",
+            "Car, truck or van",
+            "Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data",
         ),
         "pct_transit_commuters": (
             "Public transit",
-            "Total - Main mode of commuting for the employed labour force aged 15 years and over in private households with a usual place of work or no fixed workplace address - 25% sample data",
+            "Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data",
         ),
         "pct_active_commuters": (
             "Walked",
-            "Total - Main mode of commuting for the employed labour force aged 15 years and over in private households with a usual place of work or no fixed workplace address - 25% sample data",
+            "Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data",
         ),
         "pct_work_from_home": (
             "Worked at home",
-            "Total - Place of work status for the employed labour force aged 15 years and over in private households - 25% sample data",
+            "Total - Place of work status for the employed labour force aged 15 years and over - 25% sample data",
         ),
         # Additional indicators
         "median_age": "Median age of the population",
         "pct_lone_parent_families": (
-            "Lone-parent census families",
-            "Total - Census family structure including whether children are present - 25% sample data",
+            "Total one-parent families",
+            "Total number of census families in private households - 25% sample data",
         ),
-        "avg_number_of_children": "Average number of children in census families",
+        "avg_number_of_children": "Average number of children in census families with children",
         "pct_dwellings_in_need_of_repair": (
             "Major repairs needed",
             "Total - Occupied private dwellings by dwelling condition - 25% sample data",
         ),
         "pct_unaffordable_housing": (
             "Spending 30% or more of income on shelter costs",
-            "Total - Shelter-cost-to-income ratio - 25% sample data",
+            "Total - Owner and tenant households with household total income greater than zero, in non-farm, non-reserve private dwellings by shelter-cost-to-income ratio - 25% sample data",
         ),
         "pct_overcrowded_housing": (
             "Not suitable",
             "Total - Private households by housing suitability - 25% sample data",
         ),
+        # median_commute_minutes not available as pre-computed median in 2021 XLSX
         "median_commute_minutes": "Median commuting duration (minutes)",
         "pct_management_occupation": (
-            "0 Management occupations",
-            "Total - Occupation - National Occupational Classification (NOC) 2021 - for the employed labour force aged 15 years and over in private households - 25% sample data",
+            "0 Legislative and senior management occupations",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
         ),
         "pct_business_finance_admin": (
             "1 Business, finance and administration occupations",
-            "Total - Occupation - National Occupational Classification (NOC) 2021 - for the employed labour force aged 15 years and over in private households - 25% sample data",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
         ),
         "pct_service_sector": (
             "6 Sales and service occupations",
-            "Total - Occupation - National Occupational Classification (NOC) 2021 - for the employed labour force aged 15 years and over in private households - 25% sample data",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
         ),
         "pct_trades_transport": (
             "7 Trades, transport and equipment operators and related occupations",
-            "Total - Occupation - National Occupational Classification (NOC) 2021 - for the employed labour force aged 15 years and over in private households - 25% sample data",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
         ),
+        # population_density not available in 2021 neighbourhood profiles XLSX
         "population_density": "Population density per square kilometre",
     }
 
@@ -1153,16 +1160,20 @@ class TorontoOpenDataParser:
         exclude_meta = {"Characteristic", "RawCharacteristic", "_id", "Topic", "Data Source", "Category"}
         neighbourhood_cols = [col for col in raw_records[0] if col not in exclude_meta]
 
-        # Build lookup: {stripped_lower_characteristic -> row_dict}
+        def _normalize_key(s: str) -> str:
+            """Lowercase + normalize smart quotes for consistent matching."""
+            return s.lower().strip().replace("\u2019", "'").replace("\u2018", "'")
+
+        # Build lookup: {normalized_lower_characteristic -> row_dict}
         char_to_row: dict[str, dict[str, Any]] = {}
         for row in raw_records:
             char = str(row.get("Characteristic", "")).strip()
             if char:
-                char_to_row[char.lower()] = row
+                char_to_row[_normalize_key(char)] = row
 
         def _get_value(label: str, col: str) -> float | None:
             """Look up a value by exact label for a neighbourhood column."""
-            row = char_to_row.get(label.lower().strip())
+            row = char_to_row.get(_normalize_key(label))
             if row is None:
                 return None
             return self._parse_float(row.get(col))
@@ -1412,7 +1423,8 @@ class TorontoOpenDataParser:
             "indigenous identity for the population in private households": "indigenous_identity",
             "total - religion for the population in private households": "religion",
             "highest certificate, diploma or degree for the population aged 15 years and over in private households - 25%": "education_level",
-            "major field of study - classification of instructional programs": "field_of_study",
+            # Include "aged 15 years and over" to avoid matching the 25-to-64 duplicate section
+            "major field of study - classification of instructional programs (cip) 2021 for the population aged 15 years and over in private": "field_of_study",
             "occupation - national occupational classification": "occupation",
             "industry - north american industry classification system": "industry_sector",
             "total income groups for the population aged 15 years and over in private households": "income_bracket",
