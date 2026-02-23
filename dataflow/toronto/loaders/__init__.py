@@ -24,6 +24,7 @@ from .dimensions import (
     load_policy_events,
     load_time_dimension,
 )
+from .census_extended_loader import load_census_extended_data
 from .profile_loader import load_profile_data
 
 __all__ = [
@@ -50,6 +51,8 @@ __all__ = [
     "load_amenities",
     "load_amenity_counts",
     "load_profile_data",
+    # Sprint 12: census extended (Path B)
+    "load_census_extended_data",
     # CMHC crosswalk
     "build_cmhc_neighbourhood_crosswalk",
     "get_neighbourhood_weights_for_zone",

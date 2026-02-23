@@ -13,6 +13,7 @@ from .dimensions import (
     TimeDimension,
 )
 from .neighbourhood import CensusRecord, CrimeRecord, CrimeType, NeighbourhoodRecord
+from .census_extended import CensusExtendedRecord
 from .profile import VALID_CATEGORIES, ProfileRecord
 
 __all__ = [
@@ -43,4 +44,6 @@ __all__ = [
     # Profile (Neighbourhood community profile data)
     "ProfileRecord",
     "VALID_CATEGORIES",
+    # Census extended (Path B wide-format scalar indicators)
+    "CensusExtendedRecord",
 ]
