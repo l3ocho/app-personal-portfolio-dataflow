@@ -1,7 +1,6 @@
 select
   id,
   player_id,
-  club_id,
   value_eur,
   market_value_date,
   season
