@@ -21,10 +21,7 @@ class ClubRecord(BaseModel):
 
     club_id: str = Field(max_length=20, description="Transfermarkt club ID (varchar)")
     club_name: str = Field(max_length=150)
-    club_code: Optional[str] = Field(default=None, max_length=10)
     country: Optional[str] = Field(default=None, max_length=50)
-    founded_year: Optional[int] = Field(default=None, ge=1800, le=2100)
-    city: Optional[str] = Field(default=None, max_length=100)
     club_slug: Optional[str] = Field(default=None, max_length=150, description="URL-friendly slug")
     logo_url: Optional[str] = Field(default=None, max_length=255)
     source_url: Optional[str] = Field(default=None, max_length=255, description="Transfermarkt URL")

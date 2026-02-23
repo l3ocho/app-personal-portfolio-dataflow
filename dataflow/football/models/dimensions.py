@@ -39,10 +39,7 @@ class DimClub(Base):
 
     club_id: Mapped[str] = mapped_column(String(20), primary_key=True, nullable=False)
     club_name: Mapped[str] = mapped_column(String(150), nullable=False)
-    club_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
     country: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    founded_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     club_slug: Mapped[str | None] = mapped_column(String(150), nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     source_url: Mapped[str | None] = mapped_column(String(255), nullable=True)

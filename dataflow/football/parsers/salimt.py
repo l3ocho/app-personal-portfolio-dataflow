@@ -212,6 +212,17 @@ class SalimtParser:
         # Get unique competition IDs (keep first occurrence of each)
         unique_leagues = df[["competition_id", "competition_name"]].drop_duplicates(subset=["competition_id"], keep="first")
 
+        # Map league IDs to countries
+        league_countries = {
+            "GB1": "England",
+            "ES1": "Spain",
+            "IT1": "Italy",
+            "FR1": "France",
+            "L1": "Germany",
+            "BRA1": "Brazil",
+            "MLS1": "United States",
+        }
+
         records = []
         for _, row in unique_leagues.iterrows():
             try:
@@ -220,7 +231,7 @@ class SalimtParser:
                 record = LeagueRecord(
                     league_id=comp_id,
                     league_name=comp_name,
-                    country="",
+                    country=league_countries.get(comp_id, ""),
                     season_start_year=2023,
                 )
                 records.append(record)
