@@ -170,12 +170,13 @@ Analytical tables ready for dashboard consumption:
 | Model | Grain | Purpose |
 |-------|-------|---------|
 | `mart_neighbourhood_overview` | neighbourhood | Composite livability scores |
-| `mart_neighbourhood_housing` | neighbourhood | Housing and rent metrics |
+| `mart_neighbourhood_foundation` | neighbourhood × year | Cross-domain scalar indicators (demographics, income, housing costs, labour, education) |
+| `mart_neighbourhood_housing` | neighbourhood × year | Housing metrics, profile pivots (dwelling/bedroom/construction), shelter costs, composites |
+| `mart_neighbourhood_housing_rentals` | neighbourhood × bedroom_type × year | CMHC rental data disaggregated to neighbourhood grain via area-weighted crosswalk |
 | `mart_neighbourhood_safety` | neighbourhood × year | Crime rate calculations |
 | `mart_neighbourhood_demographics` | neighbourhood × year | Income, age, population metrics + profile summary columns |
-| `mart_neighbourhood_amenities` | neighbourhood | Amenity accessibility scores |
+| `mart_neighbourhood_amenities` | neighbourhood | Amenity accessibility scores, commute pivots, car dependency index |
 | `mart_neighbourhood_profile` | neighbourhood × category × subcategory | Community profile breakdown (immigration, languages, ethnic origin, visible minorities, etc.) with geometry |
-| `mart_toronto_rentals` | zone × month | Time-series rental analysis |
 
 ## Table Details
 

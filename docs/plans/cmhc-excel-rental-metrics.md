@@ -1,7 +1,7 @@
 # Plan: Extend CMHC Excel Parser for Rental Metrics
 
 ## Problem
-`mart_toronto_rentals` has several NULL columns. The RMR Excel files
+`mart_neighbourhood_housing_rentals` (formerly `mart_toronto_rentals`) has several NULL columns. The RMR Excel files
 (`data/raw/cmhc/rmr-toronto-{year}-en.xlsx`, years 2021–2025) already on disk
 contain the missing data in additional tables beyond the currently-parsed 3.1.3.
 
