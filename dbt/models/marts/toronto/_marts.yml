@@ -1,6 +1,48 @@
 version: 2
 
 models:
+  - name: mart_neighbourhood_housing_rentals
+    description: "CMHC rental data disaggregated to neighbourhood grain via area-weighted crosswalk. One row per neighbourhood per bedroom_type per year. Complements mart_toronto_rentals (zone grain) without replacing it."
+    meta:
+      dashboard_tab: Housing
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: year
+        description: "Survey year"
+        data_tests:
+          - not_null
+      - name: bedroom_type
+        description: "Bedroom type (bachelor, 1bed, 2bed, 3bed)"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [bachelor, 1bed, 2bed, 3bed]
+      - name: avg_rent
+        description: "Area-weighted average rent for this bedroom type"
+      - name: vacancy_rate
+        description: "Area-weighted vacancy rate"
+      - name: turnover_rate
+        description: "Area-weighted turnover rate"
+      - name: rental_universe_estimate
+        description: "Proportional rental universe estimate (area-weighted)"
+      - name: year_over_year_rent_change
+        description: "Year-over-year rent change from CMHC source data (area-weighted)"
+      - name: rent_yoy_change_pct
+        description: "Year-over-year rent change percentage computed from allocated neighbourhood rents"
+
   - name: mart_toronto_rentals
     description: "Final mart for Toronto rental market analysis by zone and time"
     columns:
