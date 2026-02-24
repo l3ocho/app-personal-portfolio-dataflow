@@ -236,5 +236,11 @@ models:
           - accepted_values:
               arguments:
                 values: ["", continent, country]
+      - name: indent_level
+        description: "Indentation depth from source XLSX (0 = section header, 1+ = subcategory)"
+      - name: category_total
+        description: "Total count for the category section header row (used as denominator for percentages)"
+      - name: is_subtotal
+        description: "True when indent_level > 0 (row is a subcategory, not a section header)"
       - name: diversity_index
         description: "Shannon diversity index (visible_minority rows only)"
