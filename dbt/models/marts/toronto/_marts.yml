@@ -290,7 +290,7 @@ models:
         description: "Shannon diversity index from visible minority category"
 
   - name: mart_neighbourhood_amenities
-    description: "Amenity access metrics by neighbourhood"
+    description: "Amenity access metrics by neighbourhood. Expanded with commute mode, duration, destination pivots and car dependency composite."
     meta:
       dashboard_tab: Amenities
     columns:
@@ -307,6 +307,10 @@ models:
           - not_null
       - name: geometry
         description: "PostGIS geometry for mapping"
+      - name: year
+        description: "Amenity data year"
+      - name: census_year
+        description: "Census year matched to this amenity year"
       - name: total_amenities_per_1000
         description: "Total amenities per 1000 population"
       - name: amenity_index
@@ -317,6 +321,48 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
+      - name: commute_car
+        description: "Count of car commuters (driver + passenger combined)"
+      - name: commute_car_driver
+        description: "Count of car commuters who drove"
+      - name: commute_car_passenger
+        description: "Count of car commuters who were passengers"
+      - name: commute_transit
+        description: "Count of public transit commuters"
+      - name: commute_walk
+        description: "Count of commuters who walked"
+      - name: commute_bicycle
+        description: "Count of bicycle commuters"
+      - name: commute_other
+        description: "Count of commuters using other methods"
+      - name: commute_under_15min
+        description: "Count of commuters with less than 15 minute commute"
+      - name: commute_15_29min
+        description: "Count of commuters with 15-29 minute commute"
+      - name: commute_30_44min
+        description: "Count of commuters with 30-44 minute commute"
+      - name: commute_45_59min
+        description: "Count of commuters with 45-59 minute commute"
+      - name: commute_60min_plus
+        description: "Count of commuters with 60+ minute commute"
+      - name: commute_usual_workplace
+        description: "Count of commuters who go to a usual place of work"
+      - name: commute_work_from_home
+        description: "Count of commuters who worked at home"
+      - name: commute_no_fixed_address
+        description: "Count of commuters with no fixed workplace address"
+      - name: commute_outside_canada
+        description: "Count of commuters who worked outside Canada"
+      - name: car_dependency_pct
+        description: "Percentage of commuters who use a car (driver or passenger)"
+      - name: commute_car_pct
+        description: "Percentage of commuters using car (matches car_dependency_pct)"
+      - name: commute_transit_pct
+        description: "Percentage of commuters using public transit"
+      - name: commute_active_pct
+        description: "Percentage of commuters walking or cycling"
+      - name: commute_long_pct
+        description: "Percentage of commuters with 45+ minute commute"
 
   - name: mart_neighbourhood_profile
     description: "Neighbourhood community profile analytical table with all demographics breakdown"
