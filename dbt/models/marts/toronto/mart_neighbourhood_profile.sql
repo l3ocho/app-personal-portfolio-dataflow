@@ -26,6 +26,9 @@ final as (
         p.pct_of_city,
         p.rank_in_neighbourhood,
         p.level,
+        p.indent_level,
+        p.category_total,
+        case when p.indent_level > 0 then true else false end as is_subtotal,
         p.diversity_index
     from profile p
     left join neighbourhoods n using (neighbourhood_id)

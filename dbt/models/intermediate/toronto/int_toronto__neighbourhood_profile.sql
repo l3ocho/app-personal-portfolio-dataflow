@@ -72,6 +72,7 @@ enriched as (
         p.subcategory,
         p.level,
         p.indent_level,
+        p.category_total,
         p.count,
 
         -- Percentage within this neighbourhood + category

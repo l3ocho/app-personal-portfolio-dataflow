@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Sprint 14 — Toronto Restructure Phase 3: Mart Layer)
+- `mart_neighbourhood_foundation` — NEW cross-domain mart (65 cols, grain: neighbourhood × year) from `int_neighbourhood__foundation`
+- `mart_neighbourhood_housing_rentals` — NEW neighbourhood-grain rentals mart (grain: neighbourhood × bedroom_type × year, 4,424 rows); backward-compatible alongside `mart_toronto_rentals`
+- `mart_neighbourhood_housing` expanded +27 columns: dwelling type pivots (7 types), bedroom pivots (5 sizes), construction period pivots (8 buckets), shelter cost scalars, composite scores (`family_housing_fit`, `couple_housing_fit`, `singles_housing_fit`)
+- `mart_neighbourhood_amenities` expanded +20 columns: commute mode pivots (6 modes), commute duration pivots (5 buckets), commute destination pivots (4 destinations), `car_dependency_index` composite
+- `mart_neighbourhood_profile` exposes 3 new columns: `indent_level`, `category_total`, `is_subtotal`
+
+### Changed (Sprint 14)
+- `int_neighbourhood__housing` refactored: switched from deprecated `int_neighbourhood__demographics` ref to `int_neighbourhood__foundation`; added dwelling/bedroom/construction profile pivot CTEs
+- `int_neighbourhood__amenity_scores` refactored: switched from deprecated `stg_toronto__census` ref to `int_neighbourhood__foundation`; added commute pivot CTEs and `car_dependency_index`
+
 ### Added (Sprint 13 — Toronto Restructure Phase 2: dbt Layer)
 - `stg_toronto__census_extended` — 1:1 staging model for `fact_census_extended` (~55 scalar columns)
 - `int_neighbourhood__foundation` — new intermediate superseding `int_neighbourhood__demographics`; CPI imputation + LEFT JOIN to `stg_toronto__census_extended` for 50+ extended scalar columns
