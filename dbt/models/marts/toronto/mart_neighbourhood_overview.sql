@@ -15,8 +15,6 @@ neighbourhoods as (
 neighbourhood_years as (
     select
         n.neighbourhood_id,
-        n.neighbourhood_name,
-        n.geometry,
         y.year
     from neighbourhoods n
     cross join years y
@@ -84,8 +82,6 @@ amenities as (
 scored as (
     select
         ny.neighbourhood_id,
-        ny.neighbourhood_name,
-        ny.geometry,
         ny.year,
         cm.population,
         -- Use neighbourhood-level income where available, CMA-level as fallback
@@ -147,8 +143,6 @@ scored as (
 final as (
     select
         neighbourhood_id,
-        neighbourhood_name,
-        geometry,
         year,
         population,
         median_household_income,

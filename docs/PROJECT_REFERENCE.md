@@ -41,7 +41,7 @@ This is a **data-only ETL/ELT pipeline**. No frontend code lives here. The pipel
 | `raw_toronto` | 11 tables | Dimensions, facts, bridge table |
 | `stg_toronto` | 8 models | 1:1 source cleaning |
 | `int_toronto` | 11 models | Business logic, profile pivots, extended census joins |
-| `mart_toronto` | 8 tables | Analytics-ready output |
+| `mart_toronto` | 9 tables | Analytics-ready output |
 
 **Data sources**: City of Toronto Open Data, Toronto Police API, CMHC Rental Survey, Statistics Canada XLSX
 **Coverage**: 158 neighbourhoods, 2016 + 2021 census years
@@ -57,7 +57,7 @@ This is a **data-only ETL/ELT pipeline**. No frontend code lives here. The pipel
 | `mart_football` | 3 tables | Analytics-ready output |
 
 **Data sources**: Transfermarkt (Salimt API), MLSPA, Deloitte Money League
-**Scope**: 7 leagues — Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, MLS
+**Scope**: 7 leagues — Premier League (GB1), La Liga (ES1), Bundesliga (L1), Serie A (IT1), Ligue 1 (FR1), Brasileirao (BRA1), MLS (MLS1)
 
 ---
 
@@ -87,7 +87,7 @@ dbt/                            # dbt project: portfolio
     ├── staging/football/       # 8 staging models
     ├── intermediate/toronto/   # 11 intermediate models
     ├── intermediate/football/  # 4 intermediate models
-    ├── marts/toronto/          # 8 mart tables
+    ├── marts/toronto/          # 9 mart tables
     └── marts/football/         # 3 mart tables
 
 scripts/

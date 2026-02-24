@@ -6,17 +6,9 @@ with profile as (
     select * from {{ ref('int_toronto__neighbourhood_profile') }}
 ),
 
-neighbourhoods as (
-    select
-        neighbourhood_id,
-        neighbourhood_name
-    from {{ ref('stg_toronto__neighbourhoods') }}
-),
-
 final as (
     select
         p.neighbourhood_id,
-        n.neighbourhood_name,
         p.census_year,
         p.category,
         p.subcategory,
@@ -31,7 +23,6 @@ final as (
         case when p.indent_level > 0 then true else false end as is_subtotal,
         p.diversity_index
     from profile p
-    left join neighbourhoods n using (neighbourhood_id)
 )
 
 select * from final

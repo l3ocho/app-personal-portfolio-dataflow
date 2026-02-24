@@ -45,8 +45,6 @@ profile_summary as (
 final as (
     select
         d.neighbourhood_id,
-        d.neighbourhood_name,
-        d.geometry,
         d.census_year as year,
 
         -- Population
