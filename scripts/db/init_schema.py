@@ -71,6 +71,16 @@ def main() -> int:
         if football_tables:
             print(f"{RAW_FOOTBALL_SCHEMA} schema tables: {', '.join(football_tables)}")
 
+        # Grant portfolio_reader access to all schemas (pgweb read-only user)
+        reader_schemas = [RAW_TORONTO_SCHEMA, RAW_FOOTBALL_SCHEMA, "public", "mart_toronto", "mart_football"]
+        with engine.connect() as conn:
+            for schema in reader_schemas:
+                conn.execute(text(f"GRANT USAGE ON SCHEMA {schema} TO portfolio_reader"))
+                conn.execute(text(f"GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO portfolio_reader"))
+                conn.execute(text(f"ALTER DEFAULT PRIVILEGES IN SCHEMA {schema} GRANT SELECT ON TABLES TO portfolio_reader"))
+            conn.commit()
+        print(f"Granted portfolio_reader access to: {', '.join(reader_schemas)}")
+
         return 0
 
     except Exception as e:

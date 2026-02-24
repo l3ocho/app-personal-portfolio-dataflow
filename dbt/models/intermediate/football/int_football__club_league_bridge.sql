@@ -65,20 +65,34 @@ league_forward_filled as (
   from club_seasons_with_league
 ),
 
-league_resolved as (
-  -- Carry backward if still NULL (fill from future seasons)
+league_forward_filled_with_backward as (
+  -- Carry backward if still NULL: max(league_id) ignores NULLs across all seasons
   select
     club_id,
     season,
     coalesce(
       league_id,
-      first_value(league_id) over (partition by club_id order by season desc rows between unbounded preceding and unbounded following)
+      max(league_id) over (partition by club_id)
     ) as league_id
   from league_forward_filled
+),
+
+any_known_league as (
+  -- Last-resort fallback: clubs whose ONLY known seasons predate all market value
+  -- seasons (e.g. known in 1999-2000, market values start 2003+) will have no
+  -- non-null rows in the forward/backward fill window. Pick their most recent
+  -- known league directly from the source data.
+  select distinct on (club_id)
+    club_id,
+    league_id
+  from known_club_leagues
+  where league_id is not null
+  order by club_id, season desc
 )
 
 select
-  club_id,
-  season,
-  league_id
-from league_resolved
+  f.club_id,
+  f.season,
+  coalesce(f.league_id, akl.league_id) as league_id
+from league_forward_filled_with_backward f
+left join any_known_league akl on f.club_id = akl.club_id
