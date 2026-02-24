@@ -500,7 +500,7 @@ class SalimtParser:
 
         records = []
 
-        def _int_or_none(val) -> int | None:
+        def _int_or_none(val: float | int | None) -> int | None:
             """Convert pandas NaN/None to None, otherwise int."""
             if val is None:
                 return None
