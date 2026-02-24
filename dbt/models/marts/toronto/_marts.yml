@@ -1,6 +1,23 @@
 version: 2
 
 models:
+  - name: mart_neighbourhood_geometry
+    description: "Canonical neighbourhood boundaries for map rendering. Grain: one row per neighbourhood (158 rows). Single source of truth for geometry data used by analytical marts via neighbourhood_id FK."
+    columns:
+      - name: neighbourhood_id
+        description: "Primary key. Unique neighbourhood identifier."
+        data_tests:
+          - unique
+          - not_null
+      - name: neighbourhood_name
+        description: "Official neighbourhood name."
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "Neighbourhood boundary polygon (MULTIPOLYGON, SRID 4326)."
+        data_tests:
+          - not_null
+
   - name: mart_neighbourhood_housing_rentals
     description: "CMHC rental data disaggregated to neighbourhood grain via area-weighted crosswalk. One row per neighbourhood per bedroom_type per year."
     meta:
@@ -11,14 +28,8 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
-      - name: geometry
-        description: "PostGIS geometry for mapping"
       - name: year
         description: "Survey year"
         data_tests:
@@ -53,18 +64,12 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
       - name: census_year
         description: "Census year (2016 or 2021)"
         data_tests:
           - not_null
-      - name: geometry
-        description: "PostGIS geometry for mapping"
       - name: land_area_sqkm
         description: "Land area in square kilometres"
       - name: population
@@ -102,14 +107,8 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
-      - name: geometry
-        description: "PostGIS geometry for mapping"
       - name: livability_score
         description: "Composite score: safety (30%), affordability (40%), amenities (30%)"
       - name: safety_score
@@ -129,14 +128,8 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
-      - name: geometry
-        description: "PostGIS geometry for mapping"
       - name: year
         description: "Rental year"
       - name: census_year
@@ -254,14 +247,8 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
-      - name: geometry
-        description: "PostGIS geometry for mapping"
       - name: crime_rate_per_100k
         description: "Total crime rate per 100K population"
       - name: crime_index
@@ -283,14 +270,8 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
-      - name: geometry
-        description: "PostGIS geometry for mapping"
       - name: median_household_income
         description: "Median household income"
       - name: income_index
@@ -320,14 +301,8 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
-      - name: geometry
-        description: "PostGIS geometry for mapping"
       - name: year
         description: "Amenity data year"
       - name: census_year
@@ -395,12 +370,8 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_toronto__neighbourhoods')
+              to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
       - name: census_year
         description: "Census year (2021)"
         data_tests:

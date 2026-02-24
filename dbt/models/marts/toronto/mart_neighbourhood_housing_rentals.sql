@@ -15,9 +15,7 @@ rentals as (
 
 neighbourhoods as (
     select
-        neighbourhood_id,
-        neighbourhood_name,
-        geometry
+        neighbourhood_id
     from {{ ref('stg_toronto__neighbourhoods') }}
 ),
 
@@ -64,8 +62,6 @@ with_yoy as (
 final as (
     select
         n.neighbourhood_id,
-        n.neighbourhood_name,
-        n.geometry,
 
         w.year,
         w.bedroom_type,
