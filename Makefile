@@ -1,4 +1,4 @@
-.PHONY: setup docker-up docker-down db-init local-dev load-data load-all load-toronto load-toronto-only load-football seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto
+.PHONY: setup docker-up docker-down db-init local-dev load-data load-all load-toronto load-toronto-only load-football seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto refresh
 
 # Default target
 .DEFAULT_GOAL := help
@@ -137,6 +137,11 @@ load-data: load-toronto load-football ## Load all project data (Toronto + Footba
 	@echo "$(GREEN)All data loaded!$(NC)"
 
 load-all: load-data ## Alias for load-data
+
+refresh: load-data dbt-test ## Full pipeline refresh: load all data (both domains) + verify with dbt tests
+	@echo "$(GREEN)================================$(NC)"
+	@echo "$(GREEN)✅ Full pipeline refresh complete!$(NC)"
+	@echo "$(GREEN)================================$(NC)"
 
 seed-data: ## Seed sample development data (amenities, median_age)
 	@echo "$(GREEN)Seeding development data...$(NC)"
