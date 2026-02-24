@@ -45,6 +45,9 @@ cd personal-portfolio-dataflow
 
 # Checkout desired branch
 git checkout main  # or staging for staging environment
+
+# Initialize git submodules (required for football data)
+git submodule update --init --recursive
 ```
 
 ### Step 2: Create Virtual Environment
@@ -131,26 +134,38 @@ raw_toronto  | fact_census           | table | postgres
 ### Step 7: Load Initial Data
 
 ```bash
-# Load Toronto data (will take several minutes)
-make load-toronto
+# Load all data — Toronto + Football (will take 90+ minutes on low-resource hardware)
+make load-data
 
-# Check data loaded
-docker exec -it postgres psql -U postgres -d portfolio -c "SELECT COUNT(*) FROM raw_toronto.dim_neighbourhood;"
+# Or load each domain separately:
+make load-toronto    # Toronto neighbourhood data (~5 min)
+make load-football   # Football data — 900K+ market value rows (~90 min on Raspberry Pi)
 ```
 
+Verify Toronto loaded:
+```bash
+docker exec -it postgres psql -U postgres -d portfolio -c "SELECT COUNT(*) FROM raw_toronto.dim_neighbourhood;"
+```
 Expected: 158 neighbourhoods
+
+Verify Football loaded:
+```bash
+docker exec -it postgres psql -U postgres -d portfolio -c "SELECT COUNT(*) FROM raw_football.fact_player_market_value;"
+```
+Expected: 900,000+ rows
 
 ### Step 8: Run dbt Models
 
 ```bash
-# Run all dbt models
+# Run all dbt models (Toronto + Football)
 make dbt-run
 
-# Run dbt tests
+# Run dbt tests (130 tests across both domains)
 make dbt-test
 
 # Verify mart tables created
 docker exec -it postgres psql -U postgres -d portfolio -c "\dt mart_toronto.*"
+docker exec -it postgres psql -U postgres -d portfolio -c "\dt mart_football.*"
 ```
 
 ### Step 9: Verify Installation
@@ -192,18 +207,17 @@ crontab -e
 **Recommended Schedule:**
 
 ```bash
-# Portfolio Dataflow - Toronto Data ETL
-# Run every day at 2 AM (data refresh)
-0 2 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/python scripts/data/load_toronto_data.py >> /var/log/portfolio-dataflow/etl.log 2>&1
+# Portfolio Dataflow - Toronto Data ETL (daily, fast)
+0 2 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/python scripts/data/load_toronto_data.py >> /var/log/portfolio-dataflow/etl-toronto.log 2>&1
 
-# Run dbt models every day at 3 AM (after data loads)
-0 3 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make dbt-run >> /var/log/portfolio-dataflow/dbt.log 2>&1
+# Portfolio Dataflow - Football Data ETL (weekly — large dataset, ~90 min)
+0 1 * * 0 cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/python scripts/data/load_football_data.py >> /var/log/portfolio-dataflow/etl-football.log 2>&1
 
-# Run dbt tests every day at 4 AM (after models run)
-0 4 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make dbt-test >> /var/log/portfolio-dataflow/dbt-test.log 2>&1
+# Run dbt models every day at 4 AM (after all ETL loads)
+0 4 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make dbt-run >> /var/log/portfolio-dataflow/dbt.log 2>&1
 
-# Weekly full refresh (Sundays at 1 AM)
-0 1 * * 0 cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make db-reset && ~/apps/personal-portfolio-dataflow/.venv/bin/make load-toronto >> /var/log/portfolio-dataflow/weekly-refresh.log 2>&1
+# Run dbt tests every day at 5 AM (after models run)
+0 5 * * * cd ~/apps/personal-portfolio-dataflow && ~/apps/personal-portfolio-dataflow/.venv/bin/make dbt-test >> /var/log/portfolio-dataflow/dbt-test.log 2>&1
 ```
 
 **Notes:**

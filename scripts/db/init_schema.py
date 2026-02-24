@@ -71,6 +71,20 @@ def main() -> int:
         if football_tables:
             print(f"{RAW_FOOTBALL_SCHEMA} schema tables: {', '.join(football_tables)}")
 
+        # Create portfolio_reader user if not exists (used by pgweb for read-only access)
+        with engine.connect() as conn:
+            conn.execute(text("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'portfolio_reader') THEN
+                        CREATE USER portfolio_reader WITH PASSWORD 'change_me_in_production';
+                    END IF;
+                END
+                $$;
+            """))
+            conn.commit()
+        print("portfolio_reader user ready")
+
         # Grant portfolio_reader access to all schemas (pgweb read-only user)
         # Covers raw + dbt staging/intermediate/mart layers for all domains
         reader_schemas = [

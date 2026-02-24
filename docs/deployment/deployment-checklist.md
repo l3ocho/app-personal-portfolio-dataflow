@@ -65,6 +65,9 @@ EOF
 cd $HOME/apps
 git clone ssh://git@hotserv.tailc9b278.ts.net:2222/personal-projects/app-personal-portfolio-dataflow.git personal-portfolio-dataflow
 cd personal-portfolio-dataflow
+
+# Initialize git submodules (required for football data)
+git submodule update --init --recursive
 ```
 
 ### 4. Setup Python Environment
@@ -95,14 +98,17 @@ EOF
 ```bash
 source .venv/bin/activate
 
-# Initialize database schema
+# Initialize database schema (also creates portfolio_reader user + grants all permissions)
 python scripts/db/init_schema.py
 
 # Load Toronto data
 python scripts/data/load_toronto_data.py
 python scripts/data/seed_amenity_data.py
 
-# Run dbt models
+# Load Football data (takes ~90 min on low-resource hardware)
+python scripts/data/load_football_data.py
+
+# Run dbt models (Toronto + Football)
 cd dbt && dbt run --profiles-dir . && dbt test --profiles-dir .
 ```
 
