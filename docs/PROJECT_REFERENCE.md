@@ -1,193 +1,179 @@
-# Portfolio Project Reference
+# Project Reference
 
-**Project**: Analytics Portfolio
+**Repository**: `personal-projects/app-personal-portfolio-dataflow`
+**Gitea**: `gitea.hotserv.cloud`
 **Owner**: Leo Miranda
-**Status**: Sprint 9 Complete (Dashboard Implementation Done)
-**Last Updated**: January 2026
+**Status**: Sprint 14 complete — Toronto Restructure Phases 1–3 merged to `development`
+**Last Updated**: February 2026
 
 ---
 
-## Project Overview
+## Overview
 
-Personal portfolio website with an interactive Toronto Neighbourhood Dashboard demonstrating data engineering, visualization, and analytics capabilities.
+This is a **data-only ETL/ELT pipeline**. No frontend code lives here. The pipeline ingests raw data from external APIs and files, validates with Pydantic, persists to PostgreSQL/PostGIS, and transforms via 43 dbt models into analytics-ready mart tables. The webapp (`personal-portfolio`) consumes the marts read-only.
 
-| Component | Description | Status |
-|-----------|-------------|--------|
-| Portfolio Website | Bio, About, Projects, Resume, Contact, Blog | Complete |
-| Toronto Dashboard | 5-tab neighbourhood analysis | Complete |
-| Data Pipeline | dbt models, figure factories | Complete |
-| Deployment | Production deployment | Pending |
+**Scope boundary:**
+- **This repo**: raw data → database → dbt marts
+- **Webapp repo**: mart queries → Dash visualizations → user interface
 
 ---
 
-## Completed Work
+## Sprint History
 
-### Sprint 1-6: Foundation
-- Repository setup, Docker, PostgreSQL + PostGIS
-- Bio landing page implementation
-- Initial data model design
-
-### Sprint 7: Navigation & Theme
-- Sidebar navigation
-- Dark/light theme toggle
-- dash-mantine-components integration
-
-### Sprint 8: Portfolio Website
-- About, Contact, Projects, Resume pages
-- Blog system with Markdown/frontmatter
-- Health endpoint
-
-### Sprint 9: Neighbourhood Dashboard Transition
-- Phase 1: Deleted legacy TRREB code
-- Phase 2: Documentation cleanup
-- Phase 3: New neighbourhood-centric data model
-- Phase 4: dbt model restructuring
-- Phase 5: 5-tab dashboard implementation
-- Phase 6: 15 documentation notebooks
-- Phase 7: Final documentation review
+| Sprint | Phase | Completed | Deliverables |
+|--------|-------|-----------|--------------|
+| Sprint 1–6 | Foundation | Jan 2026 | Repo setup, Docker, PostgreSQL + PostGIS, initial data model |
+| Sprint 7–9 | Dashboard (legacy) | Jan 2026 | Combined repo era — frontend + data co-located |
+| Sprint 10 | Dataflow Separation | Feb 2026 | Removed ~7,000 lines of frontend code; data-only pipeline established; renamed `portfolio_app` → `dataflow` |
+| Sprint 12 | Toronto Phase 1: Raw Layer | Feb 11, 2026 | `fact_census_extended`, 22 profile categories, label fixes, constraint fixes |
+| Sprint 13 | Toronto Phase 2: dbt Layer | Feb 18, 2026 | `int_neighbourhood__foundation`, `stg_toronto__census_extended`, denominator bug fix |
+| Sprint 14 | Toronto Phase 3: Mart Layer | Feb 23, 2026 | 3 new marts, 2 expanded marts, 50+ new columns; football pipeline integrated |
 
 ---
 
-## Application Architecture
+## Active Domains
 
-### URL Routes
+### Toronto Neighbourhood Analysis
+**Status**: Production — primary domain
 
-| URL | Page | File |
-|-----|------|------|
-| `/` | Home | `pages/home.py` |
-| `/about` | About | `pages/about.py` |
-| `/contact` | Contact | `pages/contact.py` |
-| `/projects` | Projects | `pages/projects.py` |
-| `/resume` | Resume | `pages/resume.py` |
-| `/blog` | Blog listing | `pages/blog/index.py` |
-| `/blog/{slug}` | Article | `pages/blog/article.py` |
-| `/toronto` | Dashboard | `pages/toronto/dashboard.py` |
-| `/toronto/methodology` | Methodology | `pages/toronto/methodology.py` |
-| `/health` | Health check | `pages/health.py` |
+| Layer | Tables | Description |
+|-------|--------|-------------|
+| `raw_toronto` | 11 tables | Dimensions, facts, bridge table |
+| `stg_toronto` | 8 models | 1:1 source cleaning |
+| `int_toronto` | 11 models | Business logic, profile pivots, extended census joins |
+| `mart_toronto` | 8 tables | Analytics-ready output |
+
+**Data sources**: City of Toronto Open Data, Toronto Police API, CMHC Rental Survey, Statistics Canada XLSX
+**Coverage**: 158 neighbourhoods, 2016 + 2021 census years
+
+### Football Analytics
+**Status**: Production — secondary domain (integrated Sprint 14)
+
+| Layer | Tables | Description |
+|-------|--------|-------------|
+| `raw_football` | 8 tables | Dimensions, facts, bridge table |
+| `stg_football` | 8 models | 1:1 source cleaning |
+| `int_football` | 4 models | Business logic, club-league bridge, financials |
+| `mart_football` | 3 tables | Analytics-ready output |
+
+**Data sources**: Transfermarkt (Salimt API), MLSPA, Deloitte Money League
+**Scope**: 7 leagues — Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, MLS
+
+---
+
+## Architecture
 
 ### Directory Structure
 
 ```
-portfolio_app/
-├── app.py                    # Dash app factory
-├── config.py                 # Pydantic BaseSettings
-├── assets/                   # CSS, images
-├── callbacks/                # Global callbacks (sidebar, theme)
-├── components/               # Shared UI components
-├── content/blog/             # Markdown blog articles
-├── errors/                   # Exception handling
-├── figures/
-│   └── toronto/              # Toronto figure factories
-├── pages/
-│   ├── home.py
-│   ├── about.py
-│   ├── contact.py
-│   ├── projects.py
-│   ├── resume.py
-│   ├── health.py
-│   ├── blog/
-│   │   ├── index.py
-│   │   └── article.py
-│   └── toronto/
-│       ├── dashboard.py
-│       ├── methodology.py
-│       ├── tabs/             # 5 tab layouts
-│       └── callbacks/        # Dashboard interactions (map_callbacks, chart_callbacks, selection_callbacks)
-├── toronto/                  # Data logic
-│   ├── parsers/              # API extraction (geo, toronto_open_data, toronto_police, cmhc)
-│   ├── loaders/              # Database operations (base, cmhc, cmhc_crosswalk)
-│   ├── schemas/              # Pydantic models
-│   ├── models/               # SQLAlchemy ORM (raw_toronto schema)
-│   ├── services/             # Query functions (neighbourhood_service, geometry_service)
-│   └── demo_data.py          # Sample data
-└── utils/
-    └── markdown_loader.py    # Blog article loading
+dataflow/                       # Core ETL package
+├── config.py                   # Database connection (PostgreSQL URL)
+├── errors/exceptions.py        # Custom exception classes
+├── toronto/                    # Toronto domain
+│   ├── parsers/                # API + XLSX data extraction
+│   ├── loaders/                # PostgreSQL persistence
+│   ├── schemas/                # Pydantic validation models
+│   └── models/                 # SQLAlchemy ORM (raw_toronto schema)
+└── football/                   # Football domain
+    ├── parsers/                # Transfermarkt, MLSPA, Deloitte parsers
+    ├── loaders/                # Football data loaders
+    ├── schemas/                # Pydantic validation models
+    └── models/                 # SQLAlchemy ORM (raw_football schema)
 
-dbt/                          # dbt project: portfolio
-├── models/
-│   ├── shared/               # Cross-domain dimensions
-│   ├── staging/toronto/      # Toronto staging models
-│   ├── intermediate/toronto/ # Toronto intermediate models
-│   └── marts/toronto/        # Toronto mart tables
+dbt/                            # dbt project: portfolio
+└── models/
+    ├── shared/                 # stg_dimensions__time (cross-domain)
+    ├── staging/toronto/        # 8 staging models
+    ├── staging/football/       # 8 staging models
+    ├── intermediate/toronto/   # 11 intermediate models
+    ├── intermediate/football/  # 4 intermediate models
+    ├── marts/toronto/          # 8 mart tables
+    └── marts/football/         # 3 mart tables
 
-notebooks/
-└── toronto/                  # Toronto documentation notebooks
+scripts/
+├── db/init_schema.py           # Schema + extension initialization
+└── data/
+    ├── load_toronto_data.py    # Toronto ETL (DataPipeline class)
+    ├── load_football_data.py   # Football ETL
+    └── xlsx_diagnostic.py      # XLSX label validation utility
 ```
+
+### Module Responsibilities
+
+| Module | Responsibility |
+|--------|---------------|
+| `parsers/` | Extract raw data from APIs and files. Returns validated Pydantic objects. |
+| `schemas/` | Pydantic models for input validation. Defines the shape of inbound data. |
+| `models/` | SQLAlchemy 2.0 ORM models. Defines raw table schemas in PostgreSQL. |
+| `loaders/` | Persist validated data to PostgreSQL. Uses upsert or delete-then-insert patterns. |
+| `dbt/staging/` | 1:1 source cleaning, type casting, column renaming. No business logic. |
+| `dbt/intermediate/` | Business logic: joins, aggregations, pivots, CPI adjustments, composite scores. |
+| `dbt/marts/` | Final analytical tables. Denormalized, documented, read-only contract with webapp. |
+
+### Loading Patterns
+
+| Pattern | Used For | Rationale |
+|---------|----------|-----------|
+| DELETE-then-INSERT | `fact_neighbourhood_profile` | Profile data is replaced wholesale per census year |
+| UPSERT-by-key | `fact_census`, `fact_census_extended`, `fact_rentals` | Idempotent re-runs without duplicates |
+| Bulk INSERT (no conflict) | Initial dimension loads | Fast first-time population |
 
 ---
 
-## Toronto Dashboard
+## Key Architectural Decisions
 
-### Data Sources
+### `int_neighbourhood__foundation` — Central Hub
+The `int_neighbourhood__foundation` intermediate model is the canonical source for downstream Toronto marts. It joins `fact_census`, `fact_census_extended`, and CPI imputation in one place. All marts that need neighbourhood-level scalar indicators should reference foundation, not individual staging models.
 
-| Source | Data | Format |
-|--------|------|--------|
-| City of Toronto Open Data | Neighbourhoods (158), Census profiles, Parks, Schools, Childcare, TTC | GeoJSON, CSV, API |
-| Toronto Police Service | Crime rates, MCI, Shootings | CSV, API |
-| CMHC | Rental Market Survey | CSV |
+`int_neighbourhood__demographics` is soft-deprecated; it reads from foundation and is kept only for backward compatibility until the webapp fully migrates.
 
-### Geographic Model
+### CPI Income Imputation
+2016 census from Toronto Open Data does not include neighbourhood-level income. dbt imputes 2016 income by backward-adjusting 2021 census values using Statistics Canada CPI ratios:
+- `income_2016 = income_2021 × (128.4 / 141.6)`
+- All imputed values are flagged `is_imputed = TRUE`
 
-```
-City of Toronto Neighbourhoods (158) ← Primary analysis unit
-CMHC Zones (~20) ← Rental data (Census Tract aligned)
-```
+### Profile Denominator Fix (Sprint 13)
+`int_toronto__neighbourhood_profile` previously calculated percentages using `SUM(count)` as the denominator, which included subtotals and caused 1.5–2× inflation. Fixed by using `MAX(category_total)` from the XLSX section header rows. `indent_level` distinguishes subcategory hierarchy.
 
-### Dashboard Tabs
+### CMHC Rental Disaggregation
+CMHC publishes rental data at the zone grain (~36 zones). `int_rentals__neighbourhood_allocated` uses the `bridge_cmhc_neighbourhood` area-weighted crosswalk to disaggregate zone values to 158 neighbourhoods. `mart_neighbourhood_housing_rentals` is the output.
 
-| Tab | Choropleth Metric | Supporting Charts |
-|-----|-------------------|-------------------|
-| Overview | Livability score | Top/Bottom 10 bar, Income vs Safety scatter |
-| Housing | Affordability index | Rent trend line, Tenure breakdown bar |
-| Safety | Crime rate per 100K | Crime breakdown bar, Crime trend line |
-| Demographics | Median income | Age distribution, Population density bar |
-| Amenities | Amenity index | Amenity radar, Transit accessibility bar |
+### Football Club-League Bridge
+Transfermarkt club season data often has NULL `league_id`. `int_football__club_league_bridge` resolves these gaps by inferring league associations from transfer and market value data.
 
-### Star Schema
+---
 
-| Table | Type | Description |
-|-------|------|-------------|
-| `dim_neighbourhood` | Dimension | 158 neighbourhoods with geometry |
-| `dim_time` | Dimension | Date dimension |
-| `dim_cmhc_zone` | Dimension | ~20 CMHC zones with geometry |
-| `fact_census` | Fact | Census indicators by neighbourhood |
-| `fact_crime` | Fact | Crime stats by neighbourhood |
-| `fact_rentals` | Fact | Rental data by CMHC zone |
-| `fact_amenities` | Fact | Amenity counts by neighbourhood |
+## Data Quality Notes
 
-### dbt Project: `portfolio`
+### Known Issues
 
-**Model Structure:**
-```
-dbt/models/
-├── shared/                 # Cross-domain dimensions (stg_dimensions__time)
-├── staging/toronto/        # Toronto staging models
-├── intermediate/toronto/   # Toronto intermediate models
-└── marts/toronto/          # Toronto mart tables
-```
+| Issue | Status | Location |
+|-------|--------|----------|
+| 2016 income NULL at neighbourhood level | Mitigated via CPI imputation | `int_neighbourhood__foundation` |
+| StatCan cell suppression (NULL counts) | Expected behavior — flag in analytics | `fact_neighbourhood_profile` |
+| 6 deferred profile categories (occupation, industry, income bracket, income source, household type, family type) | Wrong XLSX anchors — future sprint | `fact_neighbourhood_profile` |
+| Historical boundary reconciliation (140→158 neighbourhoods) | Deferred — 2021+ data only | All toronto models |
+| Gitea `create_issue_dependency` API returns 404 | Dependencies documented in issue bodies instead | CI/tooling |
 
-| Layer | Naming | Example |
-|-------|--------|---------|
-| Shared | `stg_dimensions__*` | `stg_dimensions__time` |
-| Staging | `stg_{source}__{entity}` | `stg_toronto__neighbourhoods` |
-| Intermediate | `int_{domain}__{transform}` | `int_neighbourhood__demographics` |
-| Marts | `mart_{domain}` | `mart_neighbourhood_overview` |
+### XLSX Label Matching
+Statistics Canada XLSX files use Unicode smart quotes (U+2019 `'` → ASCII `'`). The `_normalize_key()` helper in parsers handles normalization before label comparison. Always run `scripts/data/xlsx_diagnostic.py` before writing a new XLSX field mapping.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| Database | PostgreSQL + PostGIS | 16.x |
-| Validation | Pydantic | 2.x |
-| ORM | SQLAlchemy | 2.x |
-| Transformation | dbt-postgres | 1.7+ |
-| Data Processing | Pandas, GeoPandas | Latest |
-| Visualization | Dash + Plotly | 2.14+ |
-| UI Components | dash-mantine-components | Latest |
-| Testing | pytest | 7.0+ |
-| Python | 3.11+ | Via pyenv |
+| Layer | Technology | Version | Constraint |
+|-------|------------|---------|------------|
+| Database | PostgreSQL | 16.x | — |
+| Geospatial | PostGIS | 3.4 | `imresamu/postgis:16-3.4` for ARM64 |
+| Validation | Pydantic | 2.x | 2.0 API only — no 1.x patterns |
+| ORM | SQLAlchemy | 2.x | 2.0-style API only — no legacy `Session.query()` |
+| Transformation | dbt-postgres | 1.9+ | Project: `portfolio` |
+| Data Processing | Pandas, GeoPandas, Shapely | Latest | Required for spatial join in crosswalk builder |
+| Testing | pytest | Latest | `tests/` directory |
+| Linting | ruff | 0.8+ | Replaces flake8 + black + isort |
+| Type Checking | mypy | 1.14+ | Strict mode |
+| Python | 3.11+ | Via pyenv | `.python-version = 3.11` |
 
 ---
 
@@ -197,48 +183,14 @@ dbt/models/
 |--------|---------|------------|
 | `main` | Production releases | VPS (production) |
 | `staging` | Pre-production testing | VPS (staging) |
-| `development` | Active development | Local only |
+| `development` | Active development integration | Local |
 
 **Rules:**
 - Feature branches from `development`: `feature/{sprint}-{description}`
 - Merge into `development` when complete
 - `development` → `staging` → `main` for releases
 - Never delete `development`
-
----
-
-## Code Standards
-
-### Type Hints (Python 3.10+)
-
-```python
-def process(items: list[str], config: dict[str, int] | None = None) -> bool:
-    ...
-```
-
-### Imports
-
-| Context | Style |
-|---------|-------|
-| Same directory | `from .module import X` |
-| Sibling directory | `from ..schemas.model import Y` |
-| External | `import pandas as pd` |
-
-### Error Handling
-
-```python
-class PortfolioError(Exception):
-    """Base exception."""
-
-class ParseError(PortfolioError):
-    """Data parsing failed."""
-
-class ValidationError(PortfolioError):
-    """Validation failed."""
-
-class LoadError(PortfolioError):
-    """Database load failed."""
-```
+- Use `/gitflow branch-start` and `/gitflow commit` for standardized workflow
 
 ---
 
@@ -251,55 +203,22 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/portfolio
 POSTGRES_USER=portfolio
 POSTGRES_PASSWORD=<secure>
 POSTGRES_DB=portfolio
-DASH_DEBUG=true
-SECRET_KEY=<random>
 LOG_LEVEL=INFO
 ```
 
 ---
 
-## Makefile Targets
+## Deferred Features
 
-| Target | Purpose |
-|--------|---------|
-| `setup` | Install deps, create .env, init pre-commit |
-| `docker-up` | Start PostgreSQL + PostGIS (auto-detects x86/ARM) |
-| `docker-down` | Stop containers |
-| `docker-logs` | View container logs |
-| `db-init` | Initialize database schema |
-| `db-reset` | Drop and recreate database (DESTRUCTIVE) |
-| `load-data` | Load Toronto data from APIs, seed dev data |
-| `load-toronto-only` | Load Toronto data without dbt or seeding |
-| `seed-data` | Seed sample development data |
-| `run` | Start Dash dev server |
-| `test` | Run pytest |
-| `test-cov` | Run pytest with coverage |
-| `lint` | Run ruff linter |
-| `format` | Run ruff formatter |
-| `typecheck` | Run mypy type checker |
-| `ci` | Run all checks (lint, typecheck, test) |
-| `dbt-run` | Run dbt models |
-| `dbt-test` | Run dbt tests |
-| `dbt-docs` | Generate and serve dbt documentation |
-| `clean` | Remove build artifacts and caches |
+Stop and flag if a task requires these:
 
----
-
-## Next Steps
-
-### Deployment (Sprint 10+)
-- [ ] Production Docker configuration
-- [ ] CI/CD pipeline
-- [ ] HTTPS/SSL setup
-- [ ] Domain configuration
-
-### Data Enhancement
-- [ ] Connect to live APIs (currently using demo data)
-- [ ] Data refresh automation
-- [ ] Historical data loading
-
-### Future Projects
-- Energy Pricing Analysis dashboard (planned)
+| Feature | Reason |
+|---------|--------|
+| Historical boundary reconciliation (140→158 neighbourhoods) | 2021+ data only for V1 |
+| 6 deferred profile categories (occupation, industry, income, household, family) | Wrong XLSX anchors — needs investigation |
+| ML prediction models | Future phase |
+| Policy event annotation (`dim_policy_event`) | Table exists; requires manual data curation |
+| dbt source freshness checks | Awaits `updated_at` timestamp migration on raw tables |
 
 ---
 
@@ -307,12 +226,15 @@ LOG_LEVEL=INFO
 
 | Document | Purpose |
 |----------|---------|
-| `README.md` | Quick start guide |
-| `CLAUDE.md` | AI assistant context |
-| `docs/CONTRIBUTING.md` | Developer guide |
-| `notebooks/README.md` | Notebook documentation |
+| `README.md` | Quick start and overview |
+| `CLAUDE.md` | AI assistant context and mandatory behavior rules |
+| `docs/DATABASE_SCHEMA.md` | Full schema reference |
+| `docs/CONTRIBUTING.md` | Contributor guide |
+| `docs/deployment/vps-deployment.md` | Production deployment runbook |
+| `docs/deployment/shared-postgres.md` | Multi-database PostgreSQL setup |
+| `docs/project-lessons-learned/INDEX.md` | Sprint lessons learned |
 
 ---
 
-*Reference Version: 3.0*
-*Updated: January 2026*
+*Reference Version: 4.0*
+*Updated: February 2026 — Sprint 14 complete*
