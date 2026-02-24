@@ -1203,7 +1203,7 @@ class TorontoOpenDataParser:
                 return _get_value(spec, col)
             elif isinstance(spec, list):
                 # Sum of multiple rows
-                total = 0
+                total = 0.0
                 found_any = False
                 for label in spec:
                     val = _get_value(label, col)
