@@ -99,7 +99,7 @@ models:
         description: "Amenity component score (0-100)"
 
   - name: mart_neighbourhood_housing
-    description: "Housing and affordability metrics by neighbourhood"
+    description: "Housing and affordability metrics by neighbourhood. Expanded with dwelling type, bedroom, construction period profile pivots and composite affordability scores."
     meta:
       dashboard_tab: Housing
     columns:
@@ -116,12 +116,112 @@ models:
           - not_null
       - name: geometry
         description: "PostGIS geometry for mapping"
+      - name: year
+        description: "Rental year"
+      - name: census_year
+        description: "Census year matched to this rental year (most recent ≤ year)"
+      - name: pct_owner_occupied
+        description: "Percentage owner-occupied dwellings"
+      - name: pct_renter_occupied
+        description: "Percentage renter-occupied dwellings"
+      - name: average_dwelling_value
+        description: "Average dwelling value"
+      - name: median_household_income
+        description: "Median household income (CPI-imputed for pre-2021)"
+      - name: income_quintile
+        description: "Income quintile (1=lowest, 5=highest)"
+      - name: avg_shelter_cost_owner
+        description: "Average monthly shelter cost for owners"
+      - name: avg_shelter_cost_renter
+        description: "Average monthly shelter cost for renters"
+      - name: pct_shelter_cost_30pct
+        description: "Percentage of households spending 30%+ of income on shelter"
+      - name: pct_suitable_housing
+        description: "Percentage of households in suitable housing"
+      - name: total_private_dwellings
+        description: "Total private dwellings"
+      - name: occupied_private_dwellings
+        description: "Occupied private dwellings"
+      - name: avg_household_size
+        description: "Average household size"
+      - name: pct_dwellings_in_need_of_repair
+        description: "Percentage of dwellings in need of major repair"
+      - name: pct_unaffordable_housing
+        description: "Percentage in unaffordable housing"
+      - name: pct_overcrowded_housing
+        description: "Percentage in overcrowded housing"
+      - name: avg_rent_bachelor
+        description: "Average rent for bachelor units (CMHC)"
+      - name: avg_rent_1bed
+        description: "Average rent for 1-bedroom units (CMHC)"
+      - name: avg_rent_2bed
+        description: "Average rent for 2-bedroom units (CMHC)"
+      - name: avg_rent_3bed
+        description: "Average rent for 3-bedroom units (CMHC)"
+      - name: vacancy_rate
+        description: "CMHC vacancy rate"
+      - name: total_rental_units
+        description: "Total CMHC rental units in neighbourhood"
       - name: rent_to_income_pct
         description: "Rent as percentage of median income"
+      - name: is_affordable
+        description: "True when 2-bed rent is ≤ 30% of median income"
       - name: affordability_index
-        description: "100 = city average affordability"
+        description: "100 = city average affordability for the year"
       - name: rent_yoy_change_pct
-        description: "Year-over-year rent change"
+        description: "Year-over-year 2-bedroom rent change percentage"
+      - name: dwelling_single_detached
+        description: "Count of single-detached houses"
+      - name: dwelling_semi_detached
+        description: "Count of semi-detached houses"
+      - name: dwelling_row_house
+        description: "Count of row houses"
+      - name: dwelling_duplex
+        description: "Count of apartments/flats in a duplex"
+      - name: dwelling_apt_low_rise
+        description: "Count of apartments in buildings with fewer than 5 storeys"
+      - name: dwelling_apt_high_rise
+        description: "Count of apartments in buildings with 5+ storeys"
+      - name: dwelling_other_single_attached
+        description: "Count of other single-attached houses"
+      - name: dwelling_movable
+        description: "Count of movable dwellings"
+      - name: dwelling_apartment_pct
+        description: "Percentage of dwellings that are apartment-form (duplex + low-rise + high-rise)"
+      - name: dwelling_ground_oriented_pct
+        description: "Percentage of dwellings that are ground-oriented (single + semi + row)"
+      - name: bedrooms_none
+        description: "Count of dwellings with no bedrooms"
+      - name: bedrooms_1
+        description: "Count of dwellings with 1 bedroom"
+      - name: bedrooms_2
+        description: "Count of dwellings with 2 bedrooms"
+      - name: bedrooms_3
+        description: "Count of dwellings with 3 bedrooms"
+      - name: bedrooms_4_plus
+        description: "Count of dwellings with 4+ bedrooms"
+      - name: construction_pre_1960
+        description: "Count of dwellings built 1960 or before"
+      - name: construction_1961_1980
+        description: "Count of dwellings built 1961–1980"
+      - name: construction_1981_1990
+        description: "Count of dwellings built 1981–1990"
+      - name: construction_1991_2000
+        description: "Count of dwellings built 1991–2000"
+      - name: construction_2001_2005
+        description: "Count of dwellings built 2001–2005"
+      - name: construction_2006_2010
+        description: "Count of dwellings built 2006–2010"
+      - name: construction_2011_2015
+        description: "Count of dwellings built 2011–2015"
+      - name: construction_2016_2021
+        description: "Count of dwellings built 2016–2021"
+      - name: construction_post_2000_pct
+        description: "Percentage of dwellings built after 2000"
+      - name: avg_shelter_cost
+        description: "Weighted average shelter cost across owners and renters"
+      - name: affordability_pressure_score
+        description: "Composite pressure score (0-100): shelter cost burden + renter share + low vacancy"
 
   - name: mart_neighbourhood_safety
     description: "Crime rates and safety metrics by neighbourhood"

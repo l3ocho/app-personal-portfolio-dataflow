@@ -64,8 +64,10 @@ housing as (
         n.geometry,
 
         r.year,
+        f.census_year,
 
         -- Foundation metrics (CPI-imputed for 2016-2020, actual for 2021)
+        f.income_quintile,
         f.pct_owner_occupied,
         f.pct_renter_occupied,
         f.average_dwelling_value,
