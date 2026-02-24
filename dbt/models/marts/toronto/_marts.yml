@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: mart_neighbourhood_housing_rentals
-    description: "CMHC rental data disaggregated to neighbourhood grain via area-weighted crosswalk. One row per neighbourhood per bedroom_type per year. Complements mart_toronto_rentals (zone grain) without replacing it."
+    description: "CMHC rental data disaggregated to neighbourhood grain via area-weighted crosswalk. One row per neighbourhood per bedroom_type per year."
     meta:
       dashboard_tab: Housing
     columns:
@@ -42,27 +42,6 @@ models:
         description: "Year-over-year rent change from CMHC source data (area-weighted)"
       - name: rent_yoy_change_pct
         description: "Year-over-year rent change percentage computed from allocated neighbourhood rents"
-
-  - name: mart_toronto_rentals
-    description: "Final mart for Toronto rental market analysis by zone and time"
-    columns:
-      - name: rental_id
-        description: "Unique rental record identifier"
-        data_tests:
-          - unique
-          - not_null
-      - name: date_key
-        description: "Foreign key to time dimension"
-        data_tests:
-          - relationships:
-              to: ref('stg_dimensions__time')
-              field: date_key
-      - name: zone_key
-        description: "Foreign key to CMHC zone dimension"
-        data_tests:
-          - relationships:
-              to: ref('stg_dimensions__cmhc_zones')
-              field: zone_key
 
   - name: mart_neighbourhood_foundation
     description: "Direct surface of int_neighbourhood__foundation. Full scalar column set: demographic, socioeconomic, and census extended indicators. One row per neighbourhood per census year."

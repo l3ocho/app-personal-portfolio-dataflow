@@ -4,9 +4,6 @@
 --
 -- Disaggregates CMHC zone-level rental data to individual neighbourhoods
 -- using area-weighted crosswalk (stg_cmhc__zone_crosswalk).
---
--- The existing mart_toronto_rentals remains intact at zone grain.
--- This mart provides neighbourhood-level rental metrics with bedroom_type breakdown.
 
 with crosswalk as (
     select * from {{ ref('stg_cmhc__zone_crosswalk') }}
