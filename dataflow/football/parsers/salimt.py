@@ -500,20 +500,31 @@ class SalimtParser:
 
         records = []
 
+        def _int_or_none(val) -> int | None:
+            """Convert pandas NaN/None to None, otherwise int."""
+            if val is None:
+                return None
+            try:
+                if pd.isna(val):
+                    return None
+            except (TypeError, ValueError):
+                pass
+            return int(val)
+
         for _, row in df.iterrows():
             try:
                 record = ClubSeasonRecord(
                     club_id=str(row.get("club_id", "")),
                     league_id=str(row.get("competition_id", "")),
                     season=parse_season(row.get("season_season")),
-                    position=row.get("season_rank"),
-                    matches_played=row.get("season_total_matches"),
-                    wins=row.get("season_wins"),
-                    draws=row.get("season_draws"),
-                    losses=row.get("season_losses"),
-                    goals_for=row.get("season_goals_for"),
-                    goals_against=row.get("season_goals_against"),
-                    points=row.get("season_points"),
+                    position=_int_or_none(row.get("season_rank")),
+                    matches_played=_int_or_none(row.get("season_total_matches")),
+                    wins=_int_or_none(row.get("season_wins")),
+                    draws=_int_or_none(row.get("season_draws")),
+                    losses=_int_or_none(row.get("season_losses")),
+                    goals_for=_int_or_none(row.get("season_goals_for")),
+                    goals_against=_int_or_none(row.get("season_goals_against")),
+                    points=_int_or_none(row.get("season_points")),
                 )
                 records.append(record)
             except Exception as e:
