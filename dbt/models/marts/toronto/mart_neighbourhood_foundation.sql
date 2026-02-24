@@ -17,8 +17,6 @@ final as (
     select
         -- Identifiers
         neighbourhood_id,
-        neighbourhood_name,
-        geometry,
         land_area_sqkm,
         census_year,
 

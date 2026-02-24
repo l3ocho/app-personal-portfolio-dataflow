@@ -297,7 +297,7 @@ Football league dimension. Grain: one row per league (static).
 | `country` | VARCHAR(50) | NOT NULL | Country |
 | `season_start_year` | INTEGER | NOT NULL | Current season start year |
 
-**In-scope leagues (7):** Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, MLS
+**In-scope leagues (7):** Premier League (GB1), La Liga (ES1), Bundesliga (L1), Serie A (IT1), Ligue 1 (FR1), Brasileirao (BRA1), MLS (MLS1)
 
 #### `dim_club`
 Football club dimension. Grain: one row per club (static).
@@ -455,13 +455,29 @@ Mart tables are the **read-only contract** between this pipeline and the webapp.
 
 ### Toronto Marts (`mart_toronto`)
 
+#### `mart_neighbourhood_geometry`
+Canonical neighbourhood boundaries for map rendering.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `neighbourhood_id` | INTEGER | PK, NOT NULL, UNIQUE | Neighbourhood identifier |
+| `neighbourhood_name` | TEXT | NOT NULL | Official neighbourhood name |
+| `geometry` | GEOMETRY(MULTIPOLYGON, 4326) | NOT NULL | PostGIS neighbourhood boundary |
+
+**Grain:** 158 rows (one per neighbourhood)
+**FK target for:** All analytical Toronto marts via `neighbourhood_id`
+
 #### `mart_neighbourhood_overview`
-Grain: neighbourhood. Composite livability score and top-level summary metrics.
+Grain: neighbourhood × year. Composite livability score and top-level summary metrics.
+
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 #### `mart_neighbourhood_foundation`
 Grain: neighbourhood × census year. The canonical cross-domain base mart.
 
 Includes 65+ columns across: population, age structure, household metrics, after-tax income, employment, education, housing costs and tenure, diversity/immigration, language, commuting, and housing quality indicators. Sources from `int_neighbourhood__foundation`.
+
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 **Expected rows:** ~316 (158 neighbourhoods × 2 census years)
 
@@ -469,6 +485,8 @@ Includes 65+ columns across: population, age structure, household metrics, after
 Grain: neighbourhood × census year. Comprehensive housing analysis (75+ columns).
 
 Includes: dwelling type pivots (7 types), bedroom count pivots (5 sizes), construction period pivots (8 buckets), shelter cost scalars, affordability rates, composite fit scores (`family_housing_fit`, `couple_housing_fit`, `singles_housing_fit`).
+
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 **Expected rows:** ~316
 
@@ -479,15 +497,14 @@ Replaces the deprecated `mart_toronto_rentals` (zone grain).
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `neighbourhood_id` | INTEGER | FK → dim_neighbourhood |
-| `neighbourhood_name` | VARCHAR | Denormalized |
+| `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
 | `bedroom_type` | VARCHAR | bachelor / 1-bed / 2-bed / 3+bed / total |
 | `year` | INTEGER | Survey year |
 | `avg_rent` | NUMERIC | Area-weighted average rent |
 | `vacancy_rate` | NUMERIC | Area-weighted vacancy rate |
 | `universe` | INTEGER | Estimated unit count |
-| `cmhc_zone_codes` | TEXT | Contributing CMHC zones |
-| `geometry` | GEOMETRY | PostGIS neighbourhood boundary |
+
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 **Expected rows:** ~4,424
 
@@ -496,10 +513,8 @@ Grain: neighbourhood × census year. Income, age, population, diversity indices,
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `neighbourhood_id` | INTEGER | PK |
-| `neighbourhood_name` | VARCHAR | |
-| `geometry` | GEOMETRY(MULTIPOLYGON, 4326) | |
-| `year` | INTEGER | PK |
+| `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
+| `year` | INTEGER | Census year |
 | `population` | INTEGER | |
 | `land_area_sqkm` | NUMERIC | |
 | `population_density` | NUMERIC | |
@@ -521,25 +536,30 @@ Grain: neighbourhood × census year. Income, age, population, diversity indices,
 | `pct_neither_official_lang` | NUMERIC(5,2) | Neither English nor French % |
 | `diversity_index` | NUMERIC(6,4) | Shannon entropy on visible minority composition |
 
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
+
 **Expected rows:** ~316
 
 #### `mart_neighbourhood_safety`
 Grain: neighbourhood × year. Crime rate calculations by type.
 
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
+
 **Expected rows:** varies by available crime years
 
 #### `mart_neighbourhood_amenities`
-Grain: neighbourhood. Amenity accessibility scores, commute mode/duration/destination pivots, car dependency index (35+ columns).
+Grain: neighbourhood × year. Amenity accessibility scores, commute mode/duration/destination pivots, car dependency index (35+ columns).
 
 Commute pivots sourced from `fact_neighbourhood_profile` profile categories: commute_mode (6 modes), commute_duration (5 buckets), commute_destination (4 destinations). `car_dependency_index` is a composite score.
 
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
+
 #### `mart_neighbourhood_profile`
-Grain: neighbourhood × census year × category × subcategory. Full community profile breakdown with geometry for map-based analysis.
+Grain: neighbourhood × census year × category × subcategory. Full community profile breakdown.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `neighbourhood_id` | INTEGER | |
-| `neighbourhood_name` | VARCHAR | |
+| `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
 | `census_year` | INTEGER | |
 | `category` | VARCHAR | One of the 22 profile categories |
 | `subcategory` | VARCHAR | |
@@ -553,9 +573,10 @@ Grain: neighbourhood × census year × category × subcategory. Full community p
 | `category_total` | INTEGER | Section header total (denominator) |
 | `is_subtotal` | BOOLEAN | TRUE if indent_level > 0 |
 | `diversity_index` | NUMERIC(6,4) | Shannon entropy (visible_minority only) |
-| `geometry` | GEOMETRY(MULTIPOLYGON, 4326) | PostGIS neighbourhood boundary |
 
-**Expected rows:** ~32,706
+> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
+
+**Expected rows:** ~108,230
 
 ---
 

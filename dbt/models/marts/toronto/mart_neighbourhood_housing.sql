@@ -37,8 +37,6 @@ with_yoy as (
 final as (
     select
         neighbourhood_id,
-        neighbourhood_name,
-        geometry,
         year,
         census_year,
 

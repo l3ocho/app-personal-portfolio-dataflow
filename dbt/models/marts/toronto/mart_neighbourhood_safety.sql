@@ -21,8 +21,6 @@ city_avg as (
 final as (
     select
         c.neighbourhood_id,
-        c.neighbourhood_name,
-        c.geometry,
         c.population,
         c.year,
 
