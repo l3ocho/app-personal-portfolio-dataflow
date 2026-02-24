@@ -22,6 +22,55 @@ models:
               to: ref('stg_dimensions__cmhc_zones')
               field: zone_key
 
+  - name: mart_neighbourhood_foundation
+    description: "Direct surface of int_neighbourhood__foundation. Full scalar column set: demographic, socioeconomic, and census extended indicators. One row per neighbourhood per census year."
+    meta:
+      dashboard_tab: Foundation
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: census_year
+        description: "Census year (2016 or 2021)"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: land_area_sqkm
+        description: "Land area in square kilometres"
+      - name: population
+        description: "Total population"
+      - name: population_density
+        description: "Population per square kilometre"
+      - name: median_household_income
+        description: "Median household income (2021 observed; 2016-2020 CPI-imputed)"
+      - name: average_household_income
+        description: "Average household income"
+      - name: income_quintile
+        description: "Income quintile (1=lowest, 5=highest)"
+      - name: is_imputed
+        description: "True when income values are CPI-imputed (pre-2021 census years)"
+      - name: median_age
+        description: "Median age of population"
+      - name: unemployment_rate
+        description: "Unemployment rate"
+      - name: education_bachelors_pct
+        description: "Percentage with bachelor's degree or higher"
+      - name: average_dwelling_value
+        description: "Average dwelling value"
+      - name: pct_owner_occupied
+        description: "Percentage owner-occupied dwellings"
+      - name: pct_renter_occupied
+        description: "Percentage renter-occupied dwellings"
+
   - name: mart_neighbourhood_overview
     description: "Neighbourhood overview with composite livability score"
     meta:
