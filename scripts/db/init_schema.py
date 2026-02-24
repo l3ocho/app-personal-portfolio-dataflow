@@ -36,12 +36,18 @@ def main() -> int:
             result.fetchone()
         print("Database connection successful")
 
-        # Create domain-specific schemas
+        # Create all schemas upfront — raw schemas for SQLAlchemy tables,
+        # dbt schemas as empty shells so grants don't fail before dbt runs
+        all_schemas = [
+            "shared",
+            RAW_TORONTO_SCHEMA, "stg_toronto", "int_toronto", "mart_toronto",
+            RAW_FOOTBALL_SCHEMA, "stg_football", "int_football", "mart_football",
+        ]
         with engine.connect() as conn:
-            conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {RAW_TORONTO_SCHEMA}"))
-            conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {RAW_FOOTBALL_SCHEMA}"))
+            for schema in all_schemas:
+                conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
             conn.commit()
-        print(f"Created schemas: {RAW_TORONTO_SCHEMA}, {RAW_FOOTBALL_SCHEMA}")
+        print(f"Created schemas: {', '.join(all_schemas)}")
 
         # Create all Toronto tables
         create_toronto_tables()
