@@ -149,9 +149,18 @@ Branch naming, commit conventions, workflow steps, and release procedures are do
 
 ### Multi-Domain Architecture
 
-- **dataflow/**: Domain-namespaced (`dataflow/toronto/`, future: `dataflow/football/`)
-- **dbt models**: Domain subdirectories (`staging/toronto/`, `marts/toronto/`)
-- **Database schemas**: Domain-specific raw data (`raw_toronto`, future: `raw_football`)
+- **dataflow/**: Domain-namespaced (`dataflow/toronto/`, `dataflow/football/`)
+- **dbt models**: Domain subdirectories (`staging/toronto/`, `staging/football/`, etc.)
+- **Database schemas**: Domain-specific raw data (`raw_toronto`, `raw_football`)
+
+### Football Data Sources
+
+See `data/raw/football/SOURCES.md` for complete source documentation including URLs, setup instructions, and update frequency.
+
+**Summary:**
+- **Transfermarkt (salimt)** — git submodule at `data/raw/football/salimt/` → `git submodule update --init --recursive`
+- **MLSPA** — CSV files manually placed in `data/raw/football/mlspa/`
+- **Deloitte** — Wikipedia scrape (auto-fetched on first run, cached at `data/raw/football/deloitte/wikipedia_cache.html`); requires `lxml`
 
 ---
 
