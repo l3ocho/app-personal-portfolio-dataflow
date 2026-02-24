@@ -72,7 +72,12 @@ def main() -> int:
             print(f"{RAW_FOOTBALL_SCHEMA} schema tables: {', '.join(football_tables)}")
 
         # Grant portfolio_reader access to all schemas (pgweb read-only user)
-        reader_schemas = [RAW_TORONTO_SCHEMA, RAW_FOOTBALL_SCHEMA, "public", "mart_toronto", "mart_football"]
+        # Covers raw + dbt staging/intermediate/mart layers for all domains
+        reader_schemas = [
+            "public", "shared",
+            RAW_TORONTO_SCHEMA, "stg_toronto", "int_toronto", "mart_toronto",
+            RAW_FOOTBALL_SCHEMA, "stg_football", "int_football", "mart_football",
+        ]
         with engine.connect() as conn:
             for schema in reader_schemas:
                 conn.execute(text(f"GRANT USAGE ON SCHEMA {schema} TO portfolio_reader"))
