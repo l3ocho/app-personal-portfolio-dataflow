@@ -20,6 +20,7 @@ Exit codes:
 
 import argparse
 import logging
+import subprocess
 import sys
 from pathlib import Path
 
@@ -294,6 +295,72 @@ class FootballDataPipeline:
             logger.error(f"Error building player-competition bridge: {e}")
             raise
 
+    def run_dbt(self) -> bool:
+        """Run dbt for football domain models.
+
+        Returns:
+            True if successful, False otherwise.
+        """
+        logger.info("Running dbt transformations (football domain)...")
+
+        dbt_project_dir = PROJECT_ROOT / "dbt"
+        venv_dbt = PROJECT_ROOT / ".venv" / "bin" / "dbt"
+        dbt_cmd = str(venv_dbt) if venv_dbt.exists() else "dbt"
+
+        football_select = [
+            "path:models/staging/football",
+            "path:models/intermediate/football",
+            "path:models/marts/football",
+        ]
+
+        try:
+            logger.info("  Running dbt deps...")
+            result = subprocess.run(
+                [dbt_cmd, "deps", "--profiles-dir", str(dbt_project_dir)],
+                cwd=dbt_project_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                logger.error(f"dbt deps failed:\n{result.stdout}\n{result.stderr}")
+                return False
+
+            logger.info("  Running dbt run (football domain)...")
+            result = subprocess.run(
+                [dbt_cmd, "run", "--profiles-dir", str(dbt_project_dir),
+                 "--select", *football_select],
+                cwd=dbt_project_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                logger.error(f"dbt run failed:\n{result.stdout}\n{result.stderr}")
+                return False
+
+            logger.info("  dbt run completed successfully")
+
+            logger.info("  Running dbt test (football domain)...")
+            result = subprocess.run(
+                [dbt_cmd, "test", "--profiles-dir", str(dbt_project_dir),
+                 "--select", *football_select],
+                cwd=dbt_project_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                logger.warning(f"dbt test had failures:\n{result.stdout}\n{result.stderr}")
+            else:
+                logger.info("  dbt test completed successfully")
+
+            return True
+
+        except FileNotFoundError:
+            logger.error("dbt not found. Install with: pip install dbt-postgres")
+            return False
+        except Exception as e:
+            logger.error(f"dbt execution failed: {e}")
+            return False
+
     def _print_stats(self) -> None:
         """Print loading statistics."""
         logger.info("=" * 60)
@@ -307,12 +374,20 @@ class FootballDataPipeline:
 def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Load football data into database")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose logging"
+    )
+    parser.add_argument(
+        "--skip-dbt", action="store_true", help="Skip dbt run, only load raw data"
+    )
 
     args = parser.parse_args()
 
     pipeline = FootballDataPipeline(verbose=args.verbose)
     success = pipeline.run()
+
+    if success and not args.skip_dbt:
+        success = pipeline.run_dbt()
 
     return 0 if success else 1
 

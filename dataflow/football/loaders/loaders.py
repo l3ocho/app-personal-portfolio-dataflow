@@ -155,7 +155,7 @@ def load_player_market_values(
             )
             loaded = inserted + updated
             total += loaded
-            logger.info(f"Market values chunk {i//chunk_size + 1}: {loaded} records")
+            logger.info(f"Market values chunk {i // chunk_size + 1}: {loaded} records")
 
         return total
 

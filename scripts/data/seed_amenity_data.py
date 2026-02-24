@@ -123,7 +123,9 @@ def seed_median_age() -> int:
         for census_id in null_ids:
             age = random.randint(30, 50)
             conn.execute(
-                text("UPDATE raw_toronto.fact_census SET median_age = :age WHERE id = :id"),
+                text(
+                    "UPDATE raw_toronto.fact_census SET median_age = :age WHERE id = :id"
+                ),
                 {"age": age, "id": census_id},
             )
 
@@ -137,7 +139,9 @@ def seed_census_housing() -> int:
 
     with engine.begin() as conn:
         result = conn.execute(
-            text("SELECT id FROM raw_toronto.fact_census WHERE pct_owner_occupied IS NULL")
+            text(
+                "SELECT id FROM raw_toronto.fact_census WHERE pct_owner_occupied IS NULL"
+            )
         )
         null_ids = [row[0] for row in result]
 

@@ -48,7 +48,9 @@ class MLSPAParser:
         for csv_path in csv_files:
             records.extend(self._parse_csv(csv_path))
 
-        logger.info(f"Parsed {len(records)} MLS salary records from {len(csv_files)} files")
+        logger.info(
+            f"Parsed {len(records)} MLS salary records from {len(csv_files)} files"
+        )
         return records
 
     def _parse_csv(self, csv_path: Path) -> list[MLSPASalaryRecord]:
@@ -69,11 +71,15 @@ class MLSPAParser:
                         club_name=str(row.get("club_name", "")),
                         season=int(row.get("season", 2023)),
                         salary_usd=row.get("salary_usd"),
-                        guaranteed_compensation_usd=row.get("guaranteed_compensation_usd"),
+                        guaranteed_compensation_usd=row.get(
+                            "guaranteed_compensation_usd"
+                        ),
                     )
                     records.append(record)
                 except Exception as e:
-                    logger.warning(f"Could not parse MLS salary row from {csv_path.name}: {row.to_dict()}: {e}")
+                    logger.warning(
+                        f"Could not parse MLS salary row from {csv_path.name}: {row.to_dict()}: {e}"
+                    )
 
             logger.info(f"Parsed {len(records)} records from {csv_path.name}")
             return records

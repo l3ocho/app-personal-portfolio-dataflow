@@ -124,9 +124,13 @@ load-toronto-only: ## Load Toronto data without running dbt or seeding
 	@echo "$(GREEN)Loading Toronto data (skip dbt)...$(NC)"
 	$(PYTHON) scripts/data/load_toronto_data.py --skip-dbt
 
-load-football: ## Load football data from salimt and MLSPA sources
+load-football: ## Load football data from salimt and MLSPA sources (includes dbt)
 	@echo "$(GREEN)Loading football data...$(NC)"
 	$(PYTHON) scripts/data/load_football_data.py
+
+load-football-only: ## Load football data without running dbt
+	@echo "$(GREEN)Loading football data (skip dbt)...$(NC)"
+	$(PYTHON) scripts/data/load_football_data.py --skip-dbt
 
 # Aggregate data loading
 load-data: load-toronto load-football ## Load all project data (Toronto + Football)

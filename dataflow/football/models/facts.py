@@ -107,7 +107,9 @@ class FactMLSSalary(Base):
     club_name: Mapped[str] = mapped_column(String(100), nullable=False)
     season: Mapped[int] = mapped_column(Integer, nullable=False)
     salary_usd: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    guaranteed_compensation_usd: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    guaranteed_compensation_usd: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
 
 
 class FactClubFinance(Base):

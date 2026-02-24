@@ -3,6 +3,7 @@
 from .amenities import load_amenities, load_amenity_counts
 from .base import bulk_insert, get_session, upsert_by_key
 from .census import load_census_data
+from .census_extended_loader import load_census_extended_data
 from .cmhc import (
     ensure_toronto_cma_zone,
     load_cmhc_record,
@@ -24,7 +25,6 @@ from .dimensions import (
     load_policy_events,
     load_time_dimension,
 )
-from .census_extended_loader import load_census_extended_data
 from .profile_loader import load_profile_data
 
 __all__ = [

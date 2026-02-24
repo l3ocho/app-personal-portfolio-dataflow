@@ -54,6 +54,4 @@ class FactNeighbourhoodProfile(Base):
     count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     level: Mapped[str] = mapped_column(String(20), nullable=False, default="")
     category_total: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    indent_level: Mapped[int] = mapped_column(
-        SmallInteger, nullable=False, default=0
-    )
+    indent_level: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)

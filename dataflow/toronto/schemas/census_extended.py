@@ -21,15 +21,25 @@ class CensusExtendedRecord(BaseModel):
     """
 
     # Natural key
-    neighbourhood_id: int = Field(ge=1, le=200, description="Neighbourhood ID (AREA_ID)")
+    neighbourhood_id: int = Field(
+        ge=1, le=200, description="Neighbourhood ID (AREA_ID)"
+    )
     census_year: int = Field(ge=2016, le=2030, description="Census year")
 
     # Population
     population: int | None = Field(default=None, ge=0, description="Total population")
-    pop_0_to_14: int | None = Field(default=None, ge=0, description="Population aged 0-14")
-    pop_15_to_24: int | None = Field(default=None, ge=0, description="Population aged 15-24")
-    pop_25_to_64: int | None = Field(default=None, ge=0, description="Population aged 25-64")
-    pop_65_plus: int | None = Field(default=None, ge=0, description="Population aged 65+")
+    pop_0_to_14: int | None = Field(
+        default=None, ge=0, description="Population aged 0-14"
+    )
+    pop_15_to_24: int | None = Field(
+        default=None, ge=0, description="Population aged 15-24"
+    )
+    pop_25_to_64: int | None = Field(
+        default=None, ge=0, description="Population aged 25-64"
+    )
+    pop_65_plus: int | None = Field(
+        default=None, ge=0, description="Population aged 65+"
+    )
 
     # Households
     total_private_dwellings: int | None = Field(
@@ -53,7 +63,10 @@ class CensusExtendedRecord(BaseModel):
         default=None, ge=0, le=100, description="% renter-occupied dwellings"
     )
     pct_suitable_housing: float | None = Field(
-        default=None, ge=0, le=100, description="% in suitable housing (not overcrowded)"
+        default=None,
+        ge=0,
+        le=100,
+        description="% in suitable housing (not overcrowded)",
     )
     avg_shelter_cost_owner: float | None = Field(
         default=None, ge=0, description="Average monthly shelter cost for owners (CAD)"
@@ -62,13 +75,15 @@ class CensusExtendedRecord(BaseModel):
         default=None, ge=0, description="Average monthly shelter cost for renters (CAD)"
     )
     pct_shelter_cost_30pct: float | None = Field(
-        default=None, ge=0, le=100,
-        description="% spending 30%+ of income on shelter"
+        default=None, ge=0, le=100, description="% spending 30%+ of income on shelter"
     )
 
     # Education
     pct_no_certificate: float | None = Field(
-        default=None, ge=0, le=100, description="% with no certificate, diploma or degree"
+        default=None,
+        ge=0,
+        le=100,
+        description="% with no certificate, diploma or degree",
     )
     pct_high_school: float | None = Field(
         default=None, ge=0, le=100, description="% with high school diploma"
@@ -102,12 +117,13 @@ class CensusExtendedRecord(BaseModel):
         default=None, ge=0, description="Median employment income (CAD)"
     )
     lico_at_rate: float | None = Field(
-        default=None, ge=0, le=100,
-        description="% in low income (LICO after-tax)"
+        default=None, ge=0, le=100, description="% in low income (LICO after-tax)"
     )
     market_basket_measure_rate: float | None = Field(
-        default=None, ge=0, le=100,
-        description="% in low income (Market Basket Measure)"
+        default=None,
+        ge=0,
+        le=100,
+        description="% in low income (Market Basket Measure)",
     )
 
     # Diversity / immigration
@@ -115,7 +131,10 @@ class CensusExtendedRecord(BaseModel):
         default=None, ge=0, le=100, description="% immigrants"
     )
     pct_recent_immigrants: float | None = Field(
-        default=None, ge=0, le=100, description="% recent immigrants (arrived 2016-2021)"
+        default=None,
+        ge=0,
+        le=100,
+        description="% recent immigrants (arrived 2016-2021)",
     )
     pct_visible_minority: float | None = Field(
         default=None, ge=0, le=100, description="% visible minority"
@@ -132,7 +151,10 @@ class CensusExtendedRecord(BaseModel):
         default=None, ge=0, le=100, description="% with knowledge of French only"
     )
     pct_neither_official_lang: float | None = Field(
-        default=None, ge=0, le=100, description="% with no knowledge of official languages"
+        default=None,
+        ge=0,
+        le=100,
+        description="% with no knowledge of official languages",
     )
     pct_bilingual: float | None = Field(
         default=None, ge=0, le=100, description="% bilingual (English and French)"
@@ -140,7 +162,10 @@ class CensusExtendedRecord(BaseModel):
 
     # Mobility / migration
     pct_non_movers: float | None = Field(
-        default=None, ge=0, le=100, description="% non-movers (same address 5 years ago)"
+        default=None,
+        ge=0,
+        le=100,
+        description="% non-movers (same address 5 years ago)",
     )
     pct_movers_within_city: float | None = Field(
         default=None, ge=0, le=100, description="% internal migrants within city"
@@ -177,7 +202,10 @@ class CensusExtendedRecord(BaseModel):
         default=None, ge=0, le=100, description="% dwellings in need of major repairs"
     )
     pct_unaffordable_housing: float | None = Field(
-        default=None, ge=0, le=100, description="% in unaffordable housing (30%+ on shelter)"
+        default=None,
+        ge=0,
+        le=100,
+        description="% in unaffordable housing (30%+ on shelter)",
     )
     pct_overcrowded_housing: float | None = Field(
         default=None, ge=0, le=100, description="% in overcrowded housing"
@@ -186,13 +214,19 @@ class CensusExtendedRecord(BaseModel):
         default=None, ge=0, description="Median commute duration (minutes)"
     )
     pct_postsecondary: float | None = Field(
-        default=None, ge=0, le=100, description="% with postsecondary certificate or higher"
+        default=None,
+        ge=0,
+        le=100,
+        description="% with postsecondary certificate or higher",
     )
     pct_management_occupation: float | None = Field(
         default=None, ge=0, le=100, description="% in management occupations"
     )
     pct_business_finance_admin: float | None = Field(
-        default=None, ge=0, le=100, description="% in business/finance/admin occupations"
+        default=None,
+        ge=0,
+        le=100,
+        description="% in business/finance/admin occupations",
     )
     pct_service_sector: float | None = Field(
         default=None, ge=0, le=100, description="% in service sector occupations"

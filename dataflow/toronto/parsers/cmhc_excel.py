@@ -103,7 +103,9 @@ class CMHCExcelParser:
         for part in parts:
             if part.isdigit() and len(part) == 4:
                 return int(part)
-        raise ValueError(f"Could not extract year from filename: {self.excel_path.name}")
+        raise ValueError(
+            f"Could not extract year from filename: {self.excel_path.name}"
+        )
 
     def _find_header_row(self, df: pd.DataFrame) -> int | None:
         """Find the row index containing bedroom type headers.
@@ -122,7 +124,9 @@ class CMHCExcelParser:
                 return idx
         return None
 
-    def _find_bedroom_cols(self, df: pd.DataFrame, header_row_idx: int) -> dict[int, str]:
+    def _find_bedroom_cols(
+        self, df: pd.DataFrame, header_row_idx: int
+    ) -> dict[int, str]:
         """Extract bedroom type column positions from the header row.
 
         Args:
@@ -159,7 +163,9 @@ class CMHCExcelParser:
 
         header_row_idx = self._find_header_row(df)
         if header_row_idx is None:
-            logger.warning(f"Could not find bedroom type header in {self.excel_path.name}")
+            logger.warning(
+                f"Could not find bedroom type header in {self.excel_path.name}"
+            )
             return records
 
         bedroom_cols = self._find_bedroom_cols(df, header_row_idx)
@@ -203,7 +209,9 @@ class CMHCExcelParser:
                     )
                 )
 
-        logger.info(f"Parsed {len(records)} universe records from {self.excel_path.name}")
+        logger.info(
+            f"Parsed {len(records)} universe records from {self.excel_path.name}"
+        )
         return records
 
     def _parse_metric_table(
@@ -358,6 +366,7 @@ class CMHCExcelParser:
             return self._parse_universe_table(df)
         except Exception as e:
             import traceback
+
             logger.error(f"Failed to parse {self.excel_path.name}: {e}")
             logger.debug(traceback.format_exc())
             return []
@@ -407,13 +416,19 @@ class CMHCExcelParser:
             # Deduplicate while preserving order
             seen: set[str] = set()
             unique_bedroom_types = [
-                bt for bt in bedroom_types if not (bt in seen or seen.add(bt))  # type: ignore[func-returns-value]
+                bt
+                for bt in bedroom_types
+                if not (bt in seen or seen.add(bt))  # type: ignore[func-returns-value]
             ]
 
             for zone_code, zone_name in all_zones.items():
                 for bedroom_type in unique_bedroom_types:
-                    vacancy = vacancy_data.get(zone_code, {}).get(bedroom_type, (None, None))
-                    avg_rent = avg_rent_data.get(zone_code, {}).get(bedroom_type, (None, None))
+                    vacancy = vacancy_data.get(zone_code, {}).get(
+                        bedroom_type, (None, None)
+                    )
+                    avg_rent = avg_rent_data.get(zone_code, {}).get(
+                        bedroom_type, (None, None)
+                    )
                     rent_change = rent_change_data.get(zone_code, {}).get(
                         bedroom_type, (None, None)
                     )
@@ -425,7 +440,13 @@ class CMHCExcelParser:
                     # Skip records with no data at all
                     if all(
                         v is None
-                        for v in [universe, avg_rent[0], vacancy[0], turnover[0], rent_change[0]]
+                        for v in [
+                            universe,
+                            avg_rent[0],
+                            vacancy[0],
+                            turnover[0],
+                            rent_change[0],
+                        ]
                     ):
                         continue
 
@@ -451,7 +472,10 @@ class CMHCExcelParser:
 
         except Exception as e:
             import traceback
-            logger.error(f"Failed to parse rental data from {self.excel_path.name}: {e}")
+
+            logger.error(
+                f"Failed to parse rental data from {self.excel_path.name}: {e}"
+            )
             logger.debug(traceback.format_exc())
             return []
 
@@ -539,9 +563,7 @@ def parse_cmhc_excel_rental_directory(
             results[parser.year] = records
 
     total_records = sum(len(r) for r in results.values())
-    logger.info(
-        f"Parsed {len(results)} years of rental data ({total_records} records)"
-    )
+    logger.info(f"Parsed {len(results)} years of rental data ({total_records} records)")
     return results
 
 

@@ -216,6 +216,7 @@ class DataPipeline:
             logger.warning(f"  Failed to load 2016 census data: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
         # Load 2021 census data
@@ -232,6 +233,7 @@ class DataPipeline:
             logger.warning(f"  Failed to load 2021 census data: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
         self.stats["census"] = total_count
@@ -242,7 +244,9 @@ class DataPipeline:
 
     def _load_census_extended(self, session: Any) -> None:
         """Fetch and load census extended (Path B) scalar indicators for 2021."""
-        logger.info("Fetching census extended indicators from Toronto Open Data XLSX...")
+        logger.info(
+            "Fetching census extended indicators from Toronto Open Data XLSX..."
+        )
 
         if self.dry_run:
             logger.info("  [DRY RUN] Would fetch and load census extended data (2021)")
@@ -262,6 +266,7 @@ class DataPipeline:
             logger.warning(f"  Failed to load census extended data: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
     def _load_profiles(self, session: Any) -> None:
@@ -269,7 +274,9 @@ class DataPipeline:
         logger.info("Fetching neighbourhood profiles from Toronto Open Data...")
 
         if self.dry_run:
-            logger.info("  [DRY RUN] Would fetch and load neighbourhood profile data (2021)")
+            logger.info(
+                "  [DRY RUN] Would fetch and load neighbourhood profile data (2021)"
+            )
             return
 
         parser = TorontoOpenDataParser()
@@ -286,6 +293,7 @@ class DataPipeline:
             logger.warning(f"  Failed to load neighbourhood profile data: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
     def _load_crime(self, session: Any) -> None:
@@ -386,7 +394,9 @@ class DataPipeline:
 
         if self.dry_run:
             logger.info("  [DRY RUN] Would fetch and load CMHC rental data")
-            logger.info("  [DRY RUN] Would load zone-level rental metrics from Excel files")
+            logger.info(
+                "  [DRY RUN] Would load zone-level rental metrics from Excel files"
+            )
             return
 
         try:
@@ -510,30 +520,25 @@ class DataPipeline:
             logger.error(f"dbt project directory not found: {dbt_project_dir}")
             return False
 
+        # Selectors scoped to Toronto domain only — football has its own pipeline
+        toronto_select = [
+            "path:models/shared",
+            "path:models/staging/toronto",
+            "path:models/intermediate/toronto",
+            "path:models/marts/toronto",
+        ]
+
         if self.dry_run:
-            logger.info("  [DRY RUN] Would drop renamed mart tables")
             logger.info("  [DRY RUN] Would run: dbt deps")
-            logger.info("  [DRY RUN] Would run: dbt run")
-            logger.info("  [DRY RUN] Would run: dbt test")
+            logger.info(
+                f"  [DRY RUN] Would run: dbt run --select {' '.join(toronto_select)}"
+            )
+            logger.info(
+                f"  [DRY RUN] Would run: dbt test --select {' '.join(toronto_select)}"
+            )
             return True
 
         try:
-            # Drop renamed mart tables before dbt run to avoid conflicts
-            logger.info("  Dropping renamed mart tables...")
-            drop_script = PROJECT_ROOT / "scripts" / "db" / "migrations" / "drop_renamed_marts.py"
-            if drop_script.exists():
-                result = subprocess.run(
-                    [sys.executable, str(drop_script)],
-                    capture_output=True,
-                    text=True,
-                )
-                if result.returncode != 0:
-                    logger.warning(f"Drop renamed marts script had issues:\n{result.stderr}")
-                    # Don't fail - old table may not exist
-                else:
-                    logger.info(f"  {result.stdout}")
-            else:
-                logger.warning(f"  Drop script not found: {drop_script}")
             # Install dbt packages if needed
             logger.info("  Running dbt deps...")
             result = subprocess.run(
@@ -547,10 +552,17 @@ class DataPipeline:
                 logger.error(f"dbt deps failed:\n{result.stdout}\n{result.stderr}")
                 return False
 
-            # Run dbt models
-            logger.info("  Running dbt run...")
+            # Run dbt models — Toronto domain only
+            logger.info("  Running dbt run (Toronto domain)...")
             result = subprocess.run(
-                [dbt_cmd, "run", "--profiles-dir", str(dbt_project_dir)],
+                [
+                    dbt_cmd,
+                    "run",
+                    "--profiles-dir",
+                    str(dbt_project_dir),
+                    "--select",
+                    *toronto_select,
+                ],
                 cwd=dbt_project_dir,
                 capture_output=True,
                 text=True,
@@ -562,10 +574,17 @@ class DataPipeline:
 
             logger.info("  dbt run completed successfully")
 
-            # Run dbt tests
-            logger.info("  Running dbt test...")
+            # Run dbt tests — Toronto domain only
+            logger.info("  Running dbt test (Toronto domain)...")
             result = subprocess.run(
-                [dbt_cmd, "test", "--profiles-dir", str(dbt_project_dir)],
+                [
+                    dbt_cmd,
+                    "test",
+                    "--profiles-dir",
+                    str(dbt_project_dir),
+                    "--select",
+                    *toronto_select,
+                ],
                 cwd=dbt_project_dir,
                 capture_output=True,
                 text=True,

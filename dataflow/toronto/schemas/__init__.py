@@ -1,6 +1,7 @@
 """Pydantic schemas for Toronto housing data validation."""
 
 from .amenities import AmenityCount, AmenityRecord, AmenityType
+from .census_extended import CensusExtendedRecord
 from .cmhc import BedroomType, CMHCAnnualSurvey, CMHCRentalRecord, ReliabilityCode
 from .dimensions import (
     CMHCZone,
@@ -13,7 +14,6 @@ from .dimensions import (
     TimeDimension,
 )
 from .neighbourhood import CensusRecord, CrimeRecord, CrimeType, NeighbourhoodRecord
-from .census_extended import CensusExtendedRecord
 from .profile import VALID_CATEGORIES, ProfileRecord
 
 __all__ = [

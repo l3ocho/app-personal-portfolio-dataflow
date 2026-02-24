@@ -7,6 +7,7 @@ all Characteristic values so we can compare with CENSUS_EXTENDED_MAPPING.
 Usage:
     .venv/bin/python scripts/db/diagnose_xlsx_labels.py
 """
+
 import sys
 from pathlib import Path
 
@@ -21,9 +22,14 @@ MAPPING_LABELS = {
     "Under 15 years",
     "15 to 19 years",
     "20 to 24 years",
-    "25 to 29 years", "30 to 34 years", "35 to 39 years",
-    "40 to 44 years", "45 to 49 years", "50 to 54 years",
-    "55 to 59 years", "60 to 64 years",
+    "25 to 29 years",
+    "30 to 34 years",
+    "35 to 39 years",
+    "40 to 44 years",
+    "45 to 49 years",
+    "50 to 54 years",
+    "55 to 59 years",
+    "60 to 64 years",
     "65 years and over",
     "Total private dwellings",
     "Private dwellings occupied by usual residents",
@@ -118,7 +124,7 @@ def main():
     matched = mapping_lower & actual_lower
     unmatched = mapping_lower - actual_lower
 
-    print(f"=== MATCH SUMMARY ===")
+    print("=== MATCH SUMMARY ===")
     print(f"Mapping labels:  {len(MAPPING_LABELS)}")
     print(f"Matched:         {len(matched)}")
     print(f"Unmatched:       {len(unmatched)}\n")
@@ -129,52 +135,14 @@ def main():
 
     print("\n=== SEARCHING FOR SIMILAR ROWS IN XLSX ===")
     # For each unmatched label, find the closest actual characteristic
-    keywords = {
-        "under 15": ["age", "0 to", "15"],
-        "total - age groups": ["age", "total"],
-        "65 years": ["65", "over", "senior"],
-        "total private dwellings": ["dwellings", "private"],
-        "private dwellings occupied": ["occupied", "dwellings"],
-        "average household size": ["household size", "average"],
-        "average after-tax income": ["after-tax", "income", "household"],
-        "participation rate": ["participation"],
-        "employment rate": ["employment rate"],
-        "unemployment rate": ["unemployment"],
-        "worked full year": ["full year", "full time"],
-        "median after-tax income": ["median", "after-tax"],
-        "median employment income": ["median", "employment income"],
-        "lico-at": ["low-income", "lico"],
-        "market basket": ["market basket"],
-        "immigrants": ["immigrants"],
-        "2016 to 2021": ["2016", "2021", "recent"],
-        "total visible minority": ["visible minority"],
-        "total - indigenous": ["indigenous"],
-        "non-movers": ["non-mover", "movers"],
-        "movers within": ["movers within", "census subdivision"],
-        "external migrants": ["external", "migrant"],
-        "car, truck": ["car", "truck", "commut"],
-        "public transit": ["transit", "public"],
-        "walked": ["walk"],
-        "worked at home": ["home", "work from home"],
-        "median age": ["median age"],
-        "lone-parent": ["lone-parent", "single parent"],
-        "average number of children": ["children", "average"],
-        "major repairs": ["repair", "major"],
-        "median commuting": ["commut", "duration", "minutes"],
-        "0 management": ["management", "occupation"],
-        "1 business, finance": ["business, finance"],
-        "6 sales": ["sales", "service"],
-        "7 trades": ["trades", "transport"],
-        "population density": ["density"],
-    }
-
     for unmatched_label in sorted(unmatched):
         # Find similar chars using keyword hints
         unmatched_lower = unmatched_label.lower()
         # Simple: find rows containing first 10 chars of the unmatched label
         prefix = unmatched_lower[:20]
         similar = [
-            c for c in actual_chars
+            c
+            for c in actual_chars
             if any(word in c.lower() for word in prefix.split()[:3])
         ][:5]
         if similar:
@@ -183,7 +151,7 @@ def main():
                 print(f"    ~~ {s!r}")
 
     print("\n\n=== ALL XLSX CHARACTERISTICS (first 200) ===")
-    for i, char in enumerate(sorted(actual_chars)[:200]):
+    for char in sorted(actual_chars)[:200]:
         print(f"  {char!r}")
 
     # Also print all rows containing key words
@@ -204,7 +172,11 @@ def main():
 
     print("\n=== ROWS CONTAINING 'low-income' or 'lico' ===")
     for char in actual_chars:
-        if "low-income" in char.lower() or "lico" in char.lower() or "market basket" in char.lower():
+        if (
+            "low-income" in char.lower()
+            or "lico" in char.lower()
+            or "market basket" in char.lower()
+        ):
             print(f"  {char!r}")
 
     print("\n=== ROWS CONTAINING 'commut' ===")

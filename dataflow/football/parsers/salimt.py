@@ -190,7 +190,11 @@ class SalimtParser:
 
     def parse_leagues(self) -> list[LeagueRecord]:
         """Extract leagues from team_competitions_seasons.csv."""
-        csv_path = self.salimt_root / "team_competitions_seasons" / "team_competitions_seasons.csv"
+        csv_path = (
+            self.salimt_root
+            / "team_competitions_seasons"
+            / "team_competitions_seasons.csv"
+        )
         if not csv_path.exists():
             logger.warning(f"Team competitions CSV not found at {csv_path}")
             return []
@@ -203,14 +207,18 @@ class SalimtParser:
 
         # Extract unique leagues using 'competition_id' column
         if "competition_id" not in df.columns:
-            logger.warning("'competition_id' column not found in team_competitions_seasons")
+            logger.warning(
+                "'competition_id' column not found in team_competitions_seasons"
+            )
             return []
 
         # Filter to target competitions
         df = df[df["competition_id"].isin(TARGET_LEAGUES)]
 
         # Get unique competition IDs (keep first occurrence of each)
-        unique_leagues = df[["competition_id", "competition_name"]].drop_duplicates(subset=["competition_id"], keep="first")
+        unique_leagues = df[["competition_id", "competition_name"]].drop_duplicates(
+            subset=["competition_id"], keep="first"
+        )
 
         # Map league IDs to countries
         league_countries = {
@@ -238,7 +246,9 @@ class SalimtParser:
             except Exception as e:
                 logger.warning(f"Could not parse league {comp_id}: {e}")
 
-        logger.info(f"Parsed {len(records)} unique leagues from competitions (filtered to {TARGET_LEAGUES})")
+        logger.info(
+            f"Parsed {len(records)} unique leagues from competitions (filtered to {TARGET_LEAGUES})"
+        )
         return records
 
     def parse_clubs(self) -> list[ClubRecord]:
@@ -262,7 +272,9 @@ class SalimtParser:
                     club_id=str(row.get("club_id", "")),
                     club_name=str(row.get("club_name", "")),
                     club_code=None,  # Not in team_details.csv
-                    country=row.get("country_name"),  # CSV has country_name, not country
+                    country=row.get(
+                        "country_name"
+                    ),  # CSV has country_name, not country
                     founded_year=None,  # Not in team_details.csv
                     city=None,  # Not in team_details.csv
                     club_slug=row.get("club_slug"),
@@ -295,6 +307,7 @@ class SalimtParser:
             try:
                 # Handle NaN values by converting to None
                 import pandas as pd_lib
+
                 dob = row.get("date_of_birth")
                 if pd_lib.isna(dob):
                     dob = None
@@ -332,7 +345,9 @@ class SalimtParser:
         """
         csv_path = self.salimt_root / "player_profiles" / "player_profiles.csv"
         if not csv_path.exists():
-            logger.warning(f"Player profiles CSV not found for club mapping at {csv_path}")
+            logger.warning(
+                f"Player profiles CSV not found for club mapping at {csv_path}"
+            )
             return {}
 
         try:
@@ -349,7 +364,9 @@ class SalimtParser:
             club_id = str(club_id) if pd.notna(club_id) else None
             mapping[player_id] = club_id
 
-        logger.info(f"Built player-club mapping with {len(mapping)} entries ({sum(1 for v in mapping.values() if v is not None)} with clubs)")
+        logger.info(
+            f"Built player-club mapping with {len(mapping)} entries ({sum(1 for v in mapping.values() if v is not None)} with clubs)"
+        )
         return mapping
 
     def parse_player_market_values(self) -> list[PlayerMarketValueRecord]:
@@ -438,7 +455,9 @@ class SalimtParser:
             try:
                 transfer_date = row.get("transfer_date")
                 # Skip rows with missing transfer_date (e.g., Git LFS pointer files)
-                if transfer_date is None or (isinstance(transfer_date, float) and transfer_date != transfer_date):  # NaN check
+                if transfer_date is None or (
+                    isinstance(transfer_date, float) and transfer_date != transfer_date
+                ):  # NaN check
                     continue
 
                 fee_eur, is_loan = parse_transfer_fee(row.get("transfer_fee"))
@@ -461,7 +480,11 @@ class SalimtParser:
 
     def parse_club_season_stats(self) -> list[ClubSeasonRecord]:
         """Parse team_competitions_seasons.csv for club season stats."""
-        csv_path = self.salimt_root / "team_competitions_seasons" / "team_competitions_seasons.csv"
+        csv_path = (
+            self.salimt_root
+            / "team_competitions_seasons"
+            / "team_competitions_seasons.csv"
+        )
         if not csv_path.exists():
             logger.warning(f"Team competitions CSV not found at {csv_path}")
             return []
@@ -496,5 +519,7 @@ class SalimtParser:
             except Exception as e:
                 logger.debug(f"Could not parse club season row: {e}")
 
-        logger.info(f"Parsed {len(records)} club seasons (from {len(TARGET_LEAGUES)} target leagues)")
+        logger.info(
+            f"Parsed {len(records)} club seasons (from {len(TARGET_LEAGUES)} target leagues)"
+        )
         return records

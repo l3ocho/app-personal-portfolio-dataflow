@@ -2,38 +2,40 @@
 
 from pydantic import BaseModel, Field, field_validator
 
-VALID_CATEGORIES: frozenset[str] = frozenset({
-    # Existing (10)
-    "immigration_status",
-    "place_of_birth",
-    "place_of_birth_recent",
-    "citizenship",
-    "generation_status",
-    "admission_category",
-    "visible_minority",
-    "ethnic_origin",
-    "mother_tongue",
-    "official_language",
-    # New Sprint 12 categories (18)
-    "language_at_home",
-    "indigenous_identity",
-    "religion",
-    "education_level",
-    "field_of_study",
-    "occupation",
-    "industry_sector",
-    "income_bracket",
-    "income_source",
-    "household_type",
-    "family_type",
-    "commute_mode",
-    "commute_duration",
-    "commute_destination",
-    "housing_suitability",
-    "dwelling_type",
-    "bedrooms",
-    "construction_period",
-})
+VALID_CATEGORIES: frozenset[str] = frozenset(
+    {
+        # Existing (10)
+        "immigration_status",
+        "place_of_birth",
+        "place_of_birth_recent",
+        "citizenship",
+        "generation_status",
+        "admission_category",
+        "visible_minority",
+        "ethnic_origin",
+        "mother_tongue",
+        "official_language",
+        # New Sprint 12 categories (18)
+        "language_at_home",
+        "indigenous_identity",
+        "religion",
+        "education_level",
+        "field_of_study",
+        "occupation",
+        "industry_sector",
+        "income_bracket",
+        "income_source",
+        "household_type",
+        "family_type",
+        "commute_mode",
+        "commute_duration",
+        "commute_destination",
+        "housing_suitability",
+        "dwelling_type",
+        "bedrooms",
+        "construction_period",
+    }
+)
 
 
 class ProfileRecord(BaseModel):
@@ -75,5 +77,7 @@ class ProfileRecord(BaseModel):
     @classmethod
     def validate_level(cls, v: str) -> str:
         if v not in ("", "continent", "country"):
-            raise ValueError(f"Invalid level '{v}'. Must be '', 'continent', or 'country'.")
+            raise ValueError(
+                f"Invalid level '{v}'. Must be '', 'continent', or 'country'."
+            )
         return v

@@ -52,13 +52,15 @@ class TorontoOpenDataParser:
 
     # Known continent names from Statistics Canada 2021 XLSX
     # Used to distinguish place_of_birth continent-level from country-level rows
-    _POB_CONTINENTS: frozenset[str] = frozenset({
-        "africa",
-        "americas",
-        "asia",
-        "europe",
-        "oceania",
-    })
+    _POB_CONTINENTS: frozenset[str] = frozenset(
+        {
+            "africa",
+            "americas",
+            "asia",
+            "europe",
+            "oceania",
+        }
+    )
 
     # Section metadata for profile data parsing
     # Maps category to start/stop anchors for identifying data sections
@@ -473,7 +475,9 @@ class TorontoOpenDataParser:
                 if i == 0:
                     raw_char = str(row[i]) if row[i] is not None else ""
                     record["Characteristic"] = raw_char.strip()
-                    record["RawCharacteristic"] = raw_char  # preserve leading whitespace
+                    record["RawCharacteristic"] = (
+                        raw_char  # preserve leading whitespace
+                    )
                 else:
                     # Store neighbourhood values; convert None to empty string
                     col_name = str(header).strip() if header else f"col_{i}"
@@ -605,17 +609,20 @@ class TorontoOpenDataParser:
     #
     # Exact label matching is case-insensitive after stripping.
     # Row labels are from the Statistics Canada 2021 Neighbourhood Profile XLSX.
-    CENSUS_EXTENDED_MAPPING: dict[
-        str, str | list[str] | tuple[str, str]
-    ] = {
+    CENSUS_EXTENDED_MAPPING: dict[str, str | list[str] | tuple[str, str]] = {
         # Population (100% data row label is actually 25% sample in 2021 XLSX)
         "population": "Total - Age groups of the population - 25% sample data",
         "pop_0_to_14": "0 to 14 years",
         "pop_15_to_24": ["15 to 19 years", "20 to 24 years"],
         "pop_25_to_64": [
-            "25 to 29 years", "30 to 34 years", "35 to 39 years",
-            "40 to 44 years", "45 to 49 years", "50 to 54 years",
-            "55 to 59 years", "60 to 64 years",
+            "25 to 29 years",
+            "30 to 34 years",
+            "35 to 39 years",
+            "40 to 44 years",
+            "45 to 49 years",
+            "50 to 54 years",
+            "55 to 59 years",
+            "60 to 64 years",
         ],
         "pop_65_plus": "65 years and over",
         # Households (total private dwellings not available as standalone row;
@@ -1023,9 +1030,9 @@ class TorontoOpenDataParser:
                                     numeric_val = Decimal(str_val)
                                     # Only store if not already set (first match wins)
                                     if field_name not in neighbourhood_data[col]:
-                                        neighbourhood_data[col][
-                                            field_name
-                                        ] = numeric_val
+                                        neighbourhood_data[col][field_name] = (
+                                            numeric_val
+                                        )
                             except (ValueError, TypeError):
                                 pass
                     break  # Move to next row after matching
@@ -1154,10 +1161,19 @@ class TorontoOpenDataParser:
             logger.warning("Census extended dataset is empty")
             return []
 
-        logger.info(f"Fetched {len(raw_records)} XLSX rows for census_extended extraction")
+        logger.info(
+            f"Fetched {len(raw_records)} XLSX rows for census_extended extraction"
+        )
 
         # Identify neighbourhood columns
-        exclude_meta = {"Characteristic", "RawCharacteristic", "_id", "Topic", "Data Source", "Category"}
+        exclude_meta = {
+            "Characteristic",
+            "RawCharacteristic",
+            "_id",
+            "Topic",
+            "Data Source",
+            "Category",
+        }
         neighbourhood_cols = [col for col in raw_records[0] if col not in exclude_meta]
 
         def _normalize_key(s: str) -> str:
@@ -1234,8 +1250,15 @@ class TorontoOpenDataParser:
                 )
 
             # Handle integer fields
-            int_fields = {"population", "pop_0_to_14", "pop_15_to_24", "pop_25_to_64",
-                          "pop_65_plus", "total_private_dwellings", "occupied_private_dwellings"}
+            int_fields = {
+                "population",
+                "pop_0_to_14",
+                "pop_15_to_24",
+                "pop_25_to_64",
+                "pop_65_plus",
+                "total_private_dwellings",
+                "occupied_private_dwellings",
+            }
 
             record_kwargs: dict[str, Any] = {
                 "neighbourhood_id": neighbourhood_id,
@@ -1315,7 +1338,9 @@ class TorontoOpenDataParser:
             List of validated ProfileRecord objects.
         """
         if year != 2021:
-            logger.warning(f"Neighbourhood profiles only available for 2021; got {year}")
+            logger.warning(
+                f"Neighbourhood profiles only available for 2021; got {year}"
+            )
             return []
 
         raw_records: list[dict[str, Any]] = []
@@ -1366,7 +1391,9 @@ class TorontoOpenDataParser:
         )
 
         # Build records by category, applying filters where needed
-        records = self._build_profile_records(tagged_rows, col_to_id, year, section_totals)
+        records = self._build_profile_records(
+            tagged_rows, col_to_id, year, section_totals
+        )
 
         logger.info(f"Parsed {len(records)} profile records for year {year}")
         return records
@@ -1441,13 +1468,24 @@ class TorontoOpenDataParser:
         }
 
         # Identify neighbourhood columns (exclude metadata columns)
-        exclude_meta = {"Characteristic", "RawCharacteristic", "_id", "Topic", "Data Source", "Category"}
+        exclude_meta = {
+            "Characteristic",
+            "RawCharacteristic",
+            "_id",
+            "Topic",
+            "Data Source",
+            "Category",
+        }
         neighbourhood_cols = [
-            col for col in (raw_records[0] if raw_records else {}) if col not in exclude_meta
+            col
+            for col in (raw_records[0] if raw_records else {})
+            if col not in exclude_meta
         ]
 
         # Find all profile section header rows
-        section_headers: list[tuple[int, str, str]] = []  # (index, header_text, category)
+        section_headers: list[
+            tuple[int, str, str]
+        ] = []  # (index, header_text, category)
 
         for idx, row in enumerate(raw_records):
             characteristic = str(row.get("Characteristic", "")).strip()
@@ -1460,7 +1498,9 @@ class TorontoOpenDataParser:
             for header_anchor, category in profile_sections.items():
                 if header_anchor in char_lower:
                     section_headers.append((idx, characteristic, category))
-                    logger.debug(f"Found section: {category} at row {idx}: {characteristic[:60]}")
+                    logger.debug(
+                        f"Found section: {category} at row {idx}: {characteristic[:60]}"
+                    )
                     break
 
         if not section_headers:
@@ -1490,7 +1530,11 @@ class TorontoOpenDataParser:
             else:
                 # For the last profile section, find the next "Total - " header
                 for row_idx in range(header_idx + 1, len(raw_records)):
-                    char = str(raw_records[row_idx].get("Characteristic", "")).strip().lower()
+                    char = (
+                        str(raw_records[row_idx].get("Characteristic", ""))
+                        .strip()
+                        .lower()
+                    )
                     if char.startswith("total -"):
                         next_header_idx = row_idx
                         break
@@ -1606,11 +1650,15 @@ class TorontoOpenDataParser:
         section_totals = section_totals or {}
 
         # Organize rows by category for filtering
-        rows_by_category: dict[str, list[tuple[str, str, str, int, dict[str, Any]]]] = {}
+        rows_by_category: dict[
+            str, list[tuple[str, str, str, int, dict[str, Any]]]
+        ] = {}
         for category, subcategory, level, indent_level, row in tagged_rows:
             if category not in rows_by_category:
                 rows_by_category[category] = []
-            rows_by_category[category].append((category, subcategory, level, indent_level, row))
+            rows_by_category[category].append(
+                (category, subcategory, level, indent_level, row)
+            )
 
         records = []
 
@@ -1621,13 +1669,19 @@ class TorontoOpenDataParser:
 
             if category == "ethnic_origin":
                 # Apply top-30 city-wide filter
-                cat_records = self._filter_ethnic_origin(cat_rows, col_to_id, year, cat_totals)
+                cat_records = self._filter_ethnic_origin(
+                    cat_rows, col_to_id, year, cat_totals
+                )
             elif category == "mother_tongue":
                 # Apply per-neighbourhood top-15 filter
-                cat_records = self._filter_mother_tongue(cat_rows, col_to_id, year, cat_totals)
+                cat_records = self._filter_mother_tongue(
+                    cat_rows, col_to_id, year, cat_totals
+                )
             else:
                 # Standard: emit all rows for all neighbourhoods
-                cat_records = self._emit_category_records(cat_rows, col_to_id, year, cat_totals)
+                cat_records = self._emit_category_records(
+                    cat_rows, col_to_id, year, cat_totals
+                )
 
             records.extend(cat_records)
 
@@ -1673,10 +1727,7 @@ class TorontoOpenDataParser:
                     )
                     records.append(record)
                 except Exception as e:
-                    logger.debug(
-                        f"Skipping record for {col}/"
-                        f"{subcategory}: {e}"
-                    )
+                    logger.debug(f"Skipping record for {col}/{subcategory}: {e}")
 
         return records
 
@@ -1751,8 +1802,7 @@ class TorontoOpenDataParser:
                     records.append(record)
                 except Exception as e:
                     logger.debug(
-                        f"Skipping ethnic origin record for {col}/"
-                        f"{subcategory}: {e}"
+                        f"Skipping ethnic origin record for {col}/{subcategory}: {e}"
                     )
 
         return records

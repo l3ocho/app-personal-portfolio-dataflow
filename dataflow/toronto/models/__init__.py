@@ -1,6 +1,7 @@
 """SQLAlchemy models for Toronto housing data."""
 
 from .base import Base, create_tables, get_engine, get_session_factory
+from .census_extended import FactCensusExtended
 from .dimensions import (
     DimCMHCZone,
     DimNeighbourhood,
@@ -14,7 +15,6 @@ from .facts import (
     FactCrime,
     FactRentals,
 )
-from .census_extended import FactCensusExtended
 from .profile import FactNeighbourhoodProfile
 
 __all__ = [
