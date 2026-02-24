@@ -92,10 +92,10 @@ def main() -> int:
                 # Add FK constraint
                 alter_sql = text(
                     f"""
-                    ALTER TABLE raw_toronto.{fk['table']}
-                    ADD CONSTRAINT {fk['constraint']}
-                    FOREIGN KEY ({fk['column']})
-                    REFERENCES raw_toronto.{fk['ref_table']}({fk['ref_column']})
+                    ALTER TABLE raw_toronto.{fk["table"]}
+                    ADD CONSTRAINT {fk["constraint"]}
+                    FOREIGN KEY ({fk["column"]})
+                    REFERENCES raw_toronto.{fk["ref_table"]}({fk["ref_column"]})
                 """
                 )
 

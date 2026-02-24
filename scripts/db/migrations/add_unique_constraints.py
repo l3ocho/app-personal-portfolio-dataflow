@@ -82,17 +82,15 @@ def main() -> int:
                 columns_list = ", ".join(uq["columns"])
                 alter_sql = text(
                     f"""
-                    ALTER TABLE raw_toronto.{uq['table']}
-                    ADD CONSTRAINT {uq['constraint']}
+                    ALTER TABLE raw_toronto.{uq["table"]}
+                    ADD CONSTRAINT {uq["constraint"]}
                     UNIQUE ({columns_list})
                 """
                 )
 
                 conn.execute(alter_sql)
                 conn.commit()
-                print(
-                    f"  ✓ Added {uq['constraint']} on {uq['table']}({columns_list})"
-                )
+                print(f"  ✓ Added {uq['constraint']} on {uq['table']}({columns_list})")
 
         # Verify final unique constraint count
         with engine.connect() as conn:

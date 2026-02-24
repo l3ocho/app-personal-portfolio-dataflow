@@ -42,6 +42,7 @@ from dataflow.toronto.loaders import (  # noqa: E402
     get_session,
     load_amenities,
     load_census_data,
+    load_census_extended_data,
     load_cmhc_zones,
     load_crime_data,
     load_excel_rental_data,
@@ -102,6 +103,9 @@ class DataPipeline:
 
                 # 4. Load census data
                 self._load_census(session)
+
+                # 4b. Load census extended (Path B scalar indicators)
+                self._load_census_extended(session)
 
                 # 5. Load neighbourhood community profiles
                 self._load_profiles(session)
@@ -212,6 +216,7 @@ class DataPipeline:
             logger.warning(f"  Failed to load 2016 census data: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
         # Load 2021 census data
@@ -228,6 +233,7 @@ class DataPipeline:
             logger.warning(f"  Failed to load 2021 census data: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
         self.stats["census"] = total_count
@@ -236,12 +242,41 @@ class DataPipeline:
         else:
             logger.info(f"  Total census records loaded: {total_count}")
 
+    def _load_census_extended(self, session: Any) -> None:
+        """Fetch and load census extended (Path B) scalar indicators for 2021."""
+        logger.info(
+            "Fetching census extended indicators from Toronto Open Data XLSX..."
+        )
+
+        if self.dry_run:
+            logger.info("  [DRY RUN] Would fetch and load census extended data (2021)")
+            return
+
+        parser = TorontoOpenDataParser()
+        try:
+            logger.info("  Fetching 2021 census extended indicators...")
+            extended_records = parser.get_census_extended(year=2021)
+            if extended_records:
+                count = load_census_extended_data(extended_records, session)
+                self.stats["census_extended"] = count
+                logger.info(f"  Loaded {count} census extended records for 2021")
+            else:
+                logger.warning("  No census extended records fetched")
+        except Exception as e:
+            logger.warning(f"  Failed to load census extended data: {e}")
+            if self.verbose:
+                import traceback
+
+                traceback.print_exc()
+
     def _load_profiles(self, session: Any) -> None:
         """Fetch and load neighbourhood community profile data for 2021."""
         logger.info("Fetching neighbourhood profiles from Toronto Open Data...")
 
         if self.dry_run:
-            logger.info("  [DRY RUN] Would fetch and load neighbourhood profile data (2021)")
+            logger.info(
+                "  [DRY RUN] Would fetch and load neighbourhood profile data (2021)"
+            )
             return
 
         parser = TorontoOpenDataParser()
@@ -258,6 +293,7 @@ class DataPipeline:
             logger.warning(f"  Failed to load neighbourhood profile data: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
     def _load_crime(self, session: Any) -> None:
@@ -358,7 +394,9 @@ class DataPipeline:
 
         if self.dry_run:
             logger.info("  [DRY RUN] Would fetch and load CMHC rental data")
-            logger.info("  [DRY RUN] Would load zone-level rental metrics from Excel files")
+            logger.info(
+                "  [DRY RUN] Would load zone-level rental metrics from Excel files"
+            )
             return
 
         try:
@@ -482,10 +520,22 @@ class DataPipeline:
             logger.error(f"dbt project directory not found: {dbt_project_dir}")
             return False
 
+        # Selectors scoped to Toronto domain only — football has its own pipeline
+        toronto_select = [
+            "path:models/shared",
+            "path:models/staging/toronto",
+            "path:models/intermediate/toronto",
+            "path:models/marts/toronto",
+        ]
+
         if self.dry_run:
             logger.info("  [DRY RUN] Would run: dbt deps")
-            logger.info("  [DRY RUN] Would run: dbt run")
-            logger.info("  [DRY RUN] Would run: dbt test")
+            logger.info(
+                f"  [DRY RUN] Would run: dbt run --select {' '.join(toronto_select)}"
+            )
+            logger.info(
+                f"  [DRY RUN] Would run: dbt test --select {' '.join(toronto_select)}"
+            )
             return True
 
         try:
@@ -502,10 +552,17 @@ class DataPipeline:
                 logger.error(f"dbt deps failed:\n{result.stdout}\n{result.stderr}")
                 return False
 
-            # Run dbt models
-            logger.info("  Running dbt run...")
+            # Run dbt models — Toronto domain only
+            logger.info("  Running dbt run (Toronto domain)...")
             result = subprocess.run(
-                [dbt_cmd, "run", "--profiles-dir", str(dbt_project_dir)],
+                [
+                    dbt_cmd,
+                    "run",
+                    "--profiles-dir",
+                    str(dbt_project_dir),
+                    "--select",
+                    *toronto_select,
+                ],
                 cwd=dbt_project_dir,
                 capture_output=True,
                 text=True,
@@ -517,10 +574,17 @@ class DataPipeline:
 
             logger.info("  dbt run completed successfully")
 
-            # Run dbt tests
-            logger.info("  Running dbt test...")
+            # Run dbt tests — Toronto domain only
+            logger.info("  Running dbt test (Toronto domain)...")
             result = subprocess.run(
-                [dbt_cmd, "test", "--profiles-dir", str(dbt_project_dir)],
+                [
+                    dbt_cmd,
+                    "test",
+                    "--profiles-dir",
+                    str(dbt_project_dir),
+                    "--select",
+                    *toronto_select,
+                ],
                 cwd=dbt_project_dir,
                 capture_output=True,
                 text=True,

@@ -70,8 +70,8 @@ def main() -> int:
                 # Create index CONCURRENTLY (no table lock)
                 create_sql = text(
                     f"""
-                    CREATE INDEX CONCURRENTLY {idx['name']}
-                    ON raw_toronto.{idx['table']} ({idx['column']})
+                    CREATE INDEX CONCURRENTLY {idx["name"]}
+                    ON raw_toronto.{idx["table"]} ({idx["column"]})
                 """
                 )
 

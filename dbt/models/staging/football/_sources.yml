@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: raw_football
+    description: Raw football data from Transfermarkt, MLSPA, and Deloitte
+    database: "{{ env_var('DBT_SCHEMAS_DATABASE', 'portfolio') }}"
+    schema: raw_football
+    tables:
+      - name: dim_league
+        description: Football league dimension
+        columns:
+          - name: league_id
+            description: Primary key
+          - name: league_name
+          - name: country
+          - name: season_start_year
+      - name: dim_club
+        description: Football club dimension
+        columns:
+          - name: club_id
+            description: Primary key
+      - name: dim_player
+        description: Football player dimension
+        columns:
+          - name: player_id
+            description: Primary key
+      - name: fact_player_market_value
+        description: Player market value snapshots
+      - name: fact_transfer
+        description: Player transfer history
+      - name: fact_club_season
+        description: Club season statistics
+      - name: fact_mls_salary
+        description: MLS player salaries
+      - name: fact_club_finance
+        description: Club revenue (Deloitte)
+      - name: bridge_player_competition
+        description: Player-to-league participation bridge

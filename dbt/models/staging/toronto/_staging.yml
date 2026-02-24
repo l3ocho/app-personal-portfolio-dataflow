@@ -177,9 +177,45 @@ models:
                 - ethnic_origin
                 - mother_tongue
                 - official_language
+                - language_at_home
+                - indigenous_identity
+                - religion
+                - education_level
+                - field_of_study
+                - commute_mode
+                - commute_duration
+                - commute_destination
+                - housing_suitability
+                - dwelling_type
+                - bedrooms
+                - construction_period
       - name: subcategory
         description: "Specific subcategory within category"
         data_tests:
           - not_null
       - name: level
         description: "Hierarchy level (continent/country) for place_of_birth; empty for others"
+      - name: category_total
+        description: "Section header total count (denominator for pct_of_neighbourhood); NULL on all non-header rows"
+      - name: indent_level
+        description: "XLSX hierarchy depth: 0=section header, 2=subtotal, 4=leaf detail row"
+
+  - name: stg_toronto__census_extended
+    description: "Staged census extended scalar indicators (Path B). Grain: one row per (neighbourhood_id, census_year). All ~55 indicator columns nullable."
+    columns:
+      - name: census_extended_id
+        description: "Surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+      - name: neighbourhood_id
+        description: "Neighbourhood foreign key"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: census_year
+        description: "Census year"
+        data_tests:
+          - not_null

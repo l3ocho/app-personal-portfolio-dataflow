@@ -1,6 +1,7 @@
 """Pydantic schemas for Toronto housing data validation."""
 
 from .amenities import AmenityCount, AmenityRecord, AmenityType
+from .census_extended import CensusExtendedRecord
 from .cmhc import BedroomType, CMHCAnnualSurvey, CMHCRentalRecord, ReliabilityCode
 from .dimensions import (
     CMHCZone,
@@ -43,4 +44,6 @@ __all__ = [
     # Profile (Neighbourhood community profile data)
     "ProfileRecord",
     "VALID_CATEGORIES",
+    # Census extended (Path B wide-format scalar indicators)
+    "CensusExtendedRecord",
 ]

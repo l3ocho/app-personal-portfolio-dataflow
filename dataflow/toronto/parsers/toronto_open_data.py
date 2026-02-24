@@ -25,6 +25,7 @@ from dataflow.toronto.schemas import (
     NeighbourhoodRecord,
     ProfileRecord,
 )
+from dataflow.toronto.schemas.census_extended import CensusExtendedRecord
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +52,15 @@ class TorontoOpenDataParser:
 
     # Known continent names from Statistics Canada 2021 XLSX
     # Used to distinguish place_of_birth continent-level from country-level rows
-    _POB_CONTINENTS: frozenset[str] = frozenset({
-        "africa",
-        "americas",
-        "asia",
-        "europe",
-        "oceania",
-    })
+    _POB_CONTINENTS: frozenset[str] = frozenset(
+        {
+            "africa",
+            "americas",
+            "asia",
+            "europe",
+            "oceania",
+        }
+    )
 
     # Section metadata for profile data parsing
     # Maps category to start/stop anchors for identifying data sections
@@ -467,11 +470,13 @@ class TorontoOpenDataParser:
         # Convert to list of dicts with "Characteristic" as the indicator key
         records: list[dict[str, Any]] = []
         for row in rows_iter:
-            record: dict[str, Any] = {"Characteristic": ""}
+            record: dict[str, Any] = {"Characteristic": "", "RawCharacteristic": ""}
             for i, header in enumerate(headers):
                 if i == 0:
-                    record["Characteristic"] = (
-                        str(row[i]).strip() if row[i] is not None else ""
+                    raw_char = str(row[i]) if row[i] is not None else ""
+                    record["Characteristic"] = raw_char.strip()
+                    record["RawCharacteristic"] = (
+                        raw_char  # preserve leading whitespace
                     )
                 else:
                     # Store neighbourhood values; convert None to empty string
@@ -594,6 +599,204 @@ class TorontoOpenDataParser:
         "unemployment rate": "unemployment_rate",
         "average value of dwellings": "average_dwelling_value",
         # Note: bachelor's degree is handled separately (count -> percentage computation)
+    }
+
+    # Mapping for census_extended Path B extraction.
+    # Each entry maps a field_name to an extraction spec:
+    #   str         → exact label match (single row)
+    #   list[str]   → sum of multiple rows (compound indicator)
+    #   tuple[str, str] → ratio (numerator_label, denominator_label)
+    #
+    # Exact label matching is case-insensitive after stripping.
+    # Row labels are from the Statistics Canada 2021 Neighbourhood Profile XLSX.
+    CENSUS_EXTENDED_MAPPING: dict[str, str | list[str] | tuple[str, str]] = {
+        # Population (100% data row label is actually 25% sample in 2021 XLSX)
+        "population": "Total - Age groups of the population - 25% sample data",
+        "pop_0_to_14": "0 to 14 years",
+        "pop_15_to_24": ["15 to 19 years", "20 to 24 years"],
+        "pop_25_to_64": [
+            "25 to 29 years",
+            "30 to 34 years",
+            "35 to 39 years",
+            "40 to 44 years",
+            "45 to 49 years",
+            "50 to 54 years",
+            "55 to 59 years",
+            "60 to 64 years",
+        ],
+        "pop_65_plus": "65 years and over",
+        # Households (total private dwellings not available as standalone row;
+        # occupied count proxied from tenure total)
+        "total_private_dwellings": "Total - Occupied private dwellings by dwelling condition - 25% sample data",
+        "occupied_private_dwellings": "Total - Private households by tenure - 25% sample data",
+        "avg_household_size": "Average household size",
+        "avg_household_income_after_tax": "Average after-tax income of household in 2020 ($)",
+        # Housing tenure and costs
+        "pct_owner_occupied": (
+            "Owner",
+            "Total - Private households by tenure - 25% sample data",
+        ),
+        "pct_renter_occupied": (
+            "Renter",
+            "Total - Private households by tenure - 25% sample data",
+        ),
+        "pct_suitable_housing": (
+            "Suitable",
+            "Total - Private households by housing suitability - 25% sample data",
+        ),
+        "avg_shelter_cost_owner": "Average monthly shelter costs for owned dwellings ($)",
+        "avg_shelter_cost_renter": "Average monthly shelter costs for rented dwellings ($)",
+        "pct_shelter_cost_30pct": (
+            "Spending 30% or more of income on shelter costs",
+            "Total - Owner and tenant households with household total income greater than zero, in non-farm, non-reserve private dwellings by shelter-cost-to-income ratio - 25% sample data",
+        ),
+        # Education
+        "pct_no_certificate": (
+            "No certificate, diploma or degree",
+            "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
+        ),
+        "pct_high_school": (
+            "High (secondary) school diploma or equivalency certificate",
+            "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
+        ),
+        "pct_college": (
+            "Postsecondary certificate or diploma below bachelor level",
+            "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
+        ),
+        "pct_university": (
+            # Smart quote (U+2019) in XLSX normalised to ASCII apostrophe by _normalize_key
+            "Bachelor's degree or higher",
+            "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
+        ),
+        "pct_postsecondary": (
+            "Postsecondary certificate, diploma or degree",
+            "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
+        ),
+        # Labour force
+        "participation_rate": "Participation rate",
+        "employment_rate": "Employment rate",
+        "unemployment_rate": "Unemployment rate",
+        "pct_employed_full_time": (
+            # No commas in XLSX label; denominator changed from "Experienced labour force" section
+            "Worked full year full time",
+            "Total - Population aged 15 years and over by work activity during the reference year - 25% sample data",
+        ),
+        # Income
+        "median_after_tax_income": "Median after-tax income of household in 2020 ($)",
+        "median_employment_income": "Median employment income in 2020 among recipients ($)",
+        "lico_at_rate": (
+            "In low income based on the Low-income cut-offs, after tax (LICO-AT)",
+            "Total - LICO low-income status in 2020 for the population in private households to whom the low-income concept is applicable - 25% sample data",
+        ),
+        # market_basket_measure_rate not available in 2021 Toronto neighbourhood profiles XLSX
+        "market_basket_measure_rate": (
+            "In low income based on the Market Basket Measure (MBM)",
+            "Total - LICO low-income status in 2020 for the population in private households to whom the low-income concept is applicable - 25% sample data",
+        ),
+        # Diversity / immigration
+        "pct_immigrants": (
+            "Immigrants",
+            "Total - Immigrant status and period of immigration for the population in private households - 25% sample data",
+        ),
+        "pct_recent_immigrants": (
+            "2016 to 2021",
+            "Total - Immigrant status and period of immigration for the population in private households - 25% sample data",
+        ),
+        "pct_visible_minority": (
+            "Total visible minority population",
+            "Total - Visible minority for the population in private households - 25% sample data",
+        ),
+        "pct_indigenous": (
+            "Indigenous identity",
+            "Total - Indigenous identity for the population in private households - 25% sample data",
+        ),
+        # Language
+        "pct_english_only": (
+            "English only",
+            "Total - Knowledge of official languages for the population in private households - 25% sample data",
+        ),
+        "pct_french_only": (
+            "French only",
+            "Total - Knowledge of official languages for the population in private households - 25% sample data",
+        ),
+        "pct_neither_official_lang": (
+            "Neither English nor French",
+            "Total - Knowledge of official languages for the population in private households - 25% sample data",
+        ),
+        "pct_bilingual": (
+            "English and French",
+            "Total - Knowledge of official languages for the population in private households - 25% sample data",
+        ),
+        # Mobility / migration
+        "pct_non_movers": (
+            "Non-movers",
+            "Total - Mobility status 5 years ago - 25% sample data",
+        ),
+        "pct_movers_within_city": (
+            # "Non-migrants" = movers who stayed within the same CSD (City of Toronto)
+            "Non-migrants",
+            "Total - Mobility status 5 years ago - 25% sample data",
+        ),
+        "pct_movers_from_other_city": (
+            "External migrants",
+            "Total - Mobility status 5 years ago - 25% sample data",
+        ),
+        # Commuting / transport
+        "pct_car_commuters": (
+            "Car, truck or van",
+            "Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data",
+        ),
+        "pct_transit_commuters": (
+            "Public transit",
+            "Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data",
+        ),
+        "pct_active_commuters": (
+            "Walked",
+            "Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data",
+        ),
+        "pct_work_from_home": (
+            "Worked at home",
+            "Total - Place of work status for the employed labour force aged 15 years and over - 25% sample data",
+        ),
+        # Additional indicators
+        "median_age": "Median age of the population",
+        "pct_lone_parent_families": (
+            "Total one-parent families",
+            "Total number of census families in private households - 25% sample data",
+        ),
+        "avg_number_of_children": "Average number of children in census families with children",
+        "pct_dwellings_in_need_of_repair": (
+            "Major repairs needed",
+            "Total - Occupied private dwellings by dwelling condition - 25% sample data",
+        ),
+        "pct_unaffordable_housing": (
+            "Spending 30% or more of income on shelter costs",
+            "Total - Owner and tenant households with household total income greater than zero, in non-farm, non-reserve private dwellings by shelter-cost-to-income ratio - 25% sample data",
+        ),
+        "pct_overcrowded_housing": (
+            "Not suitable",
+            "Total - Private households by housing suitability - 25% sample data",
+        ),
+        # median_commute_minutes not available as pre-computed median in 2021 XLSX
+        "median_commute_minutes": "Median commuting duration (minutes)",
+        "pct_management_occupation": (
+            "0 Legislative and senior management occupations",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
+        ),
+        "pct_business_finance_admin": (
+            "1 Business, finance and administration occupations",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
+        ),
+        "pct_service_sector": (
+            "6 Sales and service occupations",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
+        ),
+        "pct_trades_transport": (
+            "7 Trades, transport and equipment operators and related occupations",
+            "Total - Labour force aged 15 years and over by occupation - Broad category - National Occupational Classification (NOC) 2021 - 25% sample data",
+        ),
+        # population_density not available in 2021 neighbourhood profiles XLSX
+        "population_density": "Population density per square kilometre",
     }
 
     # Age group patterns for computing median age from distribution data.
@@ -827,9 +1030,9 @@ class TorontoOpenDataParser:
                                     numeric_val = Decimal(str_val)
                                     # Only store if not already set (first match wins)
                                     if field_name not in neighbourhood_data[col]:
-                                        neighbourhood_data[col][
-                                            field_name
-                                        ] = numeric_val
+                                        neighbourhood_data[col][field_name] = (
+                                            numeric_val
+                                        )
                             except (ValueError, TypeError):
                                 pass
                     break  # Move to next row after matching
@@ -926,6 +1129,195 @@ class TorontoOpenDataParser:
         logger.info(f"Parsed {len(records)} census records for year {year}")
         return records
 
+    def get_census_extended(self, year: int = 2021) -> list[CensusExtendedRecord]:
+        """Fetch wide-format scalar census indicators from the Statistics Canada XLSX.
+
+        Path B extraction: ~55 scalar indicators per neighbourhood using
+        exact label matching against the Characteristic column. Intended to
+        complement Path A (long-format profile data) by providing pre-aggregated
+        scalars for the foundation intermediate model.
+
+        Args:
+            year: Census year. Only 2021 is supported.
+
+        Returns:
+            List of CensusExtendedRecord objects (one per neighbourhood, ~158 total).
+        """
+        if year != 2021:
+            logger.warning(f"Census extended only available for 2021; got {year}")
+            return []
+
+        raw_records: list[dict[str, Any]] = []
+        try:
+            raw_records = self._fetch_xlsx_as_records(
+                self.DATASETS["neighbourhood_profiles"],
+                name_filter="2021",
+            )
+        except (ValueError, Exception) as e:
+            logger.warning(f"Could not fetch 2021 XLSX for census extended: {e}")
+            return []
+
+        if not raw_records:
+            logger.warning("Census extended dataset is empty")
+            return []
+
+        logger.info(
+            f"Fetched {len(raw_records)} XLSX rows for census_extended extraction"
+        )
+
+        # Identify neighbourhood columns
+        exclude_meta = {
+            "Characteristic",
+            "RawCharacteristic",
+            "_id",
+            "Topic",
+            "Data Source",
+            "Category",
+        }
+        neighbourhood_cols = [col for col in raw_records[0] if col not in exclude_meta]
+
+        def _normalize_key(s: str) -> str:
+            """Lowercase + normalize smart quotes for consistent matching."""
+            return s.lower().strip().replace("\u2019", "'").replace("\u2018", "'")
+
+        # Build lookup: {normalized_lower_characteristic -> row_dict}
+        char_to_row: dict[str, dict[str, Any]] = {}
+        for row in raw_records:
+            char = str(row.get("Characteristic", "")).strip()
+            if char:
+                char_to_row[_normalize_key(char)] = row
+
+        def _get_value(label: str, col: str) -> float | None:
+            """Look up a value by exact label for a neighbourhood column."""
+            row = char_to_row.get(_normalize_key(label))
+            if row is None:
+                return None
+            return self._parse_float(row.get(col))
+
+        def _extract_field(
+            spec: str | list[str] | tuple[str, str],
+            col: str,
+        ) -> float | None:
+            """Extract a field value using the mapping spec."""
+            if isinstance(spec, str):
+                return _get_value(spec, col)
+            elif isinstance(spec, list):
+                # Sum of multiple rows
+                total = 0.0
+                found_any = False
+                for label in spec:
+                    val = _get_value(label, col)
+                    if val is not None:
+                        total += val
+                        found_any = True
+                return float(total) if found_any else None
+            elif isinstance(spec, tuple):
+                # Ratio: numerator / denominator * 100
+                numerator_label, denominator_label = spec
+                num = _get_value(numerator_label, col)
+                denom = _get_value(denominator_label, col)
+                if num is None or denom is None or denom == 0:
+                    return None
+                return round(num / denom * 100, 2)
+            return None
+
+        # Process each neighbourhood column
+        records: list[CensusExtendedRecord] = []
+        unmatched_cols: list[str] = []
+
+        for col in neighbourhood_cols:
+            neighbourhood_id = self._match_neighbourhood_id(col)
+            if neighbourhood_id is None:
+                unmatched_cols.append(col)
+                continue
+
+            # Extract all indicator fields
+            field_values: dict[str, float | int | None] = {}
+            matched_count = 0
+
+            for field_name, spec in self.CENSUS_EXTENDED_MAPPING.items():
+                val = _extract_field(spec, col)
+                field_values[field_name] = val
+                if val is not None:
+                    matched_count += 1
+
+            total_indicators = len(self.CENSUS_EXTENDED_MAPPING)
+            if matched_count < 50:
+                logger.warning(
+                    f"Census extended: only {matched_count}/{total_indicators} "
+                    f"indicators matched for neighbourhood '{col}' "
+                    f"(neighbourhood_id={neighbourhood_id})"
+                )
+
+            # Handle integer fields
+            int_fields = {
+                "population",
+                "pop_0_to_14",
+                "pop_15_to_24",
+                "pop_25_to_64",
+                "pop_65_plus",
+                "total_private_dwellings",
+                "occupied_private_dwellings",
+            }
+
+            record_kwargs: dict[str, Any] = {
+                "neighbourhood_id": neighbourhood_id,
+                "census_year": year,
+            }
+            for field_name, val in field_values.items():
+                if val is not None and field_name in int_fields:
+                    record_kwargs[field_name] = int(round(val))
+                else:
+                    record_kwargs[field_name] = val
+
+            try:
+                record = CensusExtendedRecord(**record_kwargs)
+                records.append(record)
+            except Exception as e:
+                logger.debug(f"Skipping census extended for '{col}': {e}")
+
+        if unmatched_cols:
+            logger.warning(
+                f"Census extended: could not match {len(unmatched_cols)} neighbourhood columns"
+            )
+
+        logger.info(
+            f"Parsed {len(records)} census_extended records for year {year} "
+            f"({len(self.CENSUS_EXTENDED_MAPPING)} indicators each)"
+        )
+        return records
+
+    def _parse_float(self, value: Any) -> float | None:
+        """Parse a Statistics Canada numeric value to float.
+
+        Strips commas, currency symbols, percent signs, and handles
+        suppression codes.
+
+        Args:
+            value: Raw value from XLSX.
+
+        Returns:
+            Parsed float, or None if suppressed/invalid.
+        """
+        if value is None or value == "":
+            return None
+
+        str_val = str(value).strip()
+        if not str_val:
+            return None
+
+        if str_val in ("x", "X", "F", ".."):
+            return None
+
+        try:
+            clean = str_val.replace(",", "").replace("$", "").replace("%", "").strip()
+            if clean and clean not in ("x", "X", "F", ".."):
+                return float(clean)
+        except (ValueError, TypeError):
+            pass
+
+        return None
+
     def get_neighbourhood_profiles(self, year: int = 2021) -> list[ProfileRecord]:
         """Fetch neighbourhood community profile data from Statistics Canada.
 
@@ -946,7 +1338,9 @@ class TorontoOpenDataParser:
             List of validated ProfileRecord objects.
         """
         if year != 2021:
-            logger.warning(f"Neighbourhood profiles only available for 2021; got {year}")
+            logger.warning(
+                f"Neighbourhood profiles only available for 2021; got {year}"
+            )
             return []
 
         raw_records: list[dict[str, Any]] = []
@@ -978,7 +1372,7 @@ class TorontoOpenDataParser:
         logger.info(f"Found {len(neighbourhood_cols)} neighbourhood columns")
 
         # Tag rows by category using state machine
-        tagged_rows = self._tag_profile_rows(raw_records)
+        tagged_rows, section_totals = self._tag_profile_rows(raw_records)
 
         # Build mapping of neighbourhood column to ID
         col_to_id: dict[str, int] = {}
@@ -997,20 +1391,28 @@ class TorontoOpenDataParser:
         )
 
         # Build records by category, applying filters where needed
-        records = self._build_profile_records(tagged_rows, col_to_id, year)
+        records = self._build_profile_records(
+            tagged_rows, col_to_id, year, section_totals
+        )
 
         logger.info(f"Parsed {len(records)} profile records for year {year}")
         return records
 
     def _tag_profile_rows(
         self, raw_records: list[dict[str, Any]]
-    ) -> list[tuple[str, str, str, dict[str, Any]]]:
-        """Tag profile rows with category, subcategory, and level.
+    ) -> tuple[
+        list[tuple[str, str, str, int, dict[str, Any]]],
+        dict[str, dict[str, int | None]],
+    ]:
+        """Tag profile rows with category, subcategory, level, and indent_level.
 
         Extracts rows from specific community profile sections using exact
         section header matching. Avoids false matches from demographic sections.
 
-        Tags each row as (category, subcategory, level, row_dict).
+        Tags each row as (category, subcategory, level, indent_level, row_dict).
+
+        Also captures category_total per section per neighbourhood column from
+        the section header row value — used to fix the denominator bug.
 
         Skips:
         - Header rows (starting with "Total - ")
@@ -1024,12 +1426,15 @@ class TorontoOpenDataParser:
             raw_records: Raw records from XLSX fetch.
 
         Returns:
-            List of (category, subcategory, level, row_dict) tuples.
+            Tuple of:
+            - List of (category, subcategory, level, indent_level, row_dict)
+            - Dict of section_totals: {category: {col_name: total_count}}
         """
-        # Exact section header mappings for community profile categories
-        # Using specific text patterns to avoid matching related sections
-        # (e.g., "mother tongue" section vs "language spoken at home" section)
+        # Exact section header mappings for community profile categories.
+        # Anchors use lowercase substring matching on the Characteristic column.
+        # Ordered from most specific to least specific to avoid false matches.
         profile_sections: dict[str, str] = {
+            # Existing 10 categories
             "knowledge of official languages for the population in private": "official_language",
             "citizenship for the population in private households": "citizenship",
             "immigrant status and period of immigration for the population": "immigration_status",
@@ -1040,10 +1445,47 @@ class TorontoOpenDataParser:
             "visible minority for the population in private households - 25%": "visible_minority",
             "ethnic or cultural origin for the population in private": "ethnic_origin",
             "total - mother tongue for the population in private households - 25%": "mother_tongue",
+            # Sprint 12: 18 new categories
+            "language spoken most often at home for the population in private": "language_at_home",
+            "indigenous identity for the population in private households": "indigenous_identity",
+            "total - religion for the population in private households": "religion",
+            "highest certificate, diploma or degree for the population aged 15 years and over in private households - 25%": "education_level",
+            # Include "aged 15 years and over" to avoid matching the 25-to-64 duplicate section
+            "major field of study - classification of instructional programs (cip) 2021 for the population aged 15 years and over in private": "field_of_study",
+            "occupation - national occupational classification": "occupation",
+            "industry - north american industry classification system": "industry_sector",
+            "total income groups for the population aged 15 years and over in private households": "income_bracket",
+            "main source of income for the population aged 15 years and over": "income_source",
+            "household type including census family structure": "household_type",
+            "census family structure for census families in private households": "family_type",
+            "main mode of commuting for the employed labour force aged 15 years and over": "commute_mode",
+            "commuting duration for the employed labour force aged 15 years and over": "commute_duration",
+            "place of work status for the employed labour force aged 15 years and over": "commute_destination",
+            "housing suitability": "housing_suitability",
+            "occupied private dwellings by structural type of dwelling": "dwelling_type",
+            "occupied private dwellings by number of bedrooms": "bedrooms",
+            "occupied private dwellings by period of construction": "construction_period",
         }
 
+        # Identify neighbourhood columns (exclude metadata columns)
+        exclude_meta = {
+            "Characteristic",
+            "RawCharacteristic",
+            "_id",
+            "Topic",
+            "Data Source",
+            "Category",
+        }
+        neighbourhood_cols = [
+            col
+            for col in (raw_records[0] if raw_records else {})
+            if col not in exclude_meta
+        ]
+
         # Find all profile section header rows
-        section_headers: list[tuple[int, str, str]] = []  # (index, header_text, category)
+        section_headers: list[
+            tuple[int, str, str]
+        ] = []  # (index, header_text, category)
 
         for idx, row in enumerate(raw_records):
             characteristic = str(row.get("Characteristic", "")).strip()
@@ -1056,22 +1498,31 @@ class TorontoOpenDataParser:
             for header_anchor, category in profile_sections.items():
                 if header_anchor in char_lower:
                     section_headers.append((idx, characteristic, category))
-                    logger.debug(f"Found section: {category} at row {idx}: {characteristic[:60]}")
+                    logger.debug(
+                        f"Found section: {category} at row {idx}: {characteristic[:60]}"
+                    )
                     break
 
         if not section_headers:
             logger.warning("No profile sections detected in XLSX data")
-            return []
+            return [], {}
 
         logger.info(f"Detected {len(section_headers)} profile sections")
 
         # Extract rows between section headers
-        tagged = []
+        tagged: list[tuple[str, str, str, int, dict[str, Any]]] = []
+        section_totals: dict[str, dict[str, int | None]] = {}
 
         for sec_idx, (header_idx, _header_text, category) in enumerate(section_headers):
+            # Capture category_total per neighbourhood column from the header row
+            header_row = raw_records[header_idx]
+            col_totals: dict[str, int | None] = {}
+            for col in neighbourhood_cols:
+                col_totals[col] = self._parse_count(header_row.get(col))
+            section_totals[category] = col_totals
+
             # Find end of this section
             # Stop at the next profile section header OR any "Total - " header
-            # (since there may be intermediate "Total - " headers between profile sections)
             next_header_idx = len(raw_records)
 
             if sec_idx + 1 < len(section_headers):
@@ -1079,7 +1530,11 @@ class TorontoOpenDataParser:
             else:
                 # For the last profile section, find the next "Total - " header
                 for row_idx in range(header_idx + 1, len(raw_records)):
-                    char = str(raw_records[row_idx].get("Characteristic", "")).strip().lower()
+                    char = (
+                        str(raw_records[row_idx].get("Characteristic", ""))
+                        .strip()
+                        .lower()
+                    )
                     if char.startswith("total -"):
                         next_header_idx = row_idx
                         break
@@ -1103,7 +1558,11 @@ class TorontoOpenDataParser:
                 if characteristic.lower() == "total":
                     continue
 
-                # Subcategory is the characteristic itself
+                # Compute indent_level from leading whitespace in RawCharacteristic
+                raw_label = str(row.get("RawCharacteristic", characteristic))
+                indent_level = len(raw_label) - len(raw_label.lstrip(" \t\xa0"))
+
+                # Subcategory is the stripped characteristic itself
                 subcategory = characteristic
                 section_rows += 1
 
@@ -1112,12 +1571,26 @@ class TorontoOpenDataParser:
                 if category in ("place_of_birth", "place_of_birth_recent"):
                     level = self._detect_place_of_birth_level(subcategory)
 
-                tagged.append((category, subcategory, level, row))
+                tagged.append((category, subcategory, level, indent_level, row))
 
             logger.debug(f"  {category:30} extracted {section_rows} subcategories")
 
-        logger.debug(f"Tagged {len(tagged)} profile rows")
-        return tagged
+        logger.debug(f"Tagged {len(tagged)} profile rows before dedup")
+
+        # Deduplicate: keep only FIRST occurrence of each (category, subcategory, level, indent_level)
+        # This prevents duplicate rows from different positions in the XLSX.
+        # indent_level is included in the key because the same subcategory text can appear
+        # at different depths (header vs detail row) and should be kept separately.
+        seen: set[tuple[str, str, str, int]] = set()
+        deduped = []
+        for category, subcategory, level, indent_level, row in tagged:
+            key = (category, subcategory, level, indent_level)
+            if key not in seen:
+                seen.add(key)
+                deduped.append((category, subcategory, level, indent_level, row))
+
+        logger.info(f"Deduplicated {len(tagged)} -> {len(deduped)} profile rows")
+        return deduped, section_totals
 
     def _parse_count(self, value: Any) -> int | None:
         """Parse a Statistics Canada count value.
@@ -1153,9 +1626,10 @@ class TorontoOpenDataParser:
 
     def _build_profile_records(
         self,
-        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        tagged_rows: list[tuple[str, str, str, int, dict[str, Any]]],
         col_to_id: dict[str, int],
         year: int,
+        section_totals: dict[str, dict[str, int | None]] | None = None,
     ) -> list[ProfileRecord]:
         """Build ProfileRecord objects from tagged rows.
 
@@ -1168,32 +1642,46 @@ class TorontoOpenDataParser:
             tagged_rows: Output from _tag_profile_rows.
             col_to_id: Mapping of neighbourhood column names to IDs.
             year: Census year.
+            section_totals: Per-category per-column category totals from section headers.
 
         Returns:
             List of validated ProfileRecord objects.
         """
+        section_totals = section_totals or {}
+
         # Organize rows by category for filtering
-        rows_by_category: dict[str, list[tuple[str, str, str, dict[str, Any]]]] = {}
-        for category, subcategory, level, row in tagged_rows:
+        rows_by_category: dict[
+            str, list[tuple[str, str, str, int, dict[str, Any]]]
+        ] = {}
+        for category, subcategory, level, indent_level, row in tagged_rows:
             if category not in rows_by_category:
                 rows_by_category[category] = []
-            rows_by_category[category].append((category, subcategory, level, row))
+            rows_by_category[category].append(
+                (category, subcategory, level, indent_level, row)
+            )
 
         records = []
 
         # Process each category
         for category in rows_by_category:
             cat_rows = rows_by_category[category]
+            cat_totals = section_totals.get(category, {})
 
             if category == "ethnic_origin":
                 # Apply top-30 city-wide filter
-                cat_records = self._filter_ethnic_origin(cat_rows, col_to_id, year)
+                cat_records = self._filter_ethnic_origin(
+                    cat_rows, col_to_id, year, cat_totals
+                )
             elif category == "mother_tongue":
                 # Apply per-neighbourhood top-15 filter
-                cat_records = self._filter_mother_tongue(cat_rows, col_to_id, year)
+                cat_records = self._filter_mother_tongue(
+                    cat_rows, col_to_id, year, cat_totals
+                )
             else:
                 # Standard: emit all rows for all neighbourhoods
-                cat_records = self._emit_category_records(cat_rows, col_to_id, year)
+                cat_records = self._emit_category_records(
+                    cat_rows, col_to_id, year, cat_totals
+                )
 
             records.extend(cat_records)
 
@@ -1201,9 +1689,10 @@ class TorontoOpenDataParser:
 
     def _emit_category_records(
         self,
-        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        tagged_rows: list[tuple[str, str, str, int, dict[str, Any]]],
         col_to_id: dict[str, int],
         year: int,
+        category_totals: dict[str, int | None] | None = None,
     ) -> list[ProfileRecord]:
         """Emit ProfileRecord for all rows in a standard (non-filtered) category.
 
@@ -1211,13 +1700,15 @@ class TorontoOpenDataParser:
             tagged_rows: Rows for this category from _tag_profile_rows.
             col_to_id: Neighbourhood ID mapping.
             year: Census year.
+            category_totals: Per-column total counts from the section header row.
 
         Returns:
             List of ProfileRecord objects.
         """
+        category_totals = category_totals or {}
         records = []
 
-        for category, subcategory, level, row in tagged_rows:
+        for category, subcategory, level, indent_level, row in tagged_rows:
             # Emit one record per neighbourhood
             for col, neighbourhood_id in col_to_id.items():
                 value = row.get(col)
@@ -1231,21 +1722,21 @@ class TorontoOpenDataParser:
                         subcategory=subcategory,
                         count=count,
                         level=level,
+                        category_total=category_totals.get(col),
+                        indent_level=indent_level,
                     )
                     records.append(record)
                 except Exception as e:
-                    logger.debug(
-                        f"Skipping record for {col}/"
-                        f"{subcategory}: {e}"
-                    )
+                    logger.debug(f"Skipping record for {col}/{subcategory}: {e}")
 
         return records
 
     def _filter_ethnic_origin(
         self,
-        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        tagged_rows: list[tuple[str, str, str, int, dict[str, Any]]],
         col_to_id: dict[str, int],
         year: int,
+        category_totals: dict[str, int | None] | None = None,
     ) -> list[ProfileRecord]:
         """Filter ethnic origin to top-30 by city-wide total.
 
@@ -1257,14 +1748,17 @@ class TorontoOpenDataParser:
             tagged_rows: Rows for ethnic_origin category.
             col_to_id: Neighbourhood ID mapping.
             year: Census year.
+            category_totals: Per-column total counts from the section header row.
 
         Returns:
             List of ProfileRecord objects for top-30 ethnicities only.
         """
+        category_totals = category_totals or {}
+
         # Compute city-wide total per subcategory
         subcategory_totals: dict[str, int] = {}
 
-        for _category, subcategory, _level, row in tagged_rows:
+        for _category, subcategory, _level, _indent_level, row in tagged_rows:
             total = 0
             for col in col_to_id:
                 count = self._parse_count(row.get(col))
@@ -1286,7 +1780,7 @@ class TorontoOpenDataParser:
 
         # Emit records only for top-30 subcategories
         records = []
-        for category, subcategory, level, row in tagged_rows:
+        for category, subcategory, level, indent_level, row in tagged_rows:
             if subcategory not in top_30:
                 continue
 
@@ -1302,21 +1796,23 @@ class TorontoOpenDataParser:
                         subcategory=subcategory,
                         count=count,
                         level=level,
+                        category_total=category_totals.get(col),
+                        indent_level=indent_level,
                     )
                     records.append(record)
                 except Exception as e:
                     logger.debug(
-                        f"Skipping ethnic origin record for {col}/"
-                        f"{subcategory}: {e}"
+                        f"Skipping ethnic origin record for {col}/{subcategory}: {e}"
                     )
 
         return records
 
     def _filter_mother_tongue(
         self,
-        tagged_rows: list[tuple[str, str, str, dict[str, Any]]],
+        tagged_rows: list[tuple[str, str, str, int, dict[str, Any]]],
         col_to_id: dict[str, int],
         year: int,
+        category_totals: dict[str, int | None] | None = None,
     ) -> list[ProfileRecord]:
         """Filter mother tongue to per-neighbourhood top-15 non-official + official.
 
@@ -1333,10 +1829,13 @@ class TorontoOpenDataParser:
             tagged_rows: Rows for mother_tongue category.
             col_to_id: Neighbourhood ID mapping.
             year: Census year.
+            category_totals: Per-column total counts from the section header row.
 
         Returns:
             List of ProfileRecord objects with per-neighbourhood top-15 filtering.
         """
+        category_totals = category_totals or {}
+
         # Aggregate rows: skip these
         skip_patterns = {"non-official", "official", "other"}
 
@@ -1347,7 +1846,7 @@ class TorontoOpenDataParser:
             # Collect language counts for this neighbourhood
             lang_counts: dict[str, int] = {}
 
-            for _category, subcategory, _level, row in tagged_rows:
+            for _category, subcategory, _level, _indent_level, row in tagged_rows:
                 # Skip aggregate rows
                 subcat_lower = subcategory.lower()
                 if any(pat in subcat_lower for pat in skip_patterns):
@@ -1361,7 +1860,7 @@ class TorontoOpenDataParser:
             # Identify official languages
             # Only include English and French (exact two languages, no variants)
             official_langs = set()
-            for _category, subcategory, _level, _row in tagged_rows:
+            for _category, subcategory, _level, _indent_level, _row in tagged_rows:
                 subcat_lower = subcategory.lower().strip()
                 # Match only English and French (the two official languages)
                 if subcat_lower in ("english", "french"):
@@ -1386,7 +1885,7 @@ class TorontoOpenDataParser:
             )
 
             # Emit records for included languages only
-            for category, subcategory, level, row in tagged_rows:
+            for category, subcategory, level, indent_level, row in tagged_rows:
                 if subcategory not in include_langs:
                     continue
 
@@ -1400,6 +1899,8 @@ class TorontoOpenDataParser:
                         subcategory=subcategory,
                         count=count,
                         level=level,
+                        category_total=category_totals.get(neighbourhood_col),
+                        indent_level=indent_level,
                     )
                     records.append(record)
                 except Exception as e:

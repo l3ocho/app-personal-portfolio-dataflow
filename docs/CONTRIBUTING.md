@@ -1,18 +1,18 @@
-# Developer Guide
+# Contributor Guide
 
-Instructions for contributing to the Analytics Portfolio project.
+This is a data engineering pipeline — no frontend code. Contributing means adding data sources, building parsers and loaders, extending dbt models, or adding new analytical domains.
 
 ---
 
 ## Table of Contents
 
 1. [Development Setup](#development-setup)
-2. [Adding a Blog Post](#adding-a-blog-post)
-3. [Adding a New Page](#adding-a-new-page)
-4. [Adding a Dashboard Tab](#adding-a-dashboard-tab)
-5. [Creating Figure Factories](#creating-figure-factories)
-6. [Branch Workflow](#branch-workflow)
-7. [Code Standards](#code-standards)
+2. [Adding a New Data Source (within existing domain)](#adding-a-new-data-source)
+3. [Adding a New dbt Model](#adding-a-new-dbt-model)
+4. [Adding a New Domain](#adding-a-new-domain)
+5. [Branch Workflow](#branch-workflow)
+6. [Code Standards](#code-standards)
+7. [Before You Commit](#before-you-commit)
 
 ---
 
@@ -20,383 +20,345 @@ Instructions for contributing to the Analytics Portfolio project.
 
 ### Prerequisites
 
-- Python 3.11+ (via pyenv)
+- Python 3.11+ (via pyenv recommended)
 - Docker and Docker Compose
-- Git
 
 ### Initial Setup
 
 ```bash
-# Clone repository
-git clone https://gitea.hotserv.cloud/lmiranda/personal-portfolio.git
-cd personal-portfolio
+git clone https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow.git
+cd personal-portfolio-dataflow
 
-# Run setup (creates venv, installs deps, copies .env.example)
-make setup
-
-# Start PostgreSQL + PostGIS
-make docker-up
-
-# Initialize database
-make db-init
-
-# Start development server
-make run
+make setup        # Creates .venv, installs deps, copies .env.example
+make docker-up    # Start PostgreSQL + PostGIS
+make db-init      # Initialize schema + extensions
+make load-toronto # Load Toronto data
+make dbt-run      # Run dbt transformations
+make dbt-test     # Validate output
 ```
-
-The app runs at `http://localhost:8050`.
 
 ### Useful Commands
 
 ```bash
-make test       # Run tests
-make test-cov   # Run tests with coverage
-make lint       # Check code style
-make format     # Auto-format code
-make typecheck  # Run mypy type checker
-make ci         # Run all checks (lint, typecheck, test)
-make dbt-run    # Run dbt transformations
-make dbt-test   # Run dbt tests
+make test        # Run pytest
+make lint        # Run ruff linter
+make format      # Auto-format with ruff
+make typecheck   # Run mypy (strict)
+make ci          # Full check: lint + typecheck + test
+make dbt-run     # Run all dbt models
+make dbt-test    # Run all dbt tests
+make pgweb-up    # Browse database at http://localhost:8081
 ```
 
 ---
 
-## Adding a Blog Post
+## Adding a New Data Source
 
-Blog posts are Markdown files with YAML frontmatter, stored in `portfolio_app/content/blog/`.
+To add a new data source within an existing domain (e.g., adding a new Toronto API):
 
-### Step 1: Create the Markdown File
+### Step 1: Write the Parser
 
-Create a new file in `portfolio_app/content/blog/`:
-
-```bash
-touch portfolio_app/content/blog/your-article-slug.md
-```
-
-The filename becomes the URL slug: `/blog/your-article-slug`
-
-### Step 2: Add Frontmatter
-
-Every blog post requires YAML frontmatter at the top:
-
-```markdown
----
-title: "Your Article Title"
-date: "2026-01-17"
-description: "A brief description for the article card (1-2 sentences)"
-tags:
-  - data-engineering
-  - python
-  - lessons-learned
-status: published
----
-
-Your article content starts here...
-```
-
-**Required fields:**
-
-| Field | Description |
-|-------|-------------|
-| `title` | Article title (displayed on cards and page) |
-| `date` | Publication date in `YYYY-MM-DD` format |
-| `description` | Short summary for article listing cards |
-| `tags` | List of tags (displayed as badges) |
-| `status` | `published` or `draft` (drafts are hidden from listing) |
-
-### Step 3: Write Content
-
-Use standard Markdown:
-
-```markdown
-## Section Heading
-
-Regular paragraph text.
-
-### Subsection
-
-- Bullet points
-- Another point
+Create a new file in `dataflow/<domain>/parsers/`:
 
 ```python
-# Code blocks with syntax highlighting
-def example():
-    return "Hello"
-```
+# dataflow/toronto/parsers/new_source.py
+"""Parser for <source name>."""
 
-**Bold text** and *italic text*.
+from ..schemas.new_schema import NewRecord
 
-> Blockquotes for callouts
-```
 
-### Step 4: Test Locally
+def fetch_new_data(url: str) -> list[NewRecord]:
+    """Fetch and validate data from <source>.
 
-```bash
-make run
-```
-
-Visit `http://localhost:8050/blog` to see the article listing.
-Visit `http://localhost:8050/blog/your-article-slug` for the full article.
-
-### Example: Complete Blog Post
-
-```markdown
----
-title: "Building ETL Pipelines with Python"
-date: "2026-01-17"
-description: "Lessons from building production data pipelines at scale"
-tags:
-  - python
-  - etl
-  - data-engineering
-status: published
----
-
-When I started building data pipelines, I made every mistake possible...
-
-## The Problem
-
-Most tutorials show toy examples. Real pipelines are different.
-
-### Error Handling
-
-```python
-def safe_transform(df: pd.DataFrame) -> pd.DataFrame:
-    try:
-        return df.apply(transform_row, axis=1)
-    except ValueError as e:
-        logger.error(f"Transform failed: {e}")
-        raise
-```
-
-## Conclusion
-
-Ship something that works, then iterate.
-```
-
----
-
-## Adding a New Page
-
-Pages use Dash's automatic routing based on file location in `portfolio_app/pages/`.
-
-### Step 1: Create the Page File
-
-```bash
-touch portfolio_app/pages/your_page.py
-```
-
-### Step 2: Register the Page
-
-Every page must call `dash.register_page()`:
-
-```python
-"""Your page description."""
-
-import dash
-import dash_mantine_components as dmc
-
-dash.register_page(
-    __name__,
-    path="/your-page",      # URL path
-    name="Your Page",       # Display name (for nav)
-    title="Your Page Title" # Browser tab title
-)
-
-
-def layout() -> dmc.Container:
-    """Page layout function."""
-    return dmc.Container(
-        dmc.Stack(
-            [
-                dmc.Title("Your Page", order=1),
-                dmc.Text("Page content here."),
-            ],
-            gap="lg",
-        ),
-        size="md",
-        py="xl",
-    )
-```
-
-### Step 3: Page with Dynamic Content
-
-For pages with URL parameters:
-
-```python
-# pages/blog/article.py
-dash.register_page(
-    __name__,
-    path_template="/blog/<slug>",  # Dynamic parameter
-    name="Article",
-)
-
-
-def layout(slug: str = "") -> dmc.Container:
-    """Layout receives URL parameters as arguments."""
-    article = get_article(slug)
-    if not article:
-        return dmc.Text("Article not found")
-
-    return dmc.Container(
-        dmc.Title(article["meta"]["title"]),
-        # ...
-    )
-```
-
-### Step 4: Add Navigation (Optional)
-
-To add the page to the sidebar, edit `portfolio_app/components/sidebar.py`:
-
-```python
-# For main pages (Home, About, Blog, etc.)
-NAV_ITEMS_MAIN = [
-    {"path": "/", "icon": "tabler:home", "label": "Home"},
-    {"path": "/your-page", "icon": "tabler:star", "label": "Your Page"},
-    # ...
-]
-
-# For project/dashboard pages
-NAV_ITEMS_PROJECTS = [
-    {"path": "/projects", "icon": "tabler:folder", "label": "Projects"},
-    {"path": "/your-dashboard", "icon": "tabler:chart-bar", "label": "Your Dashboard"},
-    # ...
-]
-```
-
-The sidebar uses icon buttons with tooltips. Each item needs `path`, `icon` (Tabler icon name), and `label` (tooltip text).
-
-### URL Routing Summary
-
-| File Location | URL |
-|---------------|-----|
-| `pages/home.py` | `/` (if `path="/"`) |
-| `pages/about.py` | `/about` |
-| `pages/blog/index.py` | `/blog` |
-| `pages/blog/article.py` | `/blog/<slug>` |
-| `pages/toronto/dashboard.py` | `/toronto` |
-
----
-
-## Adding a Dashboard Tab
-
-Dashboard tabs are in `portfolio_app/pages/toronto/tabs/`.
-
-### Step 1: Create Tab Layout
-
-```python
-# pages/toronto/tabs/your_tab.py
-"""Your tab description."""
-
-import dash_mantine_components as dmc
-
-from portfolio_app.figures.toronto.choropleth import create_choropleth
-from portfolio_app.toronto.demo_data import get_demo_data
-
-
-def create_your_tab_layout() -> dmc.Stack:
-    """Create the tab layout."""
-    data = get_demo_data()
-
-    return dmc.Stack(
-        [
-            dmc.Grid(
-                [
-                    dmc.GridCol(
-                        # Map on left
-                        create_choropleth(data, "your_metric"),
-                        span=8,
-                    ),
-                    dmc.GridCol(
-                        # KPI cards on right
-                        create_kpi_cards(data),
-                        span=4,
-                    ),
-                ],
-            ),
-            # Charts below
-            create_supporting_charts(data),
-        ],
-        gap="lg",
-    )
-```
-
-### Step 2: Register in Dashboard
-
-Edit `pages/toronto/dashboard.py` to add the tab:
-
-```python
-from portfolio_app.pages.toronto.tabs.your_tab import create_your_tab_layout
-
-# In the tabs list:
-dmc.TabsTab("Your Tab", value="your-tab"),
-
-# In the panels:
-dmc.TabsPanel(create_your_tab_layout(), value="your-tab"),
-```
-
----
-
-## Creating Figure Factories
-
-Figure factories are organized by dashboard domain under `portfolio_app/figures/{domain}/`.
-
-### Pattern
-
-```python
-# figures/toronto/your_chart.py
-"""Your chart type factory for Toronto dashboard."""
-
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
-
-
-def create_your_chart(
-    df: pd.DataFrame,
-    x_col: str,
-    y_col: str,
-    title: str = "",
-) -> go.Figure:
-    """Create a your_chart figure.
-
-    Args:
-        df: DataFrame with data.
-        x_col: Column for x-axis.
-        y_col: Column for y-axis.
-        title: Optional chart title.
-
-    Returns:
-        Configured Plotly figure.
+    Returns list of validated Pydantic records.
     """
-    fig = px.bar(df, x=x_col, y=y_col, title=title)
+    # ... fetch + validate
+    return [NewRecord(**row) for row in raw_data]
+```
 
-    fig.update_layout(
-        template="plotly_white",
-        margin=dict(l=40, r=40, t=40, b=40),
+**Conventions:**
+- Return Pydantic models, not raw dicts
+- Normalize Unicode before string comparisons (see `_normalize_key()` in `parsers/toronto_open_data.py` for Stats Canada XLSX)
+- Parser functions are pure — no DB calls
+- Export new parsers from the domain's `parsers/__init__.py`
+
+### Step 2: Define the Pydantic Schema
+
+Create or extend a schema in `dataflow/<domain>/schemas/`:
+
+```python
+# dataflow/toronto/schemas/new_schema.py
+"""Pydantic validation models for <source>."""
+
+from pydantic import BaseModel, field_validator
+
+
+class NewRecord(BaseModel):
+    neighbourhood_id: int
+    year: int
+    value: float | None = None
+
+    @field_validator("year")
+    @classmethod
+    def validate_year(cls, v: int) -> int:
+        if v < 2000:
+            raise ValueError(f"Year {v} out of range")
+        return v
+```
+
+### Step 3: Define the SQLAlchemy Model
+
+Add a table to `dataflow/<domain>/models/`:
+
+```python
+# dataflow/toronto/models/facts.py (or a new file)
+from sqlalchemy import Index, Integer, Numeric, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+from .base import Base
+from .dimensions import RAW_TORONTO_SCHEMA
+
+
+class FactNewData(Base):
+    __tablename__ = "fact_new_data"
+    __table_args__ = (
+        UniqueConstraint("neighbourhood_id", "year", name="uq_fact_new_data_key"),
+        Index("ix_fact_new_data_nbhd_year", "neighbourhood_id", "year"),
+        {"schema": RAW_TORONTO_SCHEMA},
     )
 
-    return fig
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    neighbourhood_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    value: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
 ```
 
-### Export from `__init__.py`
+### Step 4: Write the Loader
+
+Create a loader in `dataflow/<domain>/loaders/`:
 
 ```python
-# figures/toronto/__init__.py
-from .your_chart import create_your_chart
+# dataflow/toronto/loaders/new_loader.py
+"""Loader for <source> data."""
 
-__all__ = [
-    "create_your_chart",
-    # ...
+from ..models.facts import FactNewData
+from ..schemas.new_schema import NewRecord
+from .base import get_session, upsert_by_key
+
+
+def load_new_data(records: list[NewRecord]) -> int:
+    """Upsert new data records into raw_toronto.fact_new_data.
+
+    Returns number of rows affected.
+    """
+    rows = [
+        {
+            "neighbourhood_id": r.neighbourhood_id,
+            "year": r.year,
+            "value": r.value,
+        }
+        for r in records
+    ]
+    with get_session() as session:
+        return upsert_by_key(session, FactNewData, rows, key_cols=["neighbourhood_id", "year"])
+```
+
+### Step 5: Wire into the ETL Script
+
+Add the new step to `scripts/data/load_<domain>_data.py`:
+
+```python
+# In DataPipeline.run() or equivalent
+def _load_new_data(self) -> None:
+    logger.info("Loading new data...")
+    records = fetch_new_data(NEW_DATA_URL)
+    count = load_new_data(records)
+    logger.info(f"Loaded {count} new_data rows")
+```
+
+### Step 6: Update the Schema Documentation
+
+Add the new table to `docs/DATABASE_SCHEMA.md` under the appropriate raw schema section.
+
+---
+
+## Adding a New dbt Model
+
+Always run `dbt parse` first to validate the existing project before adding models.
+
+### Staging Model
+
+For 1:1 source cleaning only — no business logic in staging:
+
+```sql
+-- dbt/models/staging/toronto/stg_toronto__new_data.sql
+with source as (
+    select * from {{ source('raw_toronto', 'fact_new_data') }}
+),
+
+renamed as (
+    select
+        neighbourhood_id,
+        year,
+        value::numeric(10, 2)  as value,
+    from source
+)
+
+select * from renamed
+```
+
+Register the source in `dbt/models/staging/_sources.yml`:
+
+```yaml
+- name: raw_toronto
+  tables:
+    - name: fact_new_data
+      description: "New data from <source>"
+```
+
+Add column documentation in `dbt/models/staging/toronto/_staging.yml`.
+
+### Intermediate Model
+
+For business logic, joins, aggregations:
+
+```sql
+-- dbt/models/intermediate/toronto/int_neighbourhood__new_analysis.sql
+with foundation as (
+    select * from {{ ref('int_neighbourhood__foundation') }}
+),
+
+new_data as (
+    select * from {{ ref('stg_toronto__new_data') }}
+),
+
+joined as (
+    select
+        f.neighbourhood_id,
+        f.year,
+        n.value,
+        -- business logic here
+    from foundation f
+    left join new_data n
+        on f.neighbourhood_id = n.neighbourhood_id
+        and f.year = n.year
+)
+
+select * from joined
+```
+
+**Rules:**
+- Downstream intermediate models should reference `int_neighbourhood__foundation`, not individual staging models
+- `int_neighbourhood__demographics` is soft-deprecated — do not add new references to it
+
+### Mart Model
+
+Marts are the read-only contract with the webapp. Column names and types are **locked once deployed to production**.
+
+```sql
+-- dbt/models/marts/toronto/mart_neighbourhood_new.sql
+{{
+    config(
+        materialized='table',
+        indexes=[{'columns': ['neighbourhood_id', 'year'], 'unique': True}]
+    )
+}}
+
+with analysis as (
+    select * from {{ ref('int_neighbourhood__new_analysis') }}
+),
+
+with_geometry as (
+    select
+        a.*,
+        n.geometry,
+        n.name as neighbourhood_name
+    from analysis a
+    left join {{ ref('stg_toronto__neighbourhoods') }} n
+        on a.neighbourhood_id = n.neighbourhood_id
+)
+
+select * from with_geometry
+```
+
+Add documentation in `dbt/models/marts/_marts.yml`. Update `docs/DATABASE_SCHEMA.md`.
+
+**Impact analysis before any mart change:**
+
+```bash
+# Check what depends on the model you're changing
+cd dbt && dbt run --profiles-dir . --select +mart_neighbourhood_new+
+
+# Check if mart columns are consumed by webapp
+grep -r "mart_neighbourhood_new" /path/to/personal-portfolio/
+```
+
+---
+
+## Adding a New Domain
+
+A domain is a complete ETL stack for a new data subject area (e.g., `energy`, `real_estate`).
+
+### Structure to Create
+
+```
+dataflow/<domain>/
+├── __init__.py
+├── parsers/
+│   ├── __init__.py
+│   └── <source>.py
+├── schemas/
+│   ├── __init__.py
+│   └── <entity>.py
+├── models/
+│   ├── __init__.py
+│   ├── base.py
+│   ├── dimensions.py
+│   └── facts.py
+└── loaders/
+    ├── __init__.py
+    ├── base.py           # Can re-use from toronto
+    └── loaders.py
+
+dbt/models/
+├── staging/<domain>/
+│   ├── _sources.yml
+│   └── stg_<domain>__*.sql
+├── intermediate/<domain>/
+│   ├── _intermediate.yml
+│   └── int_<domain>__*.sql
+└── marts/<domain>/
+    ├── _marts.yml
+    └── mart_<domain>_*.sql
+
+scripts/data/
+└── load_<domain>_data.py
+
+# Register raw schema in scripts/db/init_schema.py
+```
+
+### Naming Conventions
+
+| Layer | Pattern | Example |
+|-------|---------|---------|
+| Raw schema | `raw_<domain>` | `raw_energy` |
+| Staging schema | `stg_<domain>` | `stg_energy` |
+| Intermediate schema | `int_<domain>` | `int_energy` |
+| Mart schema | `mart_<domain>` | `mart_energy` |
+| Raw tables | `dim_*`, `fact_*`, `bridge_*` | `fact_energy_prices` |
+| Staging models | `stg_<domain>__<entity>` | `stg_energy__prices` |
+| Intermediate models | `int_<domain>__<transform>` | `int_energy__annual_summary` |
+| Mart tables | `mart_<domain>_<subject>` | `mart_energy_market_overview` |
+
+### Register Raw Schema
+
+Add the new schema to `scripts/db/init_schema.py`:
+
+```python
+SCHEMAS_TO_CREATE = [
+    "raw_toronto",
+    "raw_football",
+    "raw_energy",  # new
 ]
-```
-
-### Importing Figure Factories
-
-```python
-# In callbacks or tabs
-from portfolio_app.figures.toronto import create_choropleth_figure
-from portfolio_app.figures.toronto.bar_charts import create_ranking_bar
 ```
 
 ---
@@ -410,42 +372,27 @@ staging (pre-production)
   ↑
 development (integration)
   ↑
-feature/XX-description (your work)
+feature/<sprint>-<description> (your work)
 ```
-
-### Creating a Feature Branch
 
 ```bash
 # Start from development
-git checkout development
-git pull origin development
+git checkout development && git pull origin development
 
-# Create feature branch
-git checkout -b feature/10-add-new-page
+# Create feature branch (use gitflow plugin)
+# /gitflow branch-start
 
-# Work, commit, push
-git add .
-git commit -m "feat: Add new page"
-git push -u origin feature/10-add-new-page
-```
+# Work, then commit with conventional commits
+# /gitflow commit
 
-### Merging
-
-```bash
-# Merge into development
-git checkout development
-git merge feature/10-add-new-page
-git push origin development
-
-# Delete feature branch
-git branch -d feature/10-add-new-page
-git push origin --delete feature/10-add-new-page
+# Push and open PR to development
+git push -u origin feature/<sprint>-<description>
 ```
 
 **Rules:**
-- Never commit directly to `main` or `staging`
-- Never delete `development`
-- Feature branches are temporary
+- Never commit directly to `main`, `staging`, or `development`
+- Feature branches are temporary — delete after merge
+- Use `/gitflow commit` for auto-generated conventional commit messages
 
 ---
 
@@ -453,48 +400,101 @@ git push origin --delete feature/10-add-new-page
 
 ### Type Hints
 
-Use Python 3.10+ style:
+Python 3.10+ syntax only:
 
 ```python
-def process(items: list[str], config: dict[str, int] | None = None) -> bool:
+def load_records(records: list[NewRecord], dry_run: bool = False) -> int:
+    ...
+
+def parse_value(raw: str | None) -> float | None:
     ...
 ```
 
-### Imports
+### Import Style
 
-| Context | Style |
-|---------|-------|
-| Same directory | `from .module import X` |
-| Sibling directory | `from ..schemas.model import Y` |
-| External packages | `import pandas as pd` |
+| Context | Style | Example |
+|---------|-------|---------|
+| Same directory | Single dot | `from .neighbourhood import NeighbourhoodRecord` |
+| Sibling directory | Double dot | `from ..schemas.neighbourhood import CensusRecord` |
+| External packages | Absolute | `import pandas as pd` |
 
-### Formatting
+### SQLAlchemy 2.0
+
+Use 2.0-style mapped columns only:
+
+```python
+# Correct (2.0 style)
+class MyModel(Base):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    value: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+
+# Incorrect (legacy 1.x style)
+# id = Column(Integer, primary_key=True)
+```
+
+### Pydantic 2.0
+
+Use 2.0 validators only:
+
+```python
+# Correct (2.0 style)
+@field_validator("year")
+@classmethod
+def validate_year(cls, v: int) -> int:
+    ...
+
+# Incorrect (legacy 1.x style)
+# @validator("year")
+# def validate_year(cls, v):
+```
+
+### Error Handling
+
+Use custom exceptions from `dataflow/errors/exceptions.py`:
+
+```python
+from dataflow.errors.exceptions import ParseError, LoadError
+
+def fetch_data(url: str) -> list[dict]:
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise ParseError(f"Failed to fetch {url}: {e}") from e
+```
+
+---
+
+## Before You Commit
 
 ```bash
-make format  # Runs ruff formatter
-make lint    # Checks style
+# 1. Run quality checks
+make ci  # lint + typecheck + test
+
+# 2. Validate dbt project syntax (always before dbt changes)
+cd dbt && dbt parse --profiles-dir .
+
+# 3. Run affected dbt models
+make dbt-run
+
+# 4. Run dbt tests
+make dbt-test
+
+# 5. Commit with conventional commit message
+# /gitflow commit
 ```
 
-### Docstrings
-
-Google style, only for non-obvious functions:
-
-```python
-def calculate_score(values: list[float], weights: list[float]) -> float:
-    """Calculate weighted score.
-
-    Args:
-        values: Raw metric values.
-        weights: Weight for each metric.
-
-    Returns:
-        Weighted average score.
-    """
-    ...
-```
+**dbt mandatory rules:**
+- Always `dbt parse` before `dbt run` — catches model errors early
+- Never rename mart columns without coordinating with the webapp repo
+- Run `dbt test` after any model change
+- Check downstream impact: `dbt run --select +<changed_model>+`
 
 ---
 
 ## Questions?
 
-Check `CLAUDE.md` for AI assistant context and architectural decisions.
+- See `CLAUDE.md` for AI assistant context, code conventions, and mandatory behavior rules
+- See `docs/PROJECT_REFERENCE.md` for architecture decisions and domain details
+- See `docs/DATABASE_SCHEMA.md` for schema reference

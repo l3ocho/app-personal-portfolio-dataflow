@@ -1,202 +1,303 @@
 # Portfolio Data Pipeline
 
 [![CI](https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow/actions/workflows/ci.yml/badge.svg)](https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow/actions)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
+[![dbt 1.9+](https://img.shields.io/badge/dbt-1.9+-orange.svg)](https://www.getdbt.com/)
+[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-336791.svg)](https://www.postgresql.org/)
+[![PostGIS 3.4](https://img.shields.io/badge/PostGIS-3.4-4DB33D.svg)](https://postgis.net/)
 
-**Data engineering pipeline for analytics projects.** This repository contains the ETL/ELT infrastructure that powers the portfolio analytics platform.
+> Production-grade ETL/ELT pipeline. Two domains, six sources, 43 dbt models, one clean data contract.
 
-## Purpose
+This is the **data-only** backend for the [personal-portfolio](https://gitea.hotserv.cloud/personal-projects/personal-portfolio) analytics platform. It ingests raw data from external APIs and files, validates with Pydantic, persists to PostgreSQL/PostGIS, and transforms through a full dbt model layer into analytics-ready mart tables consumed by the webapp.
 
-This is a **data-only** repository focused on:
-- Data acquisition from external sources (APIs, files)
-- Data validation and transformation
-- Database persistence and schema management
-- Analytics-ready data preparation via dbt
+**No frontend code lives here.** Raw data in. Clean marts out.
 
-**Frontend/Visualization**: See [personal-portfolio](https://gitea.hotserv.cloud/personal-projects/personal-portfolio) (separate repository)
+---
+
+## Domains
+
+| Domain | Status | Raw Tables | dbt Models | Notes |
+|--------|--------|:----------:|:----------:|-------|
+| **Toronto Neighbourhood Analysis** | ✅ Production | 11 | 25 | 158 neighbourhoods, 2016 + 2021 census |
+| **Football Analytics** | ✅ Production | 8 | 18 | 7 leagues, transfers, market values, financials |
+
+---
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph Sources
-        A1[City of Toronto API]
-        A2[Toronto Police API]
-        A3[CMHC Data]
-    end
-
-    subgraph ETL["ETL Pipeline (This Repo)"]
-        B1[Parsers]
-        B2[Loaders]
-    end
-
-    subgraph Database
-        C1[(PostgreSQL/PostGIS)]
-        C2[dbt Models]
-    end
-
-    subgraph Consumer["Portfolio Webapp"]
-        D1[Query Services]
-        D2[Visualizations]
-    end
-
-    A1 & A2 & A3 --> B1 --> B2 --> C1 --> C2 --> D1 --> D2
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  SOURCES                                                                      │
+│                                                                               │
+│  Toronto: City of Toronto API · Toronto Police API · CMHC · Statistics Canada │
+│  Football: Transfermarkt (Salimt) · MLSPA · Deloitte Money League             │
+└──────────────────────────┬───────────────────────────────────────────────────┘
+                           │  Python ETL (parsers → loaders)
+                           ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  PostgreSQL + PostGIS                                                         │
+│                                                                               │
+│  raw_toronto: dim_neighbourhood · dim_cmhc_zone · fact_census                │
+│               fact_census_extended · fact_crime · fact_amenities              │
+│               fact_rentals · fact_neighbourhood_profile                       │
+│                                                                               │
+│  raw_football: dim_league · dim_club · dim_player                             │
+│                fact_player_market_value · fact_transfer · fact_club_season    │
+│                fact_mls_salary · fact_club_finance                            │
+└──────────────────────────┬───────────────────────────────────────────────────┘
+                           │  dbt: portfolio project
+                           ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  TRANSFORMATION                                                               │
+│                                                                               │
+│  stg_*   →  1:1 source cleaning, typed, ready for logic                      │
+│  int_*   →  business logic, joins, aggregations, profile pivots              │
+│  mart_*  →  analytics-ready tables (read-only contract with webapp)          │
+└──────────────────────────┬───────────────────────────────────────────────────┘
+                           │  PostgreSQL (shared instance)
+                           ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  CONSUMER: personal-portfolio webapp                                          │
+│  Read-only queries to mart_toronto.* and mart_football.*                      │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Pipeline Stages:**
-1. **Sources**: External APIs and data files
-2. **ETL**: Python parsers extract and validate data; loaders persist to PostgreSQL
-3. **Transformation**: dbt models transform raw → staging → intermediate → marts
-4. **Consumer**: Webapp reads from mart tables (read-only access)
+---
 
-## Current Projects
+## Toronto Neighbourhood Analysis
 
-### Toronto Neighbourhood Analysis
+The primary domain. Comprehensive socioeconomic, housing, safety, amenity, and demographic intelligence across Toronto's 158 official neighbourhoods.
 
-Comprehensive data pipeline for Toronto's 158 official neighbourhoods:
+**Sources:**
+- **City of Toronto Open Data Portal** — neighbourhood boundaries, census profiles, amenity counts
+- **Toronto Police Service API** — crime statistics by neighbourhood
+- **CMHC Rental Market Survey** — rental market data (annual, zone grain)
+- **Statistics Canada XLSX** — 55+ extended scalar census indicators per neighbourhood
 
-**Data Sources**:
-- City of Toronto Open Data Portal (neighbourhoods, census, amenities)
-- Toronto Police Service (crime statistics)
-- CMHC Rental Market Survey (rental market data)
+**Data Volume:**
+- 158 neighbourhoods with PostGIS boundaries (SRID 4326)
+- 2021 census data; 2016 census with CPI-imputed income values
+- 22 community profile categories (immigration, languages, ethnic origin, housing type, commute, and more)
+- 108,000+ community profile rows
+- 4,424 neighbourhood-grain rental rows (area-weighted disaggregation from CMHC zones)
 
-**Output Schemas**:
-- `raw_toronto.*` - Raw fact and dimension tables
-- `stg_toronto.*` - dbt staging views (cleaned, typed)
-- `int_toronto.*` - dbt intermediate models (business logic)
-- `mart_toronto.*` - Analytics-ready tables for consumption
+### Toronto Mart Tables
 
-**dbt Lineage**:
-```
-raw_toronto.dim_neighbourhood
-  └─> stg_toronto__dim_neighbourhood
-      └─> int_toronto__neighbourhood_metrics
-          └─> mart_toronto.dim_neighbourhood
-```
+| Mart | Grain | Columns | Purpose |
+|------|-------|:-------:|---------|
+| `mart_neighbourhood_overview` | neighbourhood | ~20 | Composite livability scores |
+| `mart_neighbourhood_foundation` | neighbourhood × year | 65+ | Cross-domain scalar base (demographics, income, housing costs, labour, education) |
+| `mart_neighbourhood_housing` | neighbourhood × year | 75+ | Housing metrics, dwelling/bedroom/construction pivots, shelter costs, fit scores |
+| `mart_neighbourhood_housing_rentals` | neighbourhood × bedroom × year | ~10 | CMHC rentals disaggregated to neighbourhood grain |
+| `mart_neighbourhood_demographics` | neighbourhood × year | 45+ | Income, age, population, diversity indices, profile summary |
+| `mart_neighbourhood_safety` | neighbourhood × year | ~15 | Crime rate calculations by type |
+| `mart_neighbourhood_amenities` | neighbourhood | 35+ | Amenity scores, commute pivots, car dependency index |
+| `mart_neighbourhood_profile` | neighbourhood × category × subcategory | 13 | Community profile breakdown with geometry |
+
+---
+
+## Football Analytics
+
+Football market intelligence across 7 major European leagues. Player market values, transfer history, club season performance, MLS salaries, and Deloitte revenue data.
+
+**Sources:**
+- **Transfermarkt** (via Salimt API) — clubs, players, transfers, market value snapshots
+- **MLSPA** — MLS player salary data
+- **Deloitte Money League** (Wikipedia) — club annual revenue
+
+**Scope:** Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, MLS
+
+### Football Mart Tables
+
+| Mart | Purpose |
+|------|---------|
+| `mart_football_club_rankings` | Club rankings, squad values, season performance, financials |
+| `mart_football_club_deep_dive` | Deep-dive per-club player and transfer analysis |
+| `mart_football_league_comparison` | Cross-league comparison (7 in-scope leagues) |
+
+---
 
 ## Quick Start
 
 ### Local Development
 
-**Quick Setup (recommended):**
 ```bash
-# Clone repository
+# Clone and install
 git clone https://gitea.hotserv.cloud/personal-projects/personal-portfolio-dataflow.git
 cd personal-portfolio-dataflow
-
-# Install dependencies
 make setup
 
-# Start everything at once (Docker, database, pgweb)
-make local-dev
+# Start PostgreSQL + PostGIS
+make docker-up
+
+# Initialize schema and load data
+make db-init
+make load-toronto
+make load-football  # optional
+
+# Run dbt transformations
+make dbt-run
+make dbt-test
 ```
 
-**Step-by-step (if you prefer):**
+### One-Command Dev Environment
+
 ```bash
-make docker-up      # Start PostgreSQL
-make db-init        # Initialize database schema
-make pgweb-up       # Start pgweb database browser (optional)
-make load-toronto   # Load Toronto data
-make dbt-run        # Run dbt models
+make local-dev  # Docker + db-init + pgweb
 ```
 
-**View logs:**
-```bash
-make docker-logs    # Database logs
-make pgweb-logs     # pgweb logs (dev only)
-```
+Then load data: `make load-toronto && make dbt-run`
 
-### Production Deployment
-
-See [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md) for complete VPS deployment guide.
-
-**Summary:**
-1. Clone to VPS: `/opt/apps/portfolio-dataflow`
-2. Create Python venv and install dependencies
-3. Configure `.env` with database connection
-4. Initialize database and load data
-5. Schedule cron jobs for automated ETL
+---
 
 ## Project Structure
 
 ```
-dataflow/
-├── config.py              # Database configuration
-├── errors/                # Exception classes
-└── toronto/               # Toronto data pipeline
-    ├── parsers/           # API data extraction
-    ├── loaders/           # Database persistence
-    ├── schemas/           # Pydantic validation models
-    └── models/            # SQLAlchemy ORM (raw_toronto schema)
-
-dbt/                       # dbt project: portfolio
-├── models/
-│   ├── shared/            # Cross-domain dimensions (dim_time)
-│   ├── staging/toronto/   # Toronto staging models
-│   ├── intermediate/toronto/ # Toronto business logic
-│   └── marts/toronto/     # Toronto analytical tables
-
-scripts/
-├── db/                    # Database initialization
-└── data/                  # ETL scripts
-    ├── load_toronto_data.py
-    └── seed_amenity_data.py
-
-data/                      # Raw data files (CSV, Excel)
-docs/
-├── deployment/            # Deployment guides
-│   ├── vps-deployment.md
-│   └── shared-postgres.md
-└── project-lessons-learned/
+.
+├── dataflow/                       # Core ETL package
+│   ├── config.py                   # Database connection
+│   ├── errors/                     # Custom exceptions
+│   ├── toronto/                    # Toronto domain
+│   │   ├── parsers/                # API + XLSX extraction
+│   │   │   ├── toronto_open_data.py
+│   │   │   ├── toronto_police.py
+│   │   │   ├── cmhc.py, cmhc_excel.py, statcan_cmhc.py
+│   │   │   └── geo.py
+│   │   ├── loaders/                # Database persistence
+│   │   │   ├── dimensions.py, census.py, census_extended_loader.py
+│   │   │   ├── profile_loader.py, crime.py, amenities.py
+│   │   │   └── cmhc.py, cmhc_crosswalk.py, base.py
+│   │   ├── schemas/                # Pydantic validation models
+│   │   │   ├── neighbourhood.py, dimensions.py, census_extended.py
+│   │   │   ├── profile.py, amenities.py, cmhc.py
+│   │   └── models/                 # SQLAlchemy ORM (raw_toronto schema)
+│   │       ├── dimensions.py, facts.py
+│   │       ├── census_extended.py, profile.py
+│   └── football/                   # Football domain
+│       ├── parsers/                # Transfermarkt, MLSPA, Deloitte parsers
+│       ├── loaders/                # Football data loaders
+│       ├── schemas/                # Pydantic models (salimt, mlspa, deloitte)
+│       └── models/                 # SQLAlchemy ORM (raw_football schema)
+│
+├── dbt/                            # dbt project: portfolio
+│   └── models/
+│       ├── shared/                 # Cross-domain: stg_dimensions__time
+│       ├── staging/
+│       │   ├── toronto/            # 8 staging models
+│       │   └── football/           # 8 staging models
+│       ├── intermediate/
+│       │   ├── toronto/            # 11 intermediate models
+│       │   └── football/           # 4 intermediate models
+│       └── marts/
+│           ├── toronto/            # 8 mart tables
+│           └── football/           # 3 mart tables
+│
+├── scripts/
+│   ├── db/                         # Schema initialization
+│   └── data/                       # ETL orchestration scripts
+│       ├── load_toronto_data.py
+│       ├── load_football_data.py
+│       └── xlsx_diagnostic.py
+│
+├── data/                           # Raw data files (CMHC Excel, GeoJSON, etc.)
+├── docs/                           # Documentation
+├── notebooks/                      # Exploratory Jupyter notebooks
+└── tests/                          # pytest test suite
 ```
+
+---
+
+## dbt Model Catalog
+
+43 models across 3 layers and 2 domains.
+
+### Staging Layer — 1:1 source cleaning, typed
+
+**Toronto (stg_toronto schema):**
+
+| Model | Source |
+|-------|--------|
+| `stg_toronto__neighbourhoods` | `raw_toronto.dim_neighbourhood` |
+| `stg_toronto__census` | `raw_toronto.fact_census` |
+| `stg_toronto__census_extended` | `raw_toronto.fact_census_extended` |
+| `stg_toronto__profiles` | `raw_toronto.fact_neighbourhood_profile` |
+| `stg_toronto__crime` | `raw_toronto.fact_crime` |
+| `stg_toronto__amenities` | `raw_toronto.fact_amenities` |
+| `stg_cmhc__rentals` | `raw_toronto.fact_rentals` |
+| `stg_cmhc__zone_crosswalk` | `raw_toronto.bridge_cmhc_neighbourhood` |
+
+**Football (stg_football schema):**
+
+| Model | Source |
+|-------|--------|
+| `stg_football__dim_league` | `raw_football.dim_league` |
+| `stg_football__dim_club` | `raw_football.dim_club` |
+| `stg_football__dim_player` | `raw_football.dim_player` |
+| `stg_football__fact_player_market_value` | `raw_football.fact_player_market_value` |
+| `stg_football__fact_transfer` | `raw_football.fact_transfer` |
+| `stg_football__fact_club_season` | `raw_football.fact_club_season` |
+| `stg_football__fact_mls_salary` | `raw_football.fact_mls_salary` |
+| `stg_football__fact_club_finance` | `raw_football.fact_club_finance` |
+
+**Shared:**
+
+| Model | Purpose |
+|-------|---------|
+| `stg_dimensions__time` | Monthly time dimension (cross-domain) |
+
+### Intermediate Layer — business logic, joins, aggregations
+
+**Toronto (int_toronto schema):**
+
+| Model | Purpose |
+|-------|---------|
+| `int_neighbourhood__foundation` | Cross-domain foundation with 50+ extended census scalars; central hub for downstream marts |
+| `int_neighbourhood__housing` | Housing metrics with dwelling/bedroom/construction profile pivot CTEs |
+| `int_neighbourhood__amenity_scores` | Amenity accessibility scores with commute pivot CTEs and car dependency index |
+| `int_neighbourhood__crime_summary` | Crime rate calculations |
+| `int_neighbourhood__demographics` | ⚠️ Soft-deprecated; reads from foundation; kept for backward compat |
+| `int_rentals__annual` | Annual CMHC rental aggregations |
+| `int_rentals__neighbourhood_allocated` | Zone rentals disaggregated to neighbourhood grain (area-weighted) |
+| `int_rentals__toronto_cma` | Toronto CMA rental aggregates |
+| `int_toronto__neighbourhood_profile` | Profile aggregations with MAX(category_total) denominator |
+| `int_census__toronto_cma` | CMA-level census aggregates |
+| `int_year_spine` | Year dimension helper |
+
+**Football (int_football schema):**
+
+| Model | Purpose |
+|-------|---------|
+| `int_football__club_league_bridge` | Club-league associations (resolves NULL league_id gaps) |
+| `int_football__league_financials` | League-level financial aggregations |
+| `int_football__squad_values` | Squad market value calculations |
+| `int_football__transfer_flows` | Transfer network flows between clubs |
+
+### Mart Layer — analytics-ready tables (read-only contract with webapp)
+
+See **Toronto Mart Tables** and **Football Mart Tables** above.
+
+---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Database | PostgreSQL 16 + PostGIS 3.4 |
-| Validation | Pydantic 2.x |
-| ORM | SQLAlchemy 2.x |
-| Transformation | dbt-postgres 1.9+ |
-| Data Processing | Pandas, GeoPandas, Shapely |
-| PDF Parsing | pdfplumber, tabula-py |
-| Testing | pytest |
-| Python | 3.11+ |
+| Layer | Technology | Version | Notes |
+|-------|------------|---------|-------|
+| Database | PostgreSQL | 16.x | `imresamu/postgis:16-3.4` for ARM64 |
+| Geospatial | PostGIS | 3.4 | All geometries SRID 4326 |
+| Validation | Pydantic | 2.x | 2.0 API only |
+| ORM | SQLAlchemy | 2.x | 2.0-style API only |
+| Transformation | dbt-postgres | 1.9+ | Project: `portfolio` |
+| Data Processing | Pandas, GeoPandas, Shapely | Latest | Spatial operations |
+| Testing | pytest | Latest | `tests/` directory |
+| Linting | ruff | 0.8+ | Replaces flake8 + black + isort |
+| Type Checking | mypy | 1.14+ | Strict mode |
+| Python | 3.11+ | Via pyenv | `.python-version = 3.11` |
+
+---
 
 ## Development
 
-### Database Browser (pgweb)
-
-pgweb is available for browsing the database during development. It provides a lightweight web interface with read-only access.
-
-**Start pgweb:**
-```bash
-make pgweb-up
-```
-
-**Access pgweb:**
-- **From localhost**: http://localhost:8081
-- **From LAN** (other devices on your network):
-  - mDNS: `http://<hostname>.local:8081` (e.g., `http://raspberrypi.local:8081`)
-  - Direct IP: `http://<pi-ip>:8081` (e.g., `http://192.168.1.184:8081`)
-
-**Stop pgweb:**
-```bash
-make pgweb-down
-```
-
-**View logs:**
-```bash
-make pgweb-logs
-```
-
-**Security Notes:**
-- pgweb runs with the `portfolio_reader` user (read-only, `SELECT` on `mart_*` tables only)
-- pgweb is configured with `--readonly` flag for additional safety
-- pgweb is bound to `0.0.0.0` (all network interfaces) for LAN access
-- **Only use on trusted home networks** — stop the container on shared/public networks
-- pgweb only starts with the `dev` profile and never runs in production
-
-### Makefile Targets
+### Makefile Reference
 
 ```bash
 # Setup & Database
@@ -206,26 +307,66 @@ make docker-down    # Stop containers
 make db-init        # Initialize database schema
 make db-reset       # Drop and recreate database (DESTRUCTIVE)
 
-# Development Tools
-make pgweb-up       # Start pgweb database browser (dev only)
-make pgweb-down     # Stop pgweb
-make pgweb-logs     # View pgweb logs
-
 # Data Loading
-make load-data      # Load all project data (currently: Toronto)
+make load-data      # Load all domains
 make load-toronto   # Load Toronto data from APIs
+make load-football  # Load football data
 
 # dbt
-make dbt-run        # Run dbt models
+make dbt-run        # Run all dbt models
 make dbt-test       # Run dbt tests
-make dbt-docs       # Generate and serve dbt documentation
+make dbt-docs       # Generate and serve dbt docs (http://localhost:8080)
 
-# Testing & Quality
+# Quality Checks
 make test           # Run pytest
 make lint           # Run ruff linter
 make format         # Run ruff formatter
-make typecheck      # Run mypy type checker
-make ci             # Run all checks (lint, typecheck, test)
+make typecheck      # Run mypy
+make ci             # Run all checks (lint + typecheck + test)
+
+# Development Tools
+make pgweb-up       # Start pgweb database browser (dev only)
+make pgweb-down     # Stop pgweb
+make local-dev      # Start Docker + db-init + pgweb
+```
+
+### Database Browser (pgweb)
+
+A lightweight read-only web UI for exploring the database during development.
+
+```bash
+make pgweb-up
+```
+
+- **Localhost**: http://localhost:8081
+- **LAN**: `http://<hostname>.local:8081`
+
+Runs as `portfolio_reader` (SELECT-only on `mart_*` tables). Never runs in production.
+
+### dbt Commands
+
+```bash
+# Run specific model
+cd dbt && dbt run --profiles-dir . --select mart_neighbourhood_foundation
+
+# Run domain-specific models
+cd dbt && dbt run --profiles-dir . --select staging.toronto+
+cd dbt && dbt run --profiles-dir . --select marts.football+
+
+# Full refresh (rebuilds all tables)
+cd dbt && dbt run --profiles-dir . --full-refresh
+
+# Impact analysis before changes
+cd dbt && dbt run --profiles-dir . --select +int_neighbourhood__foundation+
+
+# Tests
+make dbt-test
+```
+
+**Always `dbt parse` before `dbt run`** to catch syntax errors early:
+
+```bash
+cd dbt && dbt parse --profiles-dir .
 ```
 
 ### Environment Variables
@@ -233,7 +374,7 @@ make ci             # Run all checks (lint, typecheck, test)
 Copy `.env.example` to `.env` and configure:
 
 ```bash
-# Database Connection
+# Database
 DATABASE_URL=postgresql://user:pass@localhost:5432/portfolio
 POSTGRES_USER=portfolio
 POSTGRES_PASSWORD=<secure>
@@ -243,135 +384,65 @@ POSTGRES_DB=portfolio
 LOG_LEVEL=INFO
 ```
 
-## Testing
-
-```bash
-# Run all tests
-make test
-
-# Run with coverage
-make test-cov
-
-# Run specific test file
-pytest tests/test_loaders.py -v
-```
-
-## dbt Models
-
-### Model Layers
-
-| Layer | Naming | Purpose |
-|-------|--------|---------|
-| Staging | `stg_{domain}__{entity}` | 1:1 source mapping, cleaned |
-| Intermediate | `int_{domain}__{transform}` | Business logic, joins |
-| Marts | `mart_{domain}` | Analytics-ready tables |
-
-### Run Models
-
-```bash
-# Run all models
-make dbt-run
-
-# Run specific model
-cd dbt && dbt run --profiles-dir . --select stg_toronto__dim_neighbourhood
-
-# Run with full refresh
-cd dbt && dbt run --profiles-dir . --full-refresh
-
-# Run tests
-make dbt-test
-```
-
-### Generate Documentation
-
-```bash
-make dbt-docs
-# Opens browser to http://localhost:8080
-```
+---
 
 ## Deployment
 
-### VPS Deployment
+### VPS Deployment (Cron-Based ETL)
 
-Complete guide: [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md)
+This pipeline deploys as **scheduled ETL jobs**, not a containerized service.
 
-**Prerequisites:**
-- VPS with Docker + Docker Compose
-- PostgreSQL container (see [shared-postgres.md](docs/deployment/shared-postgres.md))
-- Python 3.11+
+```
+/opt/apps/portfolio-dataflow/
+├── .venv/              # Python virtual environment
+├── dataflow/           # ETL source code
+├── dbt/                # dbt transformation project
+├── scripts/            # ETL orchestration scripts
+└── .env                # Environment configuration
+```
 
-**Deployment model**: Cron-based ETL jobs (not a containerized service)
+**Recommended cron schedule:**
 
-**Recommended schedule:**
-- Daily data refresh: 2 AM
-- dbt models: 3 AM (after data load)
-- dbt tests: 4 AM
-- Weekly full refresh: Sunday 1 AM
+```bash
+0 2 * * *   make load-toronto   # Daily data refresh at 2 AM
+0 3 * * *   make dbt-run        # Transform after load at 3 AM
+0 4 * * *   make dbt-test       # Validate transformations at 4 AM
+0 1 * * 0   make db-reset       # Weekly full refresh Sunday 1 AM
+```
+
+Full guide: [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md)
 
 ### CI/CD
 
-Gitea Actions workflows:
-- **ci.yml**: Lint and test on push to development/staging/main
-- **deploy-staging.yml**: Deploy to staging on push to staging branch
-- **deploy-production.yml**: Deploy to production on push to main branch
+Gitea Actions:
+- **ci.yml** — Lint and test on push to `development`, `staging`, `main`
+- **deploy-staging.yml** — Deploy on push to `staging`
+- **deploy-production.yml** — Deploy on push to `main`
 
-## Database Schema
-
-### Toronto Raw Schema
-
-**Dimensions:**
-- `raw_toronto.dim_neighbourhood` - 158 neighbourhoods with geometries
-- `raw_toronto.dim_time` - Date dimension
-- `raw_toronto.dim_cmhc_zone` - CMHC zones (36 zones)
-
-**Facts:**
-- `raw_toronto.fact_census` - Census metrics by neighbourhood
-- `raw_toronto.fact_crime` - Crime incidents by neighbourhood and date
-- `raw_toronto.fact_rentals` - Rental data by CMHC zone and date
-- `raw_toronto.fact_amenities` - Points of interest by neighbourhood
-
-### Toronto Mart Schema
-
-- `mart_toronto.dim_neighbourhood` - Enriched neighbourhood dimension
-- `mart_toronto.fact_neighbourhood_metrics` - Pre-aggregated metrics
-- `mart_toronto.fact_crime_summary` - Crime statistics
-- `mart_toronto.fact_housing_metrics` - Housing affordability metrics
-
-See [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) for complete schema documentation.
-
-## Adding New Data Domains
-
-To add a new data domain (e.g., `football`):
-
-1. **Create domain directory**: `dataflow/football/`
-2. **Implement parsers**: Extract data from sources
-3. **Create schemas**: Pydantic models for validation
-4. **Define models**: SQLAlchemy ORM for `raw_football` schema
-5. **Build loaders**: Persist data to database
-6. **Write dbt models**: `staging/football/`, `marts/football/`
-7. **Create load script**: `scripts/data/load_football_data.py`
-8. **Add Makefile target**: `make load-football`
+---
 
 ## Documentation
 
-- **Deployment**: [docs/deployment/vps-deployment.md](docs/deployment/vps-deployment.md)
-- **Deployment Checklist**: [docs/deployment/deployment-checklist.md](docs/deployment/deployment-checklist.md)
-- **Shared PostgreSQL**: [docs/deployment/shared-postgres.md](docs/deployment/shared-postgres.md)
-- **For Claude Code**: [CLAUDE.md](CLAUDE.md) (AI assistant context)
-- **Database Schema**: [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)
-- **Lessons Learned**: [docs/project-lessons-learned/INDEX.md](docs/project-lessons-learned/INDEX.md)
+| Document | Purpose |
+|----------|---------|
+| [DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) | Complete schema reference (raw + mart tables) |
+| [vps-deployment.md](docs/deployment/vps-deployment.md) | Production deployment runbook |
+| [shared-postgres.md](docs/deployment/shared-postgres.md) | Multi-database PostgreSQL setup |
+| [deployment-checklist.md](docs/deployment/deployment-checklist.md) | Pre-deploy checklist |
+| [PROJECT_REFERENCE.md](docs/PROJECT_REFERENCE.md) | Architecture reference and sprint history |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contributor guide (adding domains, models, parsers) |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+| [CLAUDE.md](CLAUDE.md) | AI assistant context and code conventions |
+
+---
 
 ## Related Repositories
 
-- **Frontend/Webapp**: [personal-portfolio](https://gitea.hotserv.cloud/personal-projects/personal-portfolio) - Dash app with visualizations
-- **Live Site**: [leodata.science](https://leodata.science) (when deployed)
+- **Webapp**: [personal-portfolio](https://gitea.hotserv.cloud/personal-projects/personal-portfolio) — Dash visualization app consuming mart tables
+- **Live**: [leodata.science](https://leodata.science)
+
+---
 
 ## License
 
-MIT
-
-## Author
-
-Leo Miranda
-- GitHub: [leonardomiranda](https://github.com/leonardomiranda)
-- Email: contact@leodata.science
+MIT — Leo Miranda

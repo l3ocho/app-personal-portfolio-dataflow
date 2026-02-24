@@ -1,26 +1,96 @@
 version: 2
 
 models:
-  - name: mart_toronto_rentals
-    description: "Final mart for Toronto rental market analysis by zone and time"
+  - name: mart_neighbourhood_housing_rentals
+    description: "CMHC rental data disaggregated to neighbourhood grain via area-weighted crosswalk. One row per neighbourhood per bedroom_type per year."
+    meta:
+      dashboard_tab: Housing
     columns:
-      - name: rental_id
-        description: "Unique rental record identifier"
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
         data_tests:
-          - unique
           - not_null
-      - name: date_key
-        description: "Foreign key to time dimension"
-        data_tests:
           - relationships:
-              to: ref('stg_dimensions__time')
-              field: date_key
-      - name: zone_key
-        description: "Foreign key to CMHC zone dimension"
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
         data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: year
+        description: "Survey year"
+        data_tests:
+          - not_null
+      - name: bedroom_type
+        description: "Bedroom type (bachelor, 1bed, 2bed, 3bed)"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [bachelor, 1bed, 2bed, 3bed]
+      - name: avg_rent
+        description: "Area-weighted average rent for this bedroom type"
+      - name: vacancy_rate
+        description: "Area-weighted vacancy rate"
+      - name: turnover_rate
+        description: "Area-weighted turnover rate"
+      - name: rental_universe_estimate
+        description: "Proportional rental universe estimate (area-weighted)"
+      - name: year_over_year_rent_change
+        description: "Year-over-year rent change from CMHC source data (area-weighted)"
+      - name: rent_yoy_change_pct
+        description: "Year-over-year rent change percentage computed from allocated neighbourhood rents"
+
+  - name: mart_neighbourhood_foundation
+    description: "Direct surface of int_neighbourhood__foundation. Full scalar column set: demographic, socioeconomic, and census extended indicators. One row per neighbourhood per census year."
+    meta:
+      dashboard_tab: Foundation
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
           - relationships:
-              to: ref('stg_dimensions__cmhc_zones')
-              field: zone_key
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: census_year
+        description: "Census year (2016 or 2021)"
+        data_tests:
+          - not_null
+      - name: geometry
+        description: "PostGIS geometry for mapping"
+      - name: land_area_sqkm
+        description: "Land area in square kilometres"
+      - name: population
+        description: "Total population"
+      - name: population_density
+        description: "Population per square kilometre"
+      - name: median_household_income
+        description: "Median household income (2021 observed; 2016-2020 CPI-imputed)"
+      - name: average_household_income
+        description: "Average household income"
+      - name: income_quintile
+        description: "Income quintile (1=lowest, 5=highest)"
+      - name: is_imputed
+        description: "True when income values are CPI-imputed (pre-2021 census years)"
+      - name: median_age
+        description: "Median age of population"
+      - name: unemployment_rate
+        description: "Unemployment rate"
+      - name: education_bachelors_pct
+        description: "Percentage with bachelor's degree or higher"
+      - name: average_dwelling_value
+        description: "Average dwelling value"
+      - name: pct_owner_occupied
+        description: "Percentage owner-occupied dwellings"
+      - name: pct_renter_occupied
+        description: "Percentage renter-occupied dwellings"
 
   - name: mart_neighbourhood_overview
     description: "Neighbourhood overview with composite livability score"
@@ -50,7 +120,7 @@ models:
         description: "Amenity component score (0-100)"
 
   - name: mart_neighbourhood_housing
-    description: "Housing and affordability metrics by neighbourhood"
+    description: "Housing and affordability metrics by neighbourhood. Expanded with dwelling type, bedroom, construction period profile pivots and composite affordability scores."
     meta:
       dashboard_tab: Housing
     columns:
@@ -67,12 +137,112 @@ models:
           - not_null
       - name: geometry
         description: "PostGIS geometry for mapping"
+      - name: year
+        description: "Rental year"
+      - name: census_year
+        description: "Census year matched to this rental year (most recent ≤ year)"
+      - name: pct_owner_occupied
+        description: "Percentage owner-occupied dwellings"
+      - name: pct_renter_occupied
+        description: "Percentage renter-occupied dwellings"
+      - name: average_dwelling_value
+        description: "Average dwelling value"
+      - name: median_household_income
+        description: "Median household income (CPI-imputed for pre-2021)"
+      - name: income_quintile
+        description: "Income quintile (1=lowest, 5=highest)"
+      - name: avg_shelter_cost_owner
+        description: "Average monthly shelter cost for owners"
+      - name: avg_shelter_cost_renter
+        description: "Average monthly shelter cost for renters"
+      - name: pct_shelter_cost_30pct
+        description: "Percentage of households spending 30%+ of income on shelter"
+      - name: pct_suitable_housing
+        description: "Percentage of households in suitable housing"
+      - name: total_private_dwellings
+        description: "Total private dwellings"
+      - name: occupied_private_dwellings
+        description: "Occupied private dwellings"
+      - name: avg_household_size
+        description: "Average household size"
+      - name: pct_dwellings_in_need_of_repair
+        description: "Percentage of dwellings in need of major repair"
+      - name: pct_unaffordable_housing
+        description: "Percentage in unaffordable housing"
+      - name: pct_overcrowded_housing
+        description: "Percentage in overcrowded housing"
+      - name: avg_rent_bachelor
+        description: "Average rent for bachelor units (CMHC)"
+      - name: avg_rent_1bed
+        description: "Average rent for 1-bedroom units (CMHC)"
+      - name: avg_rent_2bed
+        description: "Average rent for 2-bedroom units (CMHC)"
+      - name: avg_rent_3bed
+        description: "Average rent for 3-bedroom units (CMHC)"
+      - name: vacancy_rate
+        description: "CMHC vacancy rate"
+      - name: total_rental_units
+        description: "Total CMHC rental units in neighbourhood"
       - name: rent_to_income_pct
         description: "Rent as percentage of median income"
+      - name: is_affordable
+        description: "True when 2-bed rent is ≤ 30% of median income"
       - name: affordability_index
-        description: "100 = city average affordability"
+        description: "100 = city average affordability for the year"
       - name: rent_yoy_change_pct
-        description: "Year-over-year rent change"
+        description: "Year-over-year 2-bedroom rent change percentage"
+      - name: dwelling_single_detached
+        description: "Count of single-detached houses"
+      - name: dwelling_semi_detached
+        description: "Count of semi-detached houses"
+      - name: dwelling_row_house
+        description: "Count of row houses"
+      - name: dwelling_duplex
+        description: "Count of apartments/flats in a duplex"
+      - name: dwelling_apt_low_rise
+        description: "Count of apartments in buildings with fewer than 5 storeys"
+      - name: dwelling_apt_high_rise
+        description: "Count of apartments in buildings with 5+ storeys"
+      - name: dwelling_other_single_attached
+        description: "Count of other single-attached houses"
+      - name: dwelling_movable
+        description: "Count of movable dwellings"
+      - name: dwelling_apartment_pct
+        description: "Percentage of dwellings that are apartment-form (duplex + low-rise + high-rise)"
+      - name: dwelling_ground_oriented_pct
+        description: "Percentage of dwellings that are ground-oriented (single + semi + row)"
+      - name: bedrooms_none
+        description: "Count of dwellings with no bedrooms"
+      - name: bedrooms_1
+        description: "Count of dwellings with 1 bedroom"
+      - name: bedrooms_2
+        description: "Count of dwellings with 2 bedrooms"
+      - name: bedrooms_3
+        description: "Count of dwellings with 3 bedrooms"
+      - name: bedrooms_4_plus
+        description: "Count of dwellings with 4+ bedrooms"
+      - name: construction_pre_1960
+        description: "Count of dwellings built 1960 or before"
+      - name: construction_1961_1980
+        description: "Count of dwellings built 1961–1980"
+      - name: construction_1981_1990
+        description: "Count of dwellings built 1981–1990"
+      - name: construction_1991_2000
+        description: "Count of dwellings built 1991–2000"
+      - name: construction_2001_2005
+        description: "Count of dwellings built 2001–2005"
+      - name: construction_2006_2010
+        description: "Count of dwellings built 2006–2010"
+      - name: construction_2011_2015
+        description: "Count of dwellings built 2011–2015"
+      - name: construction_2016_2021
+        description: "Count of dwellings built 2016–2021"
+      - name: construction_post_2000_pct
+        description: "Percentage of dwellings built after 2000"
+      - name: avg_shelter_cost
+        description: "Weighted average shelter cost across owners and renters"
+      - name: affordability_pressure_score
+        description: "Composite pressure score (0-100): shelter cost burden + renter share + low vacancy"
 
   - name: mart_neighbourhood_safety
     description: "Crime rates and safety metrics by neighbourhood"
@@ -141,7 +311,7 @@ models:
         description: "Shannon diversity index from visible minority category"
 
   - name: mart_neighbourhood_amenities
-    description: "Amenity access metrics by neighbourhood"
+    description: "Amenity access metrics by neighbourhood. Expanded with commute mode, duration, destination pivots and car dependency composite."
     meta:
       dashboard_tab: Amenities
     columns:
@@ -158,6 +328,10 @@ models:
           - not_null
       - name: geometry
         description: "PostGIS geometry for mapping"
+      - name: year
+        description: "Amenity data year"
+      - name: census_year
+        description: "Census year matched to this amenity year"
       - name: total_amenities_per_1000
         description: "Total amenities per 1000 population"
       - name: amenity_index
@@ -168,6 +342,48 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
+      - name: commute_car
+        description: "Count of car commuters (driver + passenger combined)"
+      - name: commute_car_driver
+        description: "Count of car commuters who drove"
+      - name: commute_car_passenger
+        description: "Count of car commuters who were passengers"
+      - name: commute_transit
+        description: "Count of public transit commuters"
+      - name: commute_walk
+        description: "Count of commuters who walked"
+      - name: commute_bicycle
+        description: "Count of bicycle commuters"
+      - name: commute_other
+        description: "Count of commuters using other methods"
+      - name: commute_under_15min
+        description: "Count of commuters with less than 15 minute commute"
+      - name: commute_15_29min
+        description: "Count of commuters with 15-29 minute commute"
+      - name: commute_30_44min
+        description: "Count of commuters with 30-44 minute commute"
+      - name: commute_45_59min
+        description: "Count of commuters with 45-59 minute commute"
+      - name: commute_60min_plus
+        description: "Count of commuters with 60+ minute commute"
+      - name: commute_usual_workplace
+        description: "Count of commuters who go to a usual place of work"
+      - name: commute_work_from_home
+        description: "Count of commuters who worked at home"
+      - name: commute_no_fixed_address
+        description: "Count of commuters with no fixed workplace address"
+      - name: commute_outside_canada
+        description: "Count of commuters who worked outside Canada"
+      - name: car_dependency_pct
+        description: "Percentage of commuters who use a car (driver or passenger)"
+      - name: commute_car_pct
+        description: "Percentage of commuters using car (matches car_dependency_pct)"
+      - name: commute_transit_pct
+        description: "Percentage of commuters using public transit"
+      - name: commute_active_pct
+        description: "Percentage of commuters walking or cycling"
+      - name: commute_long_pct
+        description: "Percentage of commuters with 45+ minute commute"
 
   - name: mart_neighbourhood_profile
     description: "Neighbourhood community profile analytical table with all demographics breakdown"
@@ -206,6 +422,18 @@ models:
                   - ethnic_origin
                   - mother_tongue
                   - official_language
+                  - language_at_home
+                  - indigenous_identity
+                  - religion
+                  - education_level
+                  - field_of_study
+                  - commute_mode
+                  - commute_duration
+                  - commute_destination
+                  - housing_suitability
+                  - dwelling_type
+                  - bedrooms
+                  - construction_period
       - name: subcategory
         description: "Specific subcategory"
         data_tests:
@@ -224,5 +452,11 @@ models:
           - accepted_values:
               arguments:
                 values: ["", continent, country]
+      - name: indent_level
+        description: "Indentation depth from source XLSX (0 = section header, 1+ = subcategory)"
+      - name: category_total
+        description: "Total count for the category section header row (used as denominator for percentages)"
+      - name: is_subtotal
+        description: "True when indent_level > 0 (row is a subcategory, not a section header)"
       - name: diversity_index
         description: "Shannon diversity index (visible_minority rows only)"

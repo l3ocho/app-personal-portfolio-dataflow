@@ -46,6 +46,8 @@ def load_profile_data(
                 subcategory=r.subcategory,
                 count=r.count,
                 level=r.level,
+                category_total=r.category_total,
+                indent_level=r.indent_level,
             )
             for r in records
         ]
