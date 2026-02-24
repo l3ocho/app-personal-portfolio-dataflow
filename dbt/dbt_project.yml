@@ -23,11 +23,20 @@ models:
       toronto:
         +materialized: view
         +schema: stg_toronto
+      football:
+        +materialized: view
+        +schema: stg_football
     intermediate:
       toronto:
         +materialized: view
         +schema: int_toronto
+      football:
+        +materialized: view
+        +schema: int_football
     marts:
       toronto:
         +materialized: table
         +schema: mart_toronto
+      football:
+        +materialized: table
+        +schema: mart_football

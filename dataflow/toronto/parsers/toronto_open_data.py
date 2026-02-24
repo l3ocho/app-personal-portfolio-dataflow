@@ -1531,8 +1531,22 @@ class TorontoOpenDataParser:
 
             logger.debug(f"  {category:30} extracted {section_rows} subcategories")
 
-        logger.debug(f"Tagged {len(tagged)} profile rows")
-        return tagged, section_totals
+        logger.debug(f"Tagged {len(tagged)} profile rows before dedup")
+
+        # Deduplicate: keep only FIRST occurrence of each (category, subcategory, level, indent_level)
+        # This prevents duplicate rows from different positions in the XLSX.
+        # indent_level is included in the key because the same subcategory text can appear
+        # at different depths (header vs detail row) and should be kept separately.
+        seen: set[tuple[str, str, str, int]] = set()
+        deduped = []
+        for category, subcategory, level, indent_level, row in tagged:
+            key = (category, subcategory, level, indent_level)
+            if key not in seen:
+                seen.add(key)
+                deduped.append((category, subcategory, level, indent_level, row))
+
+        logger.info(f"Deduplicated {len(tagged)} -> {len(deduped)} profile rows")
+        return deduped, section_totals
 
     def _parse_count(self, value: Any) -> int | None:
         """Parse a Statistics Canada count value.

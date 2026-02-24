@@ -1,4 +1,4 @@
-.PHONY: setup docker-up docker-down db-init local-dev load-data load-all load-toronto load-toronto-only seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto
+.PHONY: setup docker-up docker-down db-init local-dev load-data load-all load-toronto load-toronto-only load-football seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto
 
 # Default target
 .DEFAULT_GOAL := help
@@ -124,8 +124,12 @@ load-toronto-only: ## Load Toronto data without running dbt or seeding
 	@echo "$(GREEN)Loading Toronto data (skip dbt)...$(NC)"
 	$(PYTHON) scripts/data/load_toronto_data.py --skip-dbt
 
+load-football: ## Load football data from salimt and MLSPA sources
+	@echo "$(GREEN)Loading football data...$(NC)"
+	$(PYTHON) scripts/data/load_football_data.py
+
 # Aggregate data loading
-load-data: load-toronto ## Load all project data (currently: Toronto)
+load-data: load-toronto load-football ## Load all project data (Toronto + Football)
 	@echo "$(GREEN)All data loaded!$(NC)"
 
 load-all: load-data ## Alias for load-data
