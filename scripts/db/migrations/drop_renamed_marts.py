@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Drop mart tables that were renamed in dbt.
+"""Idempotent schema migrations run on every deployment.
 
-dbt does not automatically drop tables when models are renamed.
-This script cleans up the old table names after renames.
+Handles:
+- Dropping mart tables renamed in dbt (dbt does not auto-drop on rename)
+- Adding columns added to existing raw tables (SQLAlchemy create_all skips existing tables)
 
-Run this once after deploying a rename change.
+All operations are idempotent — safe to run multiple times.
 """
 
 import sys
@@ -21,6 +22,14 @@ RENAMED_TABLES = [
     ("mart_toronto", "mart_toronto__neighbourhood_profile"),
 ]
 
+# Columns added to existing tables after initial schema creation.
+# Format: (schema, table, column, column_definition)
+MISSING_COLUMNS = [
+    # Sprint 12: added hierarchy columns to fact_neighbourhood_profile
+    ("raw_toronto", "fact_neighbourhood_profile", "category_total", "INTEGER NULL"),
+    ("raw_toronto", "fact_neighbourhood_profile", "indent_level", "SMALLINT NOT NULL DEFAULT 0"),
+]
+
 
 def main() -> int:
     engine = get_engine()
@@ -28,6 +37,13 @@ def main() -> int:
         for schema, table in RENAMED_TABLES:
             conn.execute(text(f'DROP TABLE IF EXISTS {schema}."{table}"'))
             print(f"Dropped {schema}.{table} (if existed)")
+
+        for schema, table, column, definition in MISSING_COLUMNS:
+            conn.execute(text(
+                f"ALTER TABLE {schema}.{table} ADD COLUMN IF NOT EXISTS {column} {definition}"
+            ))
+            print(f"Ensured column {schema}.{table}.{column}")
+
     return 0
 
 
