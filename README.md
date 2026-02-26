@@ -161,42 +161,43 @@ Runs as **cron-based jobs** on the VPS. No persistent service process.
 
 ## 🗺️ Architecture
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│  SOURCES                                                            │
-│                                                                     │
-│  Toronto: City of Toronto API · Toronto Police API · CMHC · Stats  │
-│  Football: Transfermarkt (Salimt) · MLSPA · Deloitte Money League  │
-└─────────────────────────────┬──────────────────────────────────────┘
-                              │  Python ETL (parsers → Pydantic → loaders)
-                              ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  PostgreSQL 16 + PostGIS 3.4                                        │
-│                                                                     │
-│  raw_toronto (10 tables): dim_neighbourhood · fact_census           │
-│                           fact_census_extended · fact_crime          │
-│                           fact_amenities · fact_rentals              │
-│                           fact_neighbourhood_profile · …             │
-│                                                                     │
-│  raw_football (9 tables): dim_league · dim_club · dim_player        │
-│                           fact_club_season · fact_player_market_value│
-│                           fact_transfer · fact_mls_salary · …        │
-└─────────────────────────────┬──────────────────────────────────────┘
-                              │  dbt: portfolio project
-                              ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  TRANSFORMATION (45 dbt models)                                     │
-│                                                                     │
-│  staging/*    → 1:1 cleaning, typing, renaming (views)             │
-│  intermediate/* → business logic, joins, aggregations (views)      │
-│  marts/*      → analytics-ready tables (materialized)              │
-└─────────────────────────────┬──────────────────────────────────────┘
-                              │  Read-only contract
-                              ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  app-personal-portfolio (webapp)                                     │
-│  Queries mart_toronto.* and mart_football.* — never writes          │
-└────────────────────────────────────────────────────────────────────┘
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#2563eb', 'primaryTextColor': '#fff', 'lineColor': '#64748b', 'secondaryColor': '#f1f5f9'}}}%%
+flowchart TB
+    subgraph sources["📡 Data Sources"]
+        style sources fill:#f1f5f9,stroke:#94a3b8
+        S1["🏙️ Toronto: City API · Police API · CMHC · Stats Canada"]
+        S2["⚽ Football: Transfermarkt · MLSPA · Deloitte"]
+    end
+
+    subgraph etl["🐍 Python ETL"]
+        style etl fill:#dcfce7,stroke:#16a34a
+        E1["Parsers → Pydantic Validation → Loaders"]
+    end
+
+    subgraph db["🐘 PostgreSQL 16 + PostGIS 3.4"]
+        style db fill:#fef3c7,stroke:#d97706
+        R1["raw_toronto · 10 tables"]
+        R2["raw_football · 9 tables"]
+    end
+
+    subgraph dbt["🔄 dbt Transformations · 45 models"]
+        style dbt fill:#dbeafe,stroke:#2563eb
+        D1["staging — 1:1 cleaning, typing, renaming · views"]
+        D2["intermediate — business logic, joins · views"]
+        D3["marts — analytics-ready · materialized tables"]
+    end
+
+    subgraph webapp["🌐 app-personal-portfolio"]
+        style webapp fill:#f0fdf4,stroke:#22c55e
+        W1["Reads mart_toronto.* and mart_football.* — never writes"]
+    end
+
+    sources --> etl
+    etl --> db
+    db --> dbt
+    D1 --> D2 --> D3
+    dbt -->|"read-only contract"| webapp
 ```
 
 ---
