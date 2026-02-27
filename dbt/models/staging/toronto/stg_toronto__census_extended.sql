@@ -51,7 +51,6 @@ staged as (
         median_after_tax_income,
         median_employment_income,
         lico_at_rate,
-        market_basket_measure_rate,
 
         -- Diversity / immigration
         pct_immigrants,
@@ -75,7 +74,6 @@ staged as (
         pct_transit_commuters,
         pct_active_commuters,
         pct_work_from_home,
-        median_commute_minutes,
 
         -- Additional indicators
         median_age,

@@ -57,6 +57,9 @@ census_2021_baseline as (
     where census_year = 2021
 ),
 
+-- Only 2021 extended census data is available from the source.
+-- For 2016, we use core census fields only (income, age, education, housing tenure).
+-- Extended fields (commuting, occupation, immigration, etc.) are only populated for 2021.
 foundation as (
     select
         n.neighbourhood_id,
@@ -181,7 +184,6 @@ foundation as (
         ce.median_after_tax_income,
         ce.median_employment_income,
         ce.lico_at_rate,
-        ce.market_basket_measure_rate,
 
         -- Diversity / immigration
         ce.pct_immigrants,
@@ -205,7 +207,6 @@ foundation as (
         ce.pct_transit_commuters,
         ce.pct_active_commuters,
         ce.pct_work_from_home,
-        ce.median_commute_minutes,
 
         -- Additional indicators
         ce.pct_lone_parent_families,
@@ -222,7 +223,10 @@ foundation as (
     left join census c on n.neighbourhood_id = c.neighbourhood_id
     left join census_2021_baseline c2021 on n.neighbourhood_id = c2021.neighbourhood_id
     left join cpi_factors cpi on coalesce(c.census_year, n.census_year, 2021) = cpi.year
-    left join census_extended ce
+    -- INNER JOIN to census_extended: Only return rows where extended census data exists
+    -- Since extended data is only available for 2021, this filters to 2021 only
+    -- (ensures no NULL values in the 51+ extended demographic columns)
+    inner join census_extended ce
         on n.neighbourhood_id = ce.neighbourhood_id
         and coalesce(c.census_year, n.census_year, 2021) = ce.census_year
 )

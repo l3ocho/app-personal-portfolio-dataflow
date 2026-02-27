@@ -137,7 +137,6 @@ final as (
         d.median_after_tax_income,
         d.median_employment_income,
         d.lico_at_rate,
-        d.market_basket_measure_rate,
 
         -- Immigration / diversity (extended scalars)
         d.pct_immigrants,
@@ -159,7 +158,6 @@ final as (
         d.pct_transit_commuters,
         d.pct_active_commuters,
         d.pct_work_from_home,
-        d.median_commute_minutes,
 
         -- Family / housing quality
         d.pct_lone_parent_families,
