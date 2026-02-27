@@ -147,77 +147,7 @@ foundation as (
                     end
             )
             else null
-        end as income_quintile,
-
-        -- === Extended scalars from census_extended (all nullable) ===
-        -- Population
-        ce.pop_0_to_14,
-        ce.pop_15_to_24,
-        ce.pop_25_to_64,
-        ce.pop_65_plus,
-
-        -- Households
-        ce.total_private_dwellings,
-        ce.occupied_private_dwellings,
-        ce.avg_household_size,
-        ce.avg_household_income_after_tax,
-
-        -- Housing tenure and costs
-        ce.pct_suitable_housing,
-        ce.avg_shelter_cost_owner,
-        ce.avg_shelter_cost_renter,
-        ce.pct_shelter_cost_30pct,
-
-        -- Education
-        ce.pct_no_certificate,
-        ce.pct_high_school,
-        ce.pct_college,
-        ce.pct_university,
-        ce.pct_postsecondary,
-
-        -- Labour force
-        ce.participation_rate,
-        ce.employment_rate,
-        ce.pct_employed_full_time,
-
-        -- Income (extended)
-        ce.median_after_tax_income,
-        ce.median_employment_income,
-        ce.lico_at_rate,
-
-        -- Diversity / immigration
-        ce.pct_immigrants,
-        ce.pct_recent_immigrants,
-        ce.pct_visible_minority,
-        ce.pct_indigenous,
-
-        -- Language
-        ce.pct_english_only,
-        ce.pct_french_only,
-        ce.pct_neither_official_lang,
-        ce.pct_bilingual,
-
-        -- Mobility / migration
-        ce.pct_non_movers,
-        ce.pct_movers_within_city,
-        ce.pct_movers_from_other_city,
-
-        -- Commuting / transport
-        ce.pct_car_commuters,
-        ce.pct_transit_commuters,
-        ce.pct_active_commuters,
-        ce.pct_work_from_home,
-
-        -- Additional indicators
-        ce.pct_lone_parent_families,
-        ce.avg_number_of_children,
-        ce.pct_dwellings_in_need_of_repair,
-        ce.pct_unaffordable_housing,
-        ce.pct_overcrowded_housing,
-        ce.pct_management_occupation,
-        ce.pct_business_finance_admin,
-        ce.pct_service_sector,
-        ce.pct_trades_transport
+        end as income_quintile
 
     from neighbourhoods n
     left join census c on n.neighbourhood_id = c.neighbourhood_id

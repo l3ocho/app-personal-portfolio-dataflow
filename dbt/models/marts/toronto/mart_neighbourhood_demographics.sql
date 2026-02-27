@@ -19,29 +19,6 @@ city_avg as (
     group by census_year
 ),
 
--- Profile summary: extract key indicators from community profile data
-profile_summary as (
-    select
-        neighbourhood_id,
-        census_year,
-        -- pct_immigrant: from immigration_status category
-        max(case when category = 'immigration_status' and subcategory = 'immigrants'
-            then pct_of_neighbourhood end) as pct_immigrant,
-        -- pct_visible_minority: from visible_minority category
-        max(case when category = 'visible_minority'
-                  and subcategory = 'total visible minority population'
-            then pct_of_neighbourhood end) as pct_visible_minority,
-        -- pct_neither_official_lang: from official_language category
-        max(case when category = 'official_language'
-                  and subcategory = 'neither english nor french'
-            then pct_of_neighbourhood end) as pct_neither_official_lang,
-        -- diversity_index: Shannon entropy from visible_minority
-        max(case when category = 'visible_minority'
-            then diversity_index end) as diversity_index
-    from {{ ref('int_toronto__neighbourhood_profile') }}
-    group by neighbourhood_id, census_year
-),
-
 final as (
     select
         d.neighbourhood_id,
@@ -94,88 +71,10 @@ final as (
         -- City comparisons
         round(ca.city_avg_income::numeric, 2) as city_avg_income,
         round(ca.city_avg_age::numeric, 1) as city_avg_age,
-        round(ca.city_avg_unemployment::numeric, 2) as city_avg_unemployment,
-
-        -- Community profile summary (from neighbourhood profile data)
-        round(ps.pct_immigrant::numeric, 2) as pct_immigrant,
-        round(ps.pct_visible_minority::numeric, 2) as pct_visible_minority,
-        round(ps.pct_neither_official_lang::numeric, 2) as pct_neither_official_lang,
-        round(ps.diversity_index::numeric, 4) as diversity_index,
-
-        -- === Extended scalars from census_extended (all nullable) ===
-        -- Population age groups
-        d.pop_0_to_14,
-        d.pop_15_to_24,
-        d.pop_25_to_64,
-        d.pop_65_plus,
-
-        -- Households
-        d.total_private_dwellings,
-        d.occupied_private_dwellings,
-        d.avg_household_size,
-        d.avg_household_income_after_tax,
-
-        -- Housing costs
-        d.pct_suitable_housing,
-        d.avg_shelter_cost_owner,
-        d.avg_shelter_cost_renter,
-        d.pct_shelter_cost_30pct,
-
-        -- Education
-        d.pct_no_certificate,
-        d.pct_high_school,
-        d.pct_college,
-        d.pct_university,
-        d.pct_postsecondary,
-
-        -- Labour force
-        d.participation_rate,
-        d.employment_rate,
-        d.pct_employed_full_time,
-
-        -- Income (extended)
-        d.median_after_tax_income,
-        d.median_employment_income,
-        d.lico_at_rate,
-
-        -- Immigration / diversity (extended scalars)
-        d.pct_immigrants,
-        d.pct_recent_immigrants,
-        d.pct_indigenous,
-
-        -- Language (extended)
-        d.pct_english_only,
-        d.pct_french_only,
-        d.pct_bilingual,
-
-        -- Mobility
-        d.pct_non_movers,
-        d.pct_movers_within_city,
-        d.pct_movers_from_other_city,
-
-        -- Commuting
-        d.pct_car_commuters,
-        d.pct_transit_commuters,
-        d.pct_active_commuters,
-        d.pct_work_from_home,
-
-        -- Family / housing quality
-        d.pct_lone_parent_families,
-        d.avg_number_of_children,
-        d.pct_dwellings_in_need_of_repair,
-        d.pct_unaffordable_housing,
-        d.pct_overcrowded_housing,
-
-        -- Occupation
-        d.pct_management_occupation,
-        d.pct_business_finance_admin,
-        d.pct_service_sector,
-        d.pct_trades_transport
+        round(ca.city_avg_unemployment::numeric, 2) as city_avg_unemployment
 
     from demographics d
     left join city_avg ca on d.census_year = ca.census_year
-    left join profile_summary ps on d.neighbourhood_id = ps.neighbourhood_id
-        and d.census_year = ps.census_year
 )
 
 select * from final
