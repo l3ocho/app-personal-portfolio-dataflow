@@ -1,6 +1,6 @@
 -- Mart: Neighbourhood community profile analytical table
 -- Grain: One row per (neighbourhood_id, census_year, category, subcategory, level)
--- Final consumption table for dashboard with all computed metrics
+-- Final consumption table for dashboard with populated metrics only (removed 3 NULL-only columns)
 
 with profile as (
     select * from {{ ref('int_toronto__neighbourhood_profile') }}
@@ -13,15 +13,12 @@ final as (
         p.category,
         p.subcategory,
         p.count,
-        p.pct_of_neighbourhood,
         p.city_total,
         p.pct_of_city,
         p.rank_in_neighbourhood,
         p.level,
         p.indent_level,
-        p.category_total,
-        case when p.indent_level > 0 then true else false end as is_subtotal,
-        p.diversity_index
+        case when p.indent_level > 0 then true else false end as is_subtotal
     from profile p
 )
 
