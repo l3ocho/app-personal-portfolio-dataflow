@@ -21,12 +21,12 @@ amenities_by_year as (
     select
         neighbourhood_id,
         amenity_year as year,
-        sum(case when amenity_type = 'park'              then amenity_count else 0 end) as parks_count,
-        sum(case when amenity_type = 'school'            then amenity_count else 0 end) as schools_count,
-        sum(case when amenity_type = 'transit_stop'      then amenity_count else 0 end) as transit_count,
-        sum(case when amenity_type = 'library'           then amenity_count else 0 end) as libraries_count,
-        sum(case when amenity_type = 'community_centre'  then amenity_count else 0 end) as community_centres_count,
-        sum(case when amenity_type = 'childcare'         then amenity_count else 0 end) as childcare_count,
+        sum(case when amenity_type = 'Parks'              then amenity_count else 0 end) as parks_count,
+        sum(case when amenity_type = 'Schools'            then amenity_count else 0 end) as schools_count,
+        sum(case when amenity_type = 'Transit Stops'      then amenity_count else 0 end) as transit_count,
+        sum(case when amenity_type = 'Libraries'          then amenity_count else 0 end) as libraries_count,
+        sum(case when amenity_type = 'Community Centres'  then amenity_count else 0 end) as community_centres_count,
+        sum(case when amenity_type = 'Recreation'         then amenity_count else 0 end) as childcare_count,
         sum(amenity_count) as total_amenities
     from amenities
     group by neighbourhood_id, amenity_year
