@@ -162,6 +162,11 @@ See `data/raw/football/SOURCES.md` for complete source documentation including U
 - **MLSPA** — CSV files manually placed in `data/raw/football/mlspa/`
 - **Deloitte** — Wikipedia scrape (auto-fetched on first run, cached at `data/raw/football/deloitte/wikipedia_cache.html`); requires `lxml`
 
+> ⚠️ **SUBMODULE RULE — READ ONLY**: `data/raw/football/salimt` is a **third-party upstream repository** ([github.com/salimt/football-datasets](https://github.com/salimt/football-datasets)) that we do not own or control.
+> - **NEVER push to it.** We have no write access and it is not our code.
+> - **NEVER commit a new submodule pointer** unless you have first verified the target commit exists on the upstream GitHub remote.
+> - To update: `git -C data/raw/football/salimt pull origin main` then verify with `git submodule status` before committing the pointer change.
+
 ---
 
 ## Tech Stack (Locked)

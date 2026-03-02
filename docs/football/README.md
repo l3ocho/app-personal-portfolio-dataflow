@@ -39,6 +39,8 @@ The Football domain analyses football club economics across 7 elite divisions. T
 
 > **Transfermarkt submodule:** Run `git submodule update --init --recursive` to initialise `data/raw/football/salimt/`.
 > See `data/raw/football/SOURCES.md` for complete source documentation, URLs, and update frequency.
+>
+> ⚠️ **READ-ONLY**: `salimt` is a third-party upstream repo we do not own. **Never push to it.** Update with `git -C data/raw/football/salimt pull origin main`, verify the commit exists on GitHub, then commit the pointer.
 
 ---
 
