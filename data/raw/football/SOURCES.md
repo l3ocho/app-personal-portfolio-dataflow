@@ -2,6 +2,11 @@
 
 ## Primary: salimt/football-datasets (Transfermarkt)
 
+> ⚠️ **READ-ONLY UPSTREAM SOURCE** — This is a third-party repository we do not own.
+> - **NEVER push to it.** We have no write access.
+> - **NEVER commit a submodule pointer update** without first confirming the target commit exists on GitHub (`git -C data/raw/football/salimt log --oneline -1` must match a real upstream commit).
+> - Safe update procedure: pull inside the submodule directory → verify → then commit the pointer.
+
 - **GitHub:** https://github.com/salimt/football-datasets
 - **Kaggle:** https://www.kaggle.com/datasets/xfkzujqjvx97n/football-datasets
 - **Records:** 5.7M+ across all tables
@@ -18,8 +23,11 @@ git submodule add https://github.com/salimt/football-datasets data/raw/football/
 # Initialize and clone (standard first-time setup)
 git submodule update --init --recursive data/raw/football/salimt
 
-# Update to latest
+# Update to latest upstream (PULL ONLY — never push)
 git -C data/raw/football/salimt pull origin main
+
+# After pulling, verify the pointer commit exists on GitHub before committing
+git submodule status   # should show no '+' prefix after a clean pull
 ```
 
 ### Key files (relative to `data/raw/football/salimt/`)
