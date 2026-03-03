@@ -10,6 +10,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | Versioning: [
 
 ## [Unreleased]
 
+### Removed
+- `mart_neighbourhood_foundation` — deleted as redundant; every column it contained is also present in `mart_neighbourhood_demographics`, which additionally provides age band population columns, index columns, and city-wide comparisons. Use `mart_neighbourhood_demographics` instead.
+
 ---
 
 ## [0.5.0] — 2026-02-24

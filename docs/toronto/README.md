@@ -87,13 +87,12 @@ flowchart TD
     subgraph Marts["mart_toronto (dbt tables — webapp reads here)"]
         M1[mart_neighbourhood_geometry]
         M2[mart_neighbourhood_overview]
-        M3[mart_neighbourhood_foundation]
-        M4[mart_neighbourhood_housing]
-        M5[mart_neighbourhood_housing_rentals]
-        M6[mart_neighbourhood_demographics]
-        M7[mart_neighbourhood_safety]
-        M8[mart_neighbourhood_amenities]
-        M9[mart_neighbourhood_profile]
+        M3[mart_neighbourhood_housing]
+        M4[mart_neighbourhood_housing_rentals]
+        M5[mart_neighbourhood_demographics]
+        M6[mart_neighbourhood_safety]
+        M7[mart_neighbourhood_amenities]
+        M8[mart_neighbourhood_profile]
     end
 
     S1 --> P1 --> R1 & R5
@@ -190,7 +189,6 @@ flowchart TD
 |------|-------|-------------|
 | `mart_neighbourhood_geometry` | neighbourhood | ✅ **Geometry SSoT** — `neighbourhood_id`, `name`, `geometry`, `land_area_sqkm`. All spatial joins go here. |
 | `mart_neighbourhood_overview` | neighbourhood | Composite livability scores, summary indicators |
-| `mart_neighbourhood_foundation` | neighbourhood × year | 65+ scalar base (demographics, income, housing costs, labour, education) |
 | `mart_neighbourhood_housing` | neighbourhood × year | 75+ housing columns: dwelling pivots, bedroom pivots, construction period pivots, shelter costs, fit scores |
 | `mart_neighbourhood_housing_rentals` | neighbourhood × bedroom × year | CMHC rentals disaggregated to neighbourhood grain (4,424 rows) |
 | `mart_neighbourhood_demographics` | neighbourhood × year | Population, income, age, education, diversity indices, profile summary |
@@ -215,22 +213,6 @@ flowchart TD
 | `name` | varchar | Official neighbourhood name |
 | `geometry` | geometry (PostGIS) | Polygon boundary, SRID 4326 |
 | `land_area_sqkm` | numeric | Land area in km² |
-
-</details>
-
-<details>
-<summary>mart_neighbourhood_foundation — base analytical table</summary>
-
-| Column Group | Key Columns | Source |
-|-------------|-------------|--------|
-| Identity | `neighbourhood_id`, `year` | dim_neighbourhood |
-| Population | `population`, `population_density`, `median_age` | fact_census |
-| Income | `median_household_income`, `average_household_income` (CPI-imputed for 2016) | fact_census |
-| Housing costs | `average_dwelling_value`, `shelter_cost_*` | fact_census_extended |
-| Labour | `unemployment_rate`, `participation_rate`, `employment_rate` | fact_census_extended |
-| Education | `pct_bachelors_or_higher`, `pct_high_school_only`, `pct_no_certificate` | fact_census + census_extended |
-| Diversity | `pct_visible_minority`, `pct_indigenous`, `pct_immigrants` | fact_census_extended |
-| Language | `pct_english_only`, `pct_french_only`, `pct_other_language` | fact_census_extended |
 
 </details>
 

@@ -28,6 +28,10 @@ final as (
         d.population,
         d.land_area_sqkm,
         d.population_density,
+        d.pop_0_to_14,
+        d.pop_15_to_24,
+        d.pop_25_to_64,
+        d.pop_65_plus,
 
         -- Income
         d.median_household_income,

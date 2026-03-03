@@ -472,15 +472,6 @@ Grain: neighbourhood × year. Composite livability score and top-level summary m
 
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
-#### `mart_neighbourhood_foundation`
-Grain: neighbourhood × census year. The canonical cross-domain base mart.
-
-Includes 65+ columns across: population, age structure, household metrics, after-tax income, employment, education, housing costs and tenure, diversity/immigration, language, commuting, and housing quality indicators. Sources from `int_neighbourhood__foundation`.
-
-> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
-
-**Expected rows:** ~316 (158 neighbourhoods × 2 census years)
-
 #### `mart_neighbourhood_housing`
 Grain: neighbourhood × census year. Comprehensive housing analysis (75+ columns).
 

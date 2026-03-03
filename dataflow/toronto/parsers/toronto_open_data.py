@@ -612,7 +612,7 @@ class TorontoOpenDataParser:
     CENSUS_EXTENDED_MAPPING: dict[str, str | list[str] | tuple[str, str]] = {
         # Population (100% data row label is actually 25% sample in 2021 XLSX)
         "population": "Total - Age groups of the population - 25% sample data",
-        "pop_0_to_14": "0 to 14 years",
+        "pop_0_to_14": ["0 to 4 years", "5 to 9 years", "10 to 14 years"],
         "pop_15_to_24": ["15 to 19 years", "20 to 24 years"],
         "pop_25_to_64": [
             "25 to 29 years",
@@ -624,7 +624,13 @@ class TorontoOpenDataParser:
             "55 to 59 years",
             "60 to 64 years",
         ],
-        "pop_65_plus": "65 years and over",
+        "pop_65_plus": [
+            "65 to 69 years",
+            "70 to 74 years",
+            "75 to 79 years",
+            "80 to 84 years",
+            "85 years and over",
+        ],
         # Households (total private dwellings not available as standalone row;
         # occupied count proxied from tenure total)
         "total_private_dwellings": "Total - Occupied private dwellings by dwelling condition - 25% sample data",
