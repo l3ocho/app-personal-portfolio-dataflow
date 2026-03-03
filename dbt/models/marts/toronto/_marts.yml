@@ -272,6 +272,16 @@ models:
           - relationships:
               to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
+      - name: population
+        description: "Total population"
+      - name: pop_0_to_14
+        description: "Population aged 0–14 (children)"
+      - name: pop_15_to_24
+        description: "Population aged 15–24 (youth)"
+      - name: pop_25_to_64
+        description: "Population aged 25–64 (working age)"
+      - name: pop_65_plus
+        description: "Population aged 65+ (seniors)"
       - name: median_household_income
         description: "Median household income"
       - name: income_index
@@ -282,14 +292,6 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
-      - name: pct_immigrant
-        description: "Percentage of population who are immigrants (2021 Census)"
-      - name: pct_visible_minority
-        description: "Percentage who are visible minority (2021 Census)"
-      - name: pct_neither_official_lang
-        description: "Percentage who know neither English nor French (2021 Census)"
-      - name: diversity_index
-        description: "Shannon diversity index from visible minority category"
 
   - name: mart_neighbourhood_amenities
     description: "Amenity access metrics by neighbourhood. Expanded with commute mode, duration, destination pivots and car dependency composite."

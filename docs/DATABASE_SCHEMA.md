@@ -509,7 +509,7 @@ Replaces the deprecated `mart_toronto_rentals` (zone grain).
 **Expected rows:** ~4,424
 
 #### `mart_neighbourhood_demographics`
-Grain: neighbourhood × census year. Income, age, population, diversity indices, and community profile summary columns (45+ columns).
+Grain: neighbourhood × census year. Income, age, population, and housing tenure metrics (25 columns).
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -518,6 +518,10 @@ Grain: neighbourhood × census year. Income, age, population, diversity indices,
 | `population` | INTEGER | |
 | `land_area_sqkm` | NUMERIC | |
 | `population_density` | NUMERIC | |
+| `pop_0_to_14` | INTEGER | Population aged 0–14 (children) |
+| `pop_15_to_24` | INTEGER | Population aged 15–24 (youth) |
+| `pop_25_to_64` | INTEGER | Population aged 25–64 (working age) |
+| `pop_65_plus` | INTEGER | Population aged 65+ (seniors) |
 | `median_household_income` | NUMERIC | CPI-adjusted to 2021 dollars |
 | `average_household_income` | NUMERIC | CPI-adjusted to 2021 dollars |
 | `income_quintile` | INTEGER | 1–5 (1 = lowest) |
@@ -531,10 +535,9 @@ Grain: neighbourhood × census year. Income, age, population, diversity indices,
 | `pct_renter_occupied` | NUMERIC | |
 | `average_dwelling_value` | NUMERIC | |
 | `tenure_diversity_index` | NUMERIC | Shannon entropy on owner/renter split |
-| `pct_immigrant` | NUMERIC(5,2) | Immigrants % (from profile categories) |
-| `pct_visible_minority` | NUMERIC(5,2) | Visible minority % |
-| `pct_neither_official_lang` | NUMERIC(5,2) | Neither English nor French % |
-| `diversity_index` | NUMERIC(6,4) | Shannon entropy on visible minority composition |
+| `city_avg_income` | NUMERIC | City-wide average for comparison |
+| `city_avg_age` | NUMERIC | City-wide average for comparison |
+| `city_avg_unemployment` | NUMERIC | City-wide average for comparison |
 
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 

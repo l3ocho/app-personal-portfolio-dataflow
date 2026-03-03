@@ -169,7 +169,7 @@ flowchart TD
 
 | Model | Purpose | Key Consumers |
 |-------|---------|---------------|
-| `int_neighbourhood__foundation` | **Central hub** — CPI imputation + 50+ extended scalars via LEFT JOIN. Base for all analytical marts. | housing, amenities, demographics marts |
+| `int_neighbourhood__foundation` | **Central hub** — CPI imputation + 50+ extended scalars via INNER JOIN to census_extended (filters to 2021 only). Base for all analytical marts. | housing, amenities, demographics marts |
 | `int_neighbourhood__housing` | Housing metrics with dwelling / bedroom / construction period pivot CTEs | `mart_neighbourhood_housing` |
 | `int_neighbourhood__amenity_scores` | Amenity accessibility scores + commute pivot CTEs + `car_dependency_index` | `mart_neighbourhood_amenities` |
 | `int_neighbourhood__crime_summary` | Crime rate calculations aggregated by year | `mart_neighbourhood_safety` |

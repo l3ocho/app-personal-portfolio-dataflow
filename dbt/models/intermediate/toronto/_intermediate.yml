@@ -33,6 +33,14 @@ models:
         description: "Income quintile (1-5, city-wide)"
       - name: is_imputed
         description: "True if income/education/dwelling values are CPI-adjusted estimates (2016-2020)"
+      - name: pop_0_to_14
+        description: "Population aged 0–14 (children). From census_extended, 2021 only. Sum of 0–4, 5–9, 10–14 year bands."
+      - name: pop_15_to_24
+        description: "Population aged 15–24 (youth). From census_extended, 2021 only. Sum of 15–19 and 20–24 year bands."
+      - name: pop_25_to_64
+        description: "Population aged 25–64 (working age). From census_extended, 2021 only. Sum of eight 5-year bands."
+      - name: pop_65_plus
+        description: "Population aged 65+ (seniors). From census_extended, 2021 only. Sum of five 5-year bands (65–69 through 85+)."
 
   - name: int_neighbourhood__demographics
     description: "DEPRECATED (Sprint 13) — superseded by int_neighbourhood__foundation. Kept for backward compatibility."
