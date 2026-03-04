@@ -21,7 +21,10 @@
 -- The 'is_imputed' flag marks imputed values for transparency.
 --
 -- Extended Scalars: ~55 pre-computed indicators from fact_census_extended (Path B).
--- All extended columns are nullable (Statistics Canada suppression).
+-- Age brackets (pop_0_to_14/15_24/25_64/65_plus) are not in the 2016 source XLSX.
+-- For 2016 rows, they are estimated by scaling the 2021 counts by the 2016/2021
+-- population ratio. The is_imputed flag covers these estimates.
+-- Remaining extended columns are 2021-only and NULL for 2016 rows.
 --
 -- 2016 Coverage: 26 of the 34 new neighbourhood IDs (141-174) have no 2016
 -- census data. Their 2016 rows are synthesized using 2021 values as baseline
@@ -88,6 +91,16 @@ distributed_2016 as (
           where c_2016.neighbourhood_id = c_2021.neighbourhood_id
             and c_2016.census_year = 2016
       )
+),
+
+-- 2021 baseline for age bracket carry-forward to 2016 rows.
+-- Age brackets (pop_0_to_14 etc.) are not available in the 2016 XLSX source.
+-- For 2016 rows, we estimate using the 2021 age distribution scaled by the 2016/2021
+-- population ratio. This is the same imputation pattern used for income and education.
+census_extended_2021_baseline as (
+    select neighbourhood_id, population, pop_0_to_14, pop_15_to_24, pop_25_to_64, pop_65_plus
+    from census_extended
+    where census_year = 2021
 ),
 
 -- Only 2021 extended census data is available from the source.
@@ -162,11 +175,24 @@ foundation as (
             else false
         end as is_imputed,
 
-        -- Age distribution (from census_extended, 2021 only; NULL for 2016)
-        ce.pop_0_to_14,
-        ce.pop_15_to_24,
-        ce.pop_25_to_64,
-        ce.pop_65_plus,
+        -- Age distribution: 2021 actual; 2016 estimated by scaling 2021 counts by
+        -- the 2016/2021 population ratio (same imputation pattern as income/education).
+        coalesce(
+            ce.pop_0_to_14,
+            round(ce2021.pop_0_to_14 * c.population::numeric / nullif(ce2021.population, 0))::integer
+        ) as pop_0_to_14,
+        coalesce(
+            ce.pop_15_to_24,
+            round(ce2021.pop_15_to_24 * c.population::numeric / nullif(ce2021.population, 0))::integer
+        ) as pop_15_to_24,
+        coalesce(
+            ce.pop_25_to_64,
+            round(ce2021.pop_25_to_64 * c.population::numeric / nullif(ce2021.population, 0))::integer
+        ) as pop_25_to_64,
+        coalesce(
+            ce.pop_65_plus,
+            round(ce2021.pop_65_plus * c.population::numeric / nullif(ce2021.population, 0))::integer
+        ) as pop_65_plus,
 
         -- Tenure mix
         c.pct_owner_occupied,
@@ -180,6 +206,8 @@ foundation as (
     left join census_extended ce
         on n.neighbourhood_id = ce.neighbourhood_id
         and coalesce(c.census_year, n.census_year, 2021) = ce.census_year
+    -- 2021 baseline for age bracket imputation on 2016 rows
+    left join census_extended_2021_baseline ce2021 on n.neighbourhood_id = ce2021.neighbourhood_id
 ),
 
 -- Union: rows from stg_toronto__census (132 at 2016, 158 at 2021) + 26 synthetic 2016 rows
@@ -245,17 +273,18 @@ foundation_all as (
             else null
         end                                                             as average_dwelling_value,
         true                                                            as is_imputed,
-        -- Extended fields NULL for distributed 2016 rows
-        null::integer                                                   as pop_0_to_14,
-        null::integer                                                   as pop_15_to_24,
-        null::integer                                                   as pop_25_to_64,
-        null::integer                                                   as pop_65_plus,
+        -- Age brackets: scale 2021 counts by population ratio (same pattern as foundation CTE)
+        round(ce2021.pop_0_to_14  * d.population::numeric / nullif(ce2021.population, 0))::integer as pop_0_to_14,
+        round(ce2021.pop_15_to_24 * d.population::numeric / nullif(ce2021.population, 0))::integer as pop_15_to_24,
+        round(ce2021.pop_25_to_64 * d.population::numeric / nullif(ce2021.population, 0))::integer as pop_25_to_64,
+        round(ce2021.pop_65_plus  * d.population::numeric / nullif(ce2021.population, 0))::integer as pop_65_plus,
         d.pct_owner_occupied,
         d.pct_renter_occupied,
         true                                                            as is_split_estimated
     from distributed_2016 d
     join neighbourhoods n on n.neighbourhood_id = d.neighbourhood_id
     join census_2021_baseline c2021 on c2021.neighbourhood_id = d.neighbourhood_id
+    left join census_extended_2021_baseline ce2021 on ce2021.neighbourhood_id = d.neighbourhood_id
     cross join (select adjustment_factor from cpi_factors where year = 2016) cpi
 )
 
