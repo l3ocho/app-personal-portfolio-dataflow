@@ -98,6 +98,17 @@ models:
       - name: yoy_change_pct
         description: "Year-over-year change percentage"
 
+  - name: int_neighbourhood__people
+    description: "Unified people profile: demographics + amenities + geometry at neighbourhood grain (latest year only). Direct source for mart_neighbourhood_people. Replaces mart_neighbourhood_demographics and mart_neighbourhood_amenities as the single model combining census foundation with amenity scores, city averages, and all derived indices."
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+
   - name: int_neighbourhood__amenity_scores
     description: "Normalized amenities per capita and per area"
     columns:

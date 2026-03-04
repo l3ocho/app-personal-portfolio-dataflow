@@ -69,13 +69,29 @@ housing as (
 ),
 
 -- Amenities (use latest year since infrastructure changes slowly)
+-- Computed inline from int_neighbourhood__amenity_scores (mart_neighbourhood_amenities deleted)
+amenity_raw as (
+    select *
+    from {{ ref('int_neighbourhood__amenity_scores') }}
+    where year = (select max(year) from {{ ref('int_neighbourhood__amenity_scores') }})
+),
+
+amenity_city_avg as (
+    select avg(total_amenities_per_1000) as city_avg_total_amenities
+    from amenity_raw
+),
+
 amenities as (
     select
-        neighbourhood_id,
-        amenity_index as amenity_score,
-        total_amenities_per_1000
-    from {{ ref('mart_neighbourhood_amenities') }}
-    where year = (select max(year) from {{ ref('mart_neighbourhood_amenities') }})
+        ar.neighbourhood_id,
+        case
+            when ca.city_avg_total_amenities > 0
+            then round(ar.total_amenities_per_1000 / ca.city_avg_total_amenities * 100, 1)
+            else null
+        end as amenity_score,
+        ar.total_amenities_per_1000
+    from amenity_raw ar
+    cross join amenity_city_avg ca
 ),
 
 -- Compute scores
