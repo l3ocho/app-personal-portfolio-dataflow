@@ -16,7 +16,7 @@ models:
               field: zone_code
 
   - name: int_neighbourhood__foundation
-    description: "Neighbourhood foundation: census demographics (with CPI imputation) + ~55 extended scalar indicators from fact_census_extended. Supersedes int_neighbourhood__demographics. Grain: one row per neighbourhood per census year (316 rows: 158 × 2). The 34 new neighbourhoods (IDs 141-174) have 2016 rows generated via population-proportional distribution from 16 parent old neighbourhoods; these are flagged is_split_estimated=TRUE."
+    description: "Neighbourhood foundation: census demographics (with CPI imputation) + ~55 extended scalar indicators from fact_census_extended. Supersedes int_neighbourhood__demographics. Grain: one row per neighbourhood per census year (316 rows: 158 × 2). 26 of the 34 new neighbourhood IDs (141-174) lacked real 2016 census data; synthetic 2016 rows are generated from their 2021 baseline (population and rates carried forward, income/education/dwelling CPI-imputed). These rows are flagged is_split_estimated=TRUE. The other 8 new IDs (142, 146, 147, 149, 155, 156, 158, 172) have real 2016 census data and flow through naturally."
     columns:
       - name: neighbourhood_id
         description: "Neighbourhood identifier"
@@ -34,7 +34,7 @@ models:
       - name: is_imputed
         description: "True if income/education/dwelling values are CPI-adjusted estimates (2016 rows)"
       - name: is_split_estimated
-        description: "True for the 34 new neighbourhood IDs (141-174) at 2016; population distributed from parent old neighbourhood via 2021 population ratio."
+        description: "True for 26 of the 34 new neighbourhood IDs (141-174) at census_year=2016. These IDs had no real 2016 census data; their 2016 rows are synthesised from their own 2021 values (population + rates carried forward, income CPI-imputed)."
       - name: pop_0_to_14
         description: "Population aged 0–14 (children). From census_extended, 2021 only; NULL for 2016."
       - name: pop_15_to_24

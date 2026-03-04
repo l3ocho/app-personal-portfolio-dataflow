@@ -590,7 +590,7 @@ Grain: one row per neighbourhood per census year (316 rows: 158 × 2). Unified p
 | `commute_above_60min` | INTEGER | 60+ min commuters |
 | `commute_long_pct` | NUMERIC | % commuters with 45+ min commute |
 
-**Expected rows:** 158 (one per neighbourhood)
+**Expected rows:** 316 (158 neighbourhoods × 2 census years)
 
 #### `mart_neighbourhood_safety`
 Grain: neighbourhood × year. Crime rate calculations by type.
