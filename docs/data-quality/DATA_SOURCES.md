@@ -55,6 +55,34 @@ This document describes the data sources used in the Toronto Neighbourhood Analy
 
 **Solution**: CPI-based imputation for all four metrics (see below)
 
+##### 2016 Coverage Gap: 34 New Neighbourhoods (IDs 141-174)
+
+**Issue**: The 2021 boundary revision created 34 new neighbourhood IDs (141-174) by subdividing 16 original neighbourhoods. These IDs do not exist in the 2016 census dataset (which used 140 old boundaries).
+
+**Impact**: Without this fix, the 34 new neighbourhoods had no 2016 data rows, causing NULL `census_year` in `mart_neighbourhood_housing` for 2016-era rental years, and empty 2016 data in `mart_neighbourhood_people`.
+
+**Solution: Population-Proportional Distribution**
+
+Method: distribute 2016 old-neighbourhood totals to new sub-areas using 2021 population ratios as a proxy for sub-area share.
+
+- **Pop weight** = `new_2021_pop / old_2016_pop`
+- Since each old neighbourhood's new sub-areas sum to the old population (approximately), the weights distribute the 2016 total correctly
+- **Count measures distributed**: `population`, `population_density`
+- **Rate measures carried forward unchanged**: `unemployment_rate`, `pct_owner_occupied`, `pct_renter_occupied`, `median_age`
+- **Income/education/dwelling**: NULL pre-distribution → then CPI-imputed (same path as the 124 original neighbourhoods)
+- **Flag**: `is_split_estimated = TRUE` for all 34 new neighbourhood 2016 rows
+- **Flag**: `is_imputed = TRUE` for all 2016 rows (applies CPI adjustment)
+
+Split map (16 old → 34 new):
+- 137 → 141, 142 (Woburn); 131 → 143, 144 (Rouge); 132 → 145, 146 (Malvern)
+- 117 → 147, 148 (L'Amoreaux); 45 → 149, 150 (Parkwoods-Donalda)
+- 51 → 151, 152, 153 (Willowdale East); 26 → 154, 155 (Downsview-Roding-CFB)
+- 127 → 156, 157 (Bendale); 14 → 158, 159 (Islington-City Centre West)
+- 17 → 160, 161 (Mimico); 82 → 162, 163 (Niagara)
+- 77 → 164, 165, 166 (Waterfront Communities); 75 → 167, 168 (Church-Yonge Corridor)
+- 76 → 169, 170 (Bay Street Corridor); 93 → 171, 172 (Dovercourt-Wallace-Emerson-Junction)
+- 104 → 173, 174 (Mount Pleasant West)
+
 #### 2. Neighbourhood Community Profile Data (2021)
 
 **Dataset**: `neighbourhood-profiles` (same as census, but different extraction)

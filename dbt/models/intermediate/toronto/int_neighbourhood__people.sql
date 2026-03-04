@@ -1,9 +1,11 @@
--- Intermediate: Unified people profile per neighbourhood (latest year only)
--- Grain: one row per neighbourhood
--- Sources: int_neighbourhood__foundation (latest census year)
---          int_neighbourhood__amenity_scores (latest amenity year)
+-- Intermediate: Unified people profile per neighbourhood × census year
+-- Grain: one row per neighbourhood per census year (316 rows: 158 × 2)
+-- Sources: int_neighbourhood__foundation (all census years)
+--          int_neighbourhood__amenity_scores (latest amenity year, joined to both census years)
 --          stg_toronto__neighbourhoods (geometry + name + land_area)
 -- NOTE: Does NOT reference any mart. Built directly from intermediates.
+-- City averages and indices are partitioned by census_year so 2016 and 2021
+-- are each calibrated within their own year.
 
 with neighbourhoods as (
     select
@@ -14,14 +16,10 @@ with neighbourhoods as (
     from {{ ref('stg_toronto__neighbourhoods') }}
 ),
 
--- Latest census year per neighbourhood from foundation (inner join → 2021 only, 158 rows)
-foundation_latest as (
+-- All census years from foundation (316 rows: 158 × 2 census years)
+foundation_all as (
     select *
     from {{ ref('int_neighbourhood__foundation') }}
-    where census_year = (
-        select max(census_year)
-        from {{ ref('int_neighbourhood__foundation') }}
-    )
 ),
 
 -- Latest amenity year per neighbourhood
@@ -34,9 +32,11 @@ amenity_latest as (
     )
 ),
 
--- City-wide averages (latest amenity year only)
+-- City-wide averages partitioned by census_year
+-- Amenity averages use latest amenity data joined to the census year's population
 city_avg as (
     select
+        f.census_year,
         avg(f.population::numeric / nullif(f.land_area_sqkm, 0))              as city_avg_pop_density,
         avg(f.median_age)                                                      as city_avg_age,
         avg(f.median_household_income)                                         as city_avg_income_md,
@@ -49,11 +49,12 @@ city_avg as (
         avg(a.childcare_count::numeric / nullif(f.population, 0) * 1000)      as city_avg_childcare_1k,
         avg(a.community_centres_count::numeric / nullif(f.population, 0) * 1000) as city_avg_commcentres_1k,
         avg(a.total_amenities_per_1000)                                        as city_avg_amenities_1k
-    from foundation_latest f
+    from foundation_all f
     join amenity_latest a using (neighbourhood_id)
+    group by f.census_year
 ),
 
--- Amenity tier: ntile(5) over all neighbourhoods (1=best, 5=lowest)
+-- Amenity tier: ntile(5) over all neighbourhoods using latest amenity data (1=best, 5=lowest)
 amenity_tiers as (
     select
         neighbourhood_id,
@@ -72,12 +73,13 @@ final as (
         n.neighbourhood_name,
         n.geometry,
         n.land_area_sqkm,
+        f.census_year,
 
         -- ── Population ────────────────────────────────────────────────────
         f.population                                                            as pop,
         round(f.population::numeric / nullif(n.land_area_sqkm, 0), 2)         as pop_density,
 
-        -- Age cohorts (from census_extended via foundation, 2021 only)
+        -- Age cohorts (from census_extended via foundation, 2021 only; NULL for 2016)
         f.pop_0_to_14,
         f.pop_15_to_24,
         f.pop_25_to_64,
@@ -272,10 +274,10 @@ final as (
         )                                                                       as commute_long_pct
 
     from neighbourhoods n
-    join foundation_latest f using (neighbourhood_id)
+    join foundation_all f using (neighbourhood_id)
     join amenity_latest a using (neighbourhood_id)
     join amenity_tiers t using (neighbourhood_id)
-    cross join city_avg ca
+    join city_avg ca on ca.census_year = f.census_year
 )
 
 select * from final

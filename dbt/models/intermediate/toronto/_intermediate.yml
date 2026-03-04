@@ -16,7 +16,7 @@ models:
               field: zone_code
 
   - name: int_neighbourhood__foundation
-    description: "Neighbourhood foundation: census demographics (with CPI imputation) + ~55 extended scalar indicators from fact_census_extended. Supersedes int_neighbourhood__demographics."
+    description: "Neighbourhood foundation: census demographics (with CPI imputation) + ~55 extended scalar indicators from fact_census_extended. Supersedes int_neighbourhood__demographics. Grain: one row per neighbourhood per census year (316 rows: 158 × 2). The 34 new neighbourhoods (IDs 141-174) have 2016 rows generated via population-proportional distribution from 16 parent old neighbourhoods; these are flagged is_split_estimated=TRUE."
     columns:
       - name: neighbourhood_id
         description: "Neighbourhood identifier"
@@ -26,21 +26,23 @@ models:
               to: ref('stg_toronto__neighbourhoods')
               field: neighbourhood_id
       - name: census_year
-        description: "Census year"
+        description: "Census year (2016 or 2021)"
         data_tests:
           - not_null
       - name: income_quintile
-        description: "Income quintile (1-5, city-wide)"
+        description: "Income quintile (1-5, city-wide). Recomputed over all 316 rows partitioned by census_year."
       - name: is_imputed
-        description: "True if income/education/dwelling values are CPI-adjusted estimates (2016-2020)"
+        description: "True if income/education/dwelling values are CPI-adjusted estimates (2016 rows)"
+      - name: is_split_estimated
+        description: "True for the 34 new neighbourhood IDs (141-174) at 2016; population distributed from parent old neighbourhood via 2021 population ratio."
       - name: pop_0_to_14
-        description: "Population aged 0–14 (children). From census_extended, 2021 only. Sum of 0–4, 5–9, 10–14 year bands."
+        description: "Population aged 0–14 (children). From census_extended, 2021 only; NULL for 2016."
       - name: pop_15_to_24
-        description: "Population aged 15–24 (youth). From census_extended, 2021 only. Sum of 15–19 and 20–24 year bands."
+        description: "Population aged 15–24 (youth). From census_extended, 2021 only; NULL for 2016."
       - name: pop_25_to_64
-        description: "Population aged 25–64 (working age). From census_extended, 2021 only. Sum of eight 5-year bands."
+        description: "Population aged 25–64 (working age). From census_extended, 2021 only; NULL for 2016."
       - name: pop_65_plus
-        description: "Population aged 65+ (seniors). From census_extended, 2021 only. Sum of five 5-year bands (65–69 through 85+)."
+        description: "Population aged 65+ (seniors). From census_extended, 2021 only; NULL for 2016."
 
   - name: int_neighbourhood__demographics
     description: "DEPRECATED (Sprint 13) — superseded by int_neighbourhood__foundation. Kept for backward compatibility."
@@ -99,7 +101,7 @@ models:
         description: "Year-over-year change percentage"
 
   - name: int_neighbourhood__people
-    description: "Unified people profile: demographics + amenities + geometry at neighbourhood grain (latest year only). Direct source for mart_neighbourhood_people. Replaces mart_neighbourhood_demographics and mart_neighbourhood_amenities as the single model combining census foundation with amenity scores, city averages, and all derived indices."
+    description: "Unified people profile: demographics + amenities + geometry at neighbourhood × census_year grain (316 rows: 158 × 2). Direct source for mart_neighbourhood_people. City averages and indices are partitioned by census_year so 2016 and 2021 are calibrated independently. Amenities use latest available year for both census rows."
     columns:
       - name: neighbourhood_id
         description: "Neighbourhood identifier"
@@ -108,6 +110,10 @@ models:
           - relationships:
               to: ref('stg_toronto__neighbourhoods')
               field: neighbourhood_id
+      - name: census_year
+        description: "Census year (2016 or 2021)"
+        data_tests:
+          - not_null
 
   - name: int_neighbourhood__amenity_scores
     description: "Normalized amenities per capita and per area"
@@ -127,7 +133,7 @@ models:
         description: "Total amenities per square km"
 
   - name: int_rentals__neighbourhood_allocated
-    description: "CMHC rental data allocated to neighbourhoods via area weights"
+    description: "CMHC rental data allocated to neighbourhoods via area weights. Pivoted to one row per neighbourhood per year."
     columns:
       - name: neighbourhood_id
         description: "Neighbourhood identifier"
@@ -143,7 +149,15 @@ models:
       - name: avg_rent_2bed
         description: "Weighted average 2-bedroom rent"
       - name: vacancy_rate
-        description: "Weighted average vacancy rate"
+        description: "Weighted average vacancy rate (avg across bedroom types)"
+      - name: turnover_rate
+        description: "Weighted average turnover rate (avg across bedroom types, area-weighted from CMHC zones)"
+      - name: rental_universe_estimate
+        description: "Total rental units estimate (area-weighted from CMHC zones)"
+      - name: year_over_year_rent_change
+        description: "Weighted average YoY rent change (avg across bedroom types, area-weighted from CMHC zones)"
+      - name: is_estimated
+        description: "Always TRUE — these are zone-level estimates allocated to neighbourhood level"
 
   - name: int_toronto__neighbourhood_profile
     description: "Neighbourhood community profile with computed percentages and diversity"

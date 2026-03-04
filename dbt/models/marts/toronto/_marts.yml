@@ -218,7 +218,7 @@ models:
                 values: [1, 2, 3, 4, 5]
 
   - name: mart_neighbourhood_people
-    description: "Unified neighbourhood profile combining demographics, amenities, and geometry. One row per neighbourhood, latest data year. Replaces mart_neighbourhood_demographics and mart_neighbourhood_amenities."
+    description: "Unified neighbourhood profile combining demographics, amenities, and geometry. One row per neighbourhood per census year (316 rows: 158 × 2). Replaces mart_neighbourhood_demographics and mart_neighbourhood_amenities. BREAKING CHANGE (Sprint 16): grain changed from 158 to 316 rows."
     meta:
       dashboard_tab: People
     columns:
@@ -229,22 +229,29 @@ models:
           - relationships:
               to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
+      - name: census_year
+        description: "Census year (2016 or 2021). Grain key alongside neighbourhood_id."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2016, 2021]
       - name: neighbourhood_name
         description: "Official neighbourhood name"
         data_tests:
           - not_null
       - name: pop
-        description: "Total population (latest 2021 census)"
+        description: "Total population (census year)"
       - name: pop_density
-        description: "Population per square km"
+        description: "Population per square km (census year)"
       - name: pop_0_to_14
-        description: "Population aged 0–14 (children)"
+        description: "Population aged 0–14 (children). From census_extended, 2021 only; NULL for 2016."
       - name: pop_15_to_24
-        description: "Population aged 15–24 (youth)"
+        description: "Population aged 15–24 (youth). From census_extended, 2021 only; NULL for 2016."
       - name: pop_25_to_64
-        description: "Population aged 25–64 (working age)"
+        description: "Population aged 25–64 (working age). From census_extended, 2021 only; NULL for 2016."
       - name: pop_65_plus
-        description: "Population aged 65+ (seniors)"
+        description: "Population aged 65+ (seniors). From census_extended, 2021 only; NULL for 2016."
       - name: age_md
         description: "Median age"
       - name: age_city_avg

@@ -493,22 +493,28 @@ Replaces the deprecated `mart_toronto_rentals` (zone grain).
 | `year` | INTEGER | Survey year |
 | `avg_rent` | NUMERIC | Area-weighted average rent |
 | `vacancy_rate` | NUMERIC | Area-weighted vacancy rate |
-| `universe` | INTEGER | Estimated unit count |
+| `turnover_rate` | NUMERIC | Area-weighted turnover rate (is_estimated=TRUE) |
+| `rental_universe_estimate` | NUMERIC | Proportional rental units estimate (area-weighted, is_estimated=TRUE) |
+| `year_over_year_rent_change` | NUMERIC | YoY rent change from CMHC source (area-weighted, is_estimated=TRUE) |
+| `rent_yoy_change_pct` | NUMERIC | Neighbourhood-computed YoY rent change % |
 
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 **Expected rows:** ~4,424
 
 #### `mart_neighbourhood_people`
-Grain: one row per neighbourhood (158 rows), latest census + amenity year. Unified people profile combining demographics, amenities, commute patterns, and geometry. Replaces deprecated `mart_neighbourhood_demographics` and `mart_neighbourhood_amenities`.
+Grain: one row per neighbourhood per census year (316 rows: 158 × 2). Unified people profile combining demographics, amenities, commute patterns, and geometry. Replaces deprecated `mart_neighbourhood_demographics` and `mart_neighbourhood_amenities`.
+
+**BREAKING CHANGE (Sprint 16):** grain changed from 158 to 316 rows; `census_year` column added. Webapp queries must filter by `census_year` or aggregate across years.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `neighbourhood_id` | INTEGER | PK / FK → mart_neighbourhood_geometry |
+| `neighbourhood_id` | INTEGER | Composite PK with census_year / FK → mart_neighbourhood_geometry |
+| `census_year` | INTEGER | Census year (2016 or 2021). Grain key. |
 | `neighbourhood_name` | VARCHAR | Official neighbourhood name |
 | `geometry` | GEOMETRY | Neighbourhood boundary polygon |
 | `land_area_sqkm` | NUMERIC | Land area in square km |
-| `pop` | INTEGER | Total population (2021 census) |
+| `pop` | INTEGER | Total population (census year) |
 | `pop_density` | NUMERIC | Population per square km |
 | `pop_0_to_14` | INTEGER | Population aged 0–14 |
 | `pop_15_to_24` | INTEGER | Population aged 15–24 |
