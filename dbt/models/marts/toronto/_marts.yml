@@ -18,42 +18,6 @@ models:
         data_tests:
           - not_null
 
-  - name: mart_neighbourhood_housing_rentals
-    description: "CMHC rental data disaggregated to neighbourhood grain via area-weighted crosswalk. One row per neighbourhood per bedroom_type per year."
-    meta:
-      dashboard_tab: Housing
-    columns:
-      - name: neighbourhood_id
-        description: "Neighbourhood identifier"
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('mart_neighbourhood_geometry')
-              field: neighbourhood_id
-      - name: year
-        description: "Survey year"
-        data_tests:
-          - not_null
-      - name: bedroom_type
-        description: "Bedroom type (bachelor, 1bed, 2bed, 3bed)"
-        data_tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [bachelor, 1bed, 2bed, 3bed]
-      - name: avg_rent
-        description: "Area-weighted average rent for this bedroom type"
-      - name: vacancy_rate
-        description: "Area-weighted vacancy rate"
-      - name: turnover_rate
-        description: "Area-weighted turnover rate"
-      - name: rental_universe_estimate
-        description: "Proportional rental universe estimate (area-weighted)"
-      - name: year_over_year_rent_change
-        description: "Year-over-year rent change from CMHC source data (area-weighted)"
-      - name: rent_yoy_change_pct
-        description: "Year-over-year rent change percentage computed from allocated neighbourhood rents"
-
   - name: mart_neighbourhood_overview
     description: "Neighbourhood overview with composite livability score"
     meta:
@@ -76,7 +40,7 @@ models:
         description: "Amenity component score (0-100)"
 
   - name: mart_neighbourhood_housing
-    description: "Housing and affordability metrics by neighbourhood. Expanded with dwelling type, bedroom, construction period profile pivots and composite affordability scores."
+    description: "Unified housing analysis by neighbourhood. Grain: one row per neighbourhood per rental year. Replaces former mart_neighbourhood_housing (scalar census-only) and mart_neighbourhood_housing_rentals (long format). Bedroom-type metrics pivoted to wide (4 columns per metric). Income-based columns (median_household_income, average_dwelling_value, shelter costs, dwelling/bedroom/construction pivots) are available in mart_neighbourhood_people and intentionally excluded here."
     meta:
       dashboard_tab: Housing
     columns:
@@ -89,110 +53,74 @@ models:
               field: neighbourhood_id
       - name: year
         description: "Rental year"
+        data_tests:
+          - not_null
       - name: census_year
-        description: "Census year matched to this rental year (most recent ≤ year)"
-      - name: pct_owner_occupied
-        description: "Percentage owner-occupied dwellings"
-      - name: pct_renter_occupied
-        description: "Percentage renter-occupied dwellings"
-      - name: average_dwelling_value
-        description: "Average dwelling value"
-      - name: median_household_income
-        description: "Median household income (CPI-imputed for pre-2021)"
-      - name: income_quintile
-        description: "Income quintile (1=lowest, 5=highest)"
-      - name: avg_shelter_cost_owner
-        description: "Average monthly shelter cost for owners"
-      - name: avg_shelter_cost_renter
-        description: "Average monthly shelter cost for renters"
-      - name: pct_shelter_cost_30pct
-        description: "Percentage of households spending 30%+ of income on shelter"
-      - name: pct_suitable_housing
-        description: "Percentage of households in suitable housing"
-      - name: total_private_dwellings
-        description: "Total private dwellings"
-      - name: occupied_private_dwellings
-        description: "Occupied private dwellings"
-      - name: avg_household_size
-        description: "Average household size"
-      - name: pct_dwellings_in_need_of_repair
-        description: "Percentage of dwellings in need of major repair"
-      - name: pct_unaffordable_housing
-        description: "Percentage in unaffordable housing"
-      - name: pct_overcrowded_housing
-        description: "Percentage in overcrowded housing"
-      - name: avg_rent_bachelor
-        description: "Average rent for bachelor units (CMHC)"
-      - name: avg_rent_1bed
-        description: "Average rent for 1-bedroom units (CMHC)"
-      - name: avg_rent_2bed
-        description: "Average rent for 2-bedroom units (CMHC)"
-      - name: avg_rent_3bed
-        description: "Average rent for 3-bedroom units (CMHC)"
-      - name: vacancy_rate
-        description: "CMHC vacancy rate"
-      - name: total_rental_units
-        description: "Total CMHC rental units in neighbourhood"
-      - name: rent_to_income_pct
-        description: "Rent as percentage of median income"
-      - name: is_affordable
-        description: "True when 2-bed rent is ≤ 30% of median income"
-      - name: affordability_index
-        description: "100 = city average affordability for the year"
-      - name: rent_yoy_change_pct
-        description: "Year-over-year 2-bedroom rent change percentage"
-      - name: dwelling_single_detached
-        description: "Count of single-detached houses"
-      - name: dwelling_semi_detached
-        description: "Count of semi-detached houses"
-      - name: dwelling_row_house
-        description: "Count of row houses"
-      - name: dwelling_duplex
-        description: "Count of apartments/flats in a duplex"
-      - name: dwelling_apt_low_rise
-        description: "Count of apartments in buildings with fewer than 5 storeys"
-      - name: dwelling_apt_high_rise
-        description: "Count of apartments in buildings with 5+ storeys"
-      - name: dwelling_other_single_attached
-        description: "Count of other single-attached houses"
-      - name: dwelling_movable
-        description: "Count of movable dwellings"
-      - name: dwelling_apartment_pct
-        description: "Percentage of dwellings that are apartment-form (duplex + low-rise + high-rise)"
-      - name: dwelling_ground_oriented_pct
-        description: "Percentage of dwellings that are ground-oriented (single + semi + row)"
-      - name: bedrooms_none
-        description: "Count of dwellings with no bedrooms"
-      - name: bedrooms_1
-        description: "Count of dwellings with 1 bedroom"
-      - name: bedrooms_2
-        description: "Count of dwellings with 2 bedrooms"
-      - name: bedrooms_3
-        description: "Count of dwellings with 3 bedrooms"
-      - name: bedrooms_4_plus
-        description: "Count of dwellings with 4+ bedrooms"
-      - name: construction_pre_1960
-        description: "Count of dwellings built 1960 or before"
-      - name: construction_1961_1980
-        description: "Count of dwellings built 1961–1980"
-      - name: construction_1981_1990
-        description: "Count of dwellings built 1981–1990"
-      - name: construction_1991_2000
-        description: "Count of dwellings built 1991–2000"
-      - name: construction_2001_2005
-        description: "Count of dwellings built 2001–2005"
-      - name: construction_2006_2010
-        description: "Count of dwellings built 2006–2010"
-      - name: construction_2011_2015
-        description: "Count of dwellings built 2011–2015"
-      - name: construction_2016_2021
-        description: "Count of dwellings built 2016–2021"
-      - name: construction_post_2000_pct
-        description: "Percentage of dwellings built after 2000"
-      - name: avg_shelter_cost
-        description: "Weighted average shelter cost across owners and renters"
-      - name: affordability_pressure_score
-        description: "Composite pressure score (0-100): shelter cost burden + renter share + low vacancy"
+        description: "Most recent census year ≤ rental year (census data carried forward via CPI imputation)"
+      - name: housing_occupied_owner_pct
+        description: "Percentage of dwellings owner-occupied"
+      - name: housing_occupied_renter_pct
+        description: "Percentage of dwellings renter-occupied"
+      - name: housing_rent_bachelor_avg
+        description: "Area-weighted average rent for bachelor units (CMHC, allocated to neighbourhood)"
+      - name: housing_rent_1bed_avg
+        description: "Area-weighted average rent for 1-bedroom units (CMHC, allocated to neighbourhood)"
+      - name: housing_rent_2bed_avg
+        description: "Area-weighted average rent for 2-bedroom units (CMHC, allocated to neighbourhood). Primary reference unit for affordability calculations."
+      - name: housing_rent_3bed_avg
+        description: "Area-weighted average rent for 3-bedroom units (CMHC, allocated to neighbourhood)"
+      - name: housing_rent_yoy_bachelor
+        description: "Year-over-year rent change (absolute) for bachelor units, from CMHC source (area-weighted)"
+      - name: housing_rent_yoy_1bed
+        description: "Year-over-year rent change (absolute) for 1-bedroom units, from CMHC source (area-weighted)"
+      - name: housing_rent_yoy_2bed
+        description: "Year-over-year rent change (absolute) for 2-bedroom units, from CMHC source (area-weighted)"
+      - name: housing_rent_yoy_3bed
+        description: "Year-over-year rent change (absolute) for 3-bedroom units, from CMHC source (area-weighted)"
+      - name: housing_rent_yoy_pct_bachelor
+        description: "Year-over-year rent change percentage for bachelor units (computed from allocated neighbourhood rents)"
+      - name: housing_rent_yoy_pct_1bed
+        description: "Year-over-year rent change percentage for 1-bedroom units (computed from allocated neighbourhood rents)"
+      - name: housing_rent_yoy_pct_2bed
+        description: "Year-over-year rent change percentage for 2-bedroom units (computed from allocated neighbourhood rents)"
+      - name: housing_rent_yoy_pct_3bed
+        description: "Year-over-year rent change percentage for 3-bedroom units (computed from allocated neighbourhood rents)"
+      - name: housing_vacancy_rate_bachelor
+        description: "Area-weighted vacancy rate for bachelor units"
+      - name: housing_vacancy_rate_1bed
+        description: "Area-weighted vacancy rate for 1-bedroom units"
+      - name: housing_vacancy_rate_2bed
+        description: "Area-weighted vacancy rate for 2-bedroom units"
+      - name: housing_vacancy_rate_3bed
+        description: "Area-weighted vacancy rate for 3-bedroom units"
+      - name: housing_turnover_rate_bachelor
+        description: "Area-weighted turnover rate for bachelor units"
+      - name: housing_turnover_rate_1bed
+        description: "Area-weighted turnover rate for 1-bedroom units"
+      - name: housing_turnover_rate_2bed
+        description: "Area-weighted turnover rate for 2-bedroom units"
+      - name: housing_turnover_rate_3bed
+        description: "Area-weighted turnover rate for 3-bedroom units"
+      - name: housing_rental_universe_est_bachelor
+        description: "Proportional rental universe estimate (area-weighted) for bachelor units"
+      - name: housing_rental_universe_est_1bed
+        description: "Proportional rental universe estimate (area-weighted) for 1-bedroom units"
+      - name: housing_rental_universe_est_2bed
+        description: "Proportional rental universe estimate (area-weighted) for 2-bedroom units"
+      - name: housing_rental_universe_est_3bed
+        description: "Proportional rental universe estimate (area-weighted) for 3-bedroom units"
+      - name: housing_rental_units
+        description: "Total rental units across all bedroom types (sum of area-weighted estimates)"
+      - name: housing_rent2income_pct
+        description: "Rent-to-income ratio. Formula: (2bed_avg_rent × 12) / median_household_income × 100. Income sourced from int_neighbourhood__foundation; not surfaced in this mart."
+      - name: housing_affordable
+        description: "Boolean affordability flag. Formula: 2bed annual rent ≤ 30% of median household income."
+      - name: housing_affordability_index
+        description: "Affordability index. Formula: neighbourhood rent2income_pct / city_avg_rent2income_pct × 100. 100 = city average for the year. ⚠️ mart_neighbourhood_overview reads this as `affordability_index` — follow-up rename required there."
+      - name: housing_affordability_pressure_score
+        description: "Composite affordability pressure score (0–100). Weights: 2-bed rent-to-income burden (50%) + renter share (30%) + low vacancy penalty (20%)."
+      - name: housing_turnover_rate
+        description: "Turnover rate scalar reference — 2-bed value. For callers expecting a single turnover_rate column."
 
   - name: mart_neighbourhood_safety
     description: "Crime rates and safety metrics by neighbourhood"

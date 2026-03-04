@@ -64,6 +64,39 @@ models:
       - name: income_quintile
         description: "Income quintile (1-5, city-wide)"
 
+  - name: int_neighbourhood__housing_unified
+    description: "Unified housing intermediate: census tenure metrics joined with CMHC rentals pivoted to wide format (4 bedroom types per metric). Affordability metrics computed from int_neighbourhood__foundation income (income NOT surfaced in SELECT — lives in mart_neighbourhood_people). YoY rent change pct computed from allocated neighbourhood rents per bedroom type. Columns duplicated in mart_neighbourhood_people are excluded. Grain: neighbourhood × rental year."
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: year
+        description: "Rental year"
+        data_tests:
+          - not_null
+      - name: census_year
+        description: "Most recent census year ≤ rental year (census data carried forward)"
+      - name: housing_occupied_owner_pct
+        description: "Percentage of dwellings owner-occupied"
+      - name: housing_occupied_renter_pct
+        description: "Percentage of dwellings renter-occupied"
+      - name: housing_rent_2bed_avg
+        description: "Area-weighted average rent for 2-bedroom units (CMHC, allocated to neighbourhood)"
+      - name: housing_rent2income_pct
+        description: "Rent-to-income ratio. Formula: (2bed_avg_rent × 12) / median_household_income × 100. Income sourced from int_neighbourhood__foundation; not surfaced in mart output."
+      - name: housing_affordable
+        description: "Boolean affordability flag. Formula: 2bed annual rent ≤ 30% of median household income."
+      - name: housing_affordability_index
+        description: "Affordability index. Formula: neighbourhood rent2income_pct / city_avg_rent2income_pct × 100. 100 = city average for the year."
+      - name: housing_affordability_pressure_score
+        description: "Composite affordability pressure score (0–100). Weights: 2-bed rent-to-income burden (50%) + renter share (30%) + low vacancy penalty (20%)."
+      - name: housing_turnover_rate
+        description: "Turnover rate reference — 2-bedroom as primary scalar proxy for callers expecting a single value."
+
   - name: int_neighbourhood__housing
     description: "Housing indicators combining census and rental data"
     columns:

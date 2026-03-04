@@ -473,34 +473,55 @@ Grain: neighbourhood × year. Composite livability score and top-level summary m
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 #### `mart_neighbourhood_housing`
-Grain: neighbourhood × census year. Comprehensive housing analysis (75+ columns).
+Grain: neighbourhood × rental year. Unified housing analysis mart.
 
-Includes: dwelling type pivots (7 types), bedroom count pivots (5 sizes), construction period pivots (8 buckets), shelter cost scalars, affordability rates, composite fit scores (`family_housing_fit`, `couple_housing_fit`, `singles_housing_fit`).
+**Replaces:** former `mart_neighbourhood_housing` (scalar census-only) + deleted `mart_neighbourhood_housing_rentals` (long format bedroom × year). Bedroom-type metrics are now pivoted to wide format (4 columns per metric).
+
+**Excluded columns** (available in `mart_neighbourhood_people` to avoid duplication): `median_household_income`, `average_dwelling_value`, `income_quintile`, shelter costs, dwelling/bedroom/construction period pivots.
 
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
-**Expected rows:** ~316
-
-#### `mart_neighbourhood_housing_rentals`
-Grain: neighbourhood × bedroom type × year. CMHC rental data disaggregated from CMHC zones to neighbourhood grain via area-weighted crosswalk.
-
-Replaces the deprecated `mart_toronto_rentals` (zone grain).
+**Expected rows:** ~(rental years × 158)
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
-| `bedroom_type` | VARCHAR | bachelor / 1-bed / 2-bed / 3+bed / total |
-| `year` | INTEGER | Survey year |
-| `avg_rent` | NUMERIC | Area-weighted average rent |
-| `vacancy_rate` | NUMERIC | Area-weighted vacancy rate |
-| `turnover_rate` | NUMERIC | Area-weighted turnover rate (is_estimated=TRUE) |
-| `rental_universe_estimate` | NUMERIC | Proportional rental units estimate (area-weighted, is_estimated=TRUE) |
-| `year_over_year_rent_change` | NUMERIC | YoY rent change from CMHC source (area-weighted, is_estimated=TRUE) |
-| `rent_yoy_change_pct` | NUMERIC | Neighbourhood-computed YoY rent change % |
+| `year` | INTEGER | Rental year |
+| `census_year` | INTEGER | Most recent census year ≤ rental year |
+| `housing_occupied_owner_pct` | NUMERIC | % dwellings owner-occupied |
+| `housing_occupied_renter_pct` | NUMERIC | % dwellings renter-occupied |
+| `housing_rent_bachelor_avg` | NUMERIC | Area-weighted avg rent — bachelor units |
+| `housing_rent_1bed_avg` | NUMERIC | Area-weighted avg rent — 1-bedroom units |
+| `housing_rent_2bed_avg` | NUMERIC | Area-weighted avg rent — 2-bedroom units (primary affordability reference) |
+| `housing_rent_3bed_avg` | NUMERIC | Area-weighted avg rent — 3-bedroom units |
+| `housing_rent_yoy_bachelor` | NUMERIC | YoY rent change (absolute) — bachelor, from CMHC source |
+| `housing_rent_yoy_1bed` | NUMERIC | YoY rent change (absolute) — 1-bed, from CMHC source |
+| `housing_rent_yoy_2bed` | NUMERIC | YoY rent change (absolute) — 2-bed, from CMHC source |
+| `housing_rent_yoy_3bed` | NUMERIC | YoY rent change (absolute) — 3-bed, from CMHC source |
+| `housing_rent_yoy_pct_bachelor` | NUMERIC | YoY rent change % — bachelor (computed from allocated rents) |
+| `housing_rent_yoy_pct_1bed` | NUMERIC | YoY rent change % — 1-bed (computed from allocated rents) |
+| `housing_rent_yoy_pct_2bed` | NUMERIC | YoY rent change % — 2-bed (computed from allocated rents) |
+| `housing_rent_yoy_pct_3bed` | NUMERIC | YoY rent change % — 3-bed (computed from allocated rents) |
+| `housing_vacancy_rate_bachelor` | NUMERIC | Area-weighted vacancy rate — bachelor |
+| `housing_vacancy_rate_1bed` | NUMERIC | Area-weighted vacancy rate — 1-bed |
+| `housing_vacancy_rate_2bed` | NUMERIC | Area-weighted vacancy rate — 2-bed |
+| `housing_vacancy_rate_3bed` | NUMERIC | Area-weighted vacancy rate — 3-bed |
+| `housing_turnover_rate_bachelor` | NUMERIC | Area-weighted turnover rate — bachelor |
+| `housing_turnover_rate_1bed` | NUMERIC | Area-weighted turnover rate — 1-bed |
+| `housing_turnover_rate_2bed` | NUMERIC | Area-weighted turnover rate — 2-bed |
+| `housing_turnover_rate_3bed` | NUMERIC | Area-weighted turnover rate — 3-bed |
+| `housing_rental_universe_est_bachelor` | NUMERIC | Rental universe estimate (area-weighted) — bachelor |
+| `housing_rental_universe_est_1bed` | NUMERIC | Rental universe estimate (area-weighted) — 1-bed |
+| `housing_rental_universe_est_2bed` | NUMERIC | Rental universe estimate (area-weighted) — 2-bed |
+| `housing_rental_universe_est_3bed` | NUMERIC | Rental universe estimate (area-weighted) — 3-bed |
+| `housing_rental_units` | NUMERIC | Total rental units (sum across all bedroom types) |
+| `housing_rent2income_pct` | NUMERIC | Rent-to-income ratio. Formula: (2bed_avg_rent × 12) / median_income × 100 |
+| `housing_affordable` | BOOLEAN | TRUE when 2-bed annual rent ≤ 30% of median household income |
+| `housing_affordability_index` | NUMERIC | 100 = city average affordability for the year |
+| `housing_affordability_pressure_score` | NUMERIC | Composite 0–100: rent burden (50%) + renter share (30%) + low vacancy (20%) |
+| `housing_turnover_rate` | NUMERIC | Turnover rate scalar — 2-bed value (backward-compat single-value reference) |
 
-> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
-
-**Expected rows:** ~4,424
+⚠️ **Follow-up required**: `mart_neighbourhood_overview` reads `affordability_index` from this mart. Column is now `housing_affordability_index`. Overview mart must be updated separately.
 
 #### `mart_neighbourhood_people`
 Grain: one row per neighbourhood per census year (316 rows: 158 × 2). Unified people profile combining demographics, amenities, commute patterns, and geometry. Replaces deprecated `mart_neighbourhood_demographics` and `mart_neighbourhood_amenities`.
