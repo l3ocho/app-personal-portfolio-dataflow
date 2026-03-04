@@ -99,11 +99,8 @@ mart_neighbourhood_profile (dbt mart - final consumption)
 ```
 
 **Downstream Use**:
-- `mart_neighbourhood_demographics` enriched with profile summary columns:
-  - `pct_immigrant` (from immigration_status)
-  - `pct_visible_minority` (from visible_minority)
-  - `pct_neither_official_lang` (from official_language)
-  - `diversity_index` (Shannon entropy on visible_minority)
+- `mart_neighbourhood_profile` — full 22-category hierarchical profile
+- Note: `pct_immigrant`, `pct_visible_minority`, `pct_neither_official_lang`, `diversity_index` are not currently surfaced in `mart_neighbourhood_people` (future work)
 
 ---
 
@@ -216,15 +213,15 @@ For years between censuses (2017-2020), consider:
 
 | Source | Raw Schema | Staging | Intermediate | Mart |
 |--------|------------|---------|--------------|------|
-| Toronto Open Data (2021) | `raw_toronto.fact_census` | `stg_toronto__census` | `int_neighbourhood__demographics` | `mart_neighbourhood_demographics` |
-| Toronto Open Data (2016) | `raw_toronto.fact_census` | `stg_toronto__census` | `int_neighbourhood__demographics` (imputed) | `mart_neighbourhood_demographics` |
+| Toronto Open Data (2021) | `raw_toronto.fact_census` | `stg_toronto__census` | `int_neighbourhood__foundation` | `mart_neighbourhood_people` |
+| Toronto Open Data (2016) | `raw_toronto.fact_census` | `stg_toronto__census` | `int_neighbourhood__foundation` (CPI-imputed) | `mart_neighbourhood_housing` (year-grain) |
 
-**Imputation Layer**: `int_neighbourhood__demographics` (dbt intermediate model)
+**Imputation Layer**: `int_neighbourhood__foundation` (dbt intermediate model)
 
 **Consumer Tables**:
-- `mart_neighbourhood_demographics`
-- `mart_neighbourhood_overview` (via demographics join)
-- `mart_neighbourhood_housing` (via demographics join)
+- `mart_neighbourhood_people` (latest year, 158 rows)
+- `mart_neighbourhood_housing` (year-grain, includes imputed years)
+- `mart_neighbourhood_overview` (via foundation join)
 
 ---
 
