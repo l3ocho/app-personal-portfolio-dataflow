@@ -128,6 +128,12 @@ foundation as (
             else false
         end as is_imputed,
 
+        -- Age distribution (from census_extended, 2021 only)
+        ce.pop_0_to_14,
+        ce.pop_15_to_24,
+        ce.pop_25_to_64,
+        ce.pop_65_plus,
+
         -- Tenure mix
         c.pct_owner_occupied,
         c.pct_renter_occupied,

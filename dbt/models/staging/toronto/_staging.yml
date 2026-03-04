@@ -219,3 +219,11 @@ models:
         description: "Census year"
         data_tests:
           - not_null
+      - name: pop_0_to_14
+        description: "Population aged 0–14. Sum of 0–4, 5–9, 10–14 year bands from XLSX."
+      - name: pop_15_to_24
+        description: "Population aged 15–24. Sum of 15–19 and 20–24 year bands."
+      - name: pop_25_to_64
+        description: "Population aged 25–64. Sum of eight 5-year bands (25–29 through 60–64)."
+      - name: pop_65_plus
+        description: "Population aged 65+. Sum of 65–69, 70–74, 75–79, 80–84, and 85+ year bands."

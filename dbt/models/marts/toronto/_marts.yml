@@ -54,49 +54,6 @@ models:
       - name: rent_yoy_change_pct
         description: "Year-over-year rent change percentage computed from allocated neighbourhood rents"
 
-  - name: mart_neighbourhood_foundation
-    description: "Direct surface of int_neighbourhood__foundation. Full scalar column set: demographic, socioeconomic, and census extended indicators. One row per neighbourhood per census year."
-    meta:
-      dashboard_tab: Foundation
-    columns:
-      - name: neighbourhood_id
-        description: "Neighbourhood identifier"
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('mart_neighbourhood_geometry')
-              field: neighbourhood_id
-      - name: census_year
-        description: "Census year (2016 or 2021)"
-        data_tests:
-          - not_null
-      - name: land_area_sqkm
-        description: "Land area in square kilometres"
-      - name: population
-        description: "Total population"
-      - name: population_density
-        description: "Population per square kilometre"
-      - name: median_household_income
-        description: "Median household income (2021 observed; 2016-2020 CPI-imputed)"
-      - name: average_household_income
-        description: "Average household income"
-      - name: income_quintile
-        description: "Income quintile (1=lowest, 5=highest)"
-      - name: is_imputed
-        description: "True when income values are CPI-imputed (pre-2021 census years)"
-      - name: median_age
-        description: "Median age of population"
-      - name: unemployment_rate
-        description: "Unemployment rate"
-      - name: education_bachelors_pct
-        description: "Percentage with bachelor's degree or higher"
-      - name: average_dwelling_value
-        description: "Average dwelling value"
-      - name: pct_owner_occupied
-        description: "Percentage owner-occupied dwellings"
-      - name: pct_renter_occupied
-        description: "Percentage renter-occupied dwellings"
-
   - name: mart_neighbourhood_overview
     description: "Neighbourhood overview with composite livability score"
     meta:
@@ -272,6 +229,16 @@ models:
           - relationships:
               to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
+      - name: population
+        description: "Total population"
+      - name: pop_0_to_14
+        description: "Population aged 0–14 (children)"
+      - name: pop_15_to_24
+        description: "Population aged 15–24 (youth)"
+      - name: pop_25_to_64
+        description: "Population aged 25–64 (working age)"
+      - name: pop_65_plus
+        description: "Population aged 65+ (seniors)"
       - name: median_household_income
         description: "Median household income"
       - name: income_index
@@ -282,14 +249,6 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
-      - name: pct_immigrant
-        description: "Percentage of population who are immigrants (2021 Census)"
-      - name: pct_visible_minority
-        description: "Percentage who are visible minority (2021 Census)"
-      - name: pct_neither_official_lang
-        description: "Percentage who know neither English nor French (2021 Census)"
-      - name: diversity_index
-        description: "Shannon diversity index from visible minority category"
 
   - name: mart_neighbourhood_amenities
     description: "Amenity access metrics by neighbourhood. Expanded with commute mode, duration, destination pivots and car dependency composite."

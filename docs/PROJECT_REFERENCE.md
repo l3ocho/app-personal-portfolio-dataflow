@@ -3,14 +3,14 @@
 **Repository**: `personal-projects/app-personal-portfolio-dataflow`
 **Gitea**: `gitea.hotserv.cloud`
 **Owner**: Leo Miranda
-**Status**: Sprint 14 complete — Toronto Restructure Phases 1–3 merged to `development`
+**Status**: Sprint 15 complete — Geometry mart extraction + age band population columns added
 **Last Updated**: February 2026
 
 ---
 
 ## Overview
 
-This is a **data-only ETL/ELT pipeline**. No frontend code lives here. The pipeline ingests raw data from external APIs and files, validates with Pydantic, persists to PostgreSQL/PostGIS, and transforms via 43 dbt models into analytics-ready mart tables. The webapp (`personal-portfolio`) consumes the marts read-only.
+This is a **data-only ETL/ELT pipeline**. No frontend code lives here. The pipeline ingests raw data from external APIs and files, validates with Pydantic, persists to PostgreSQL/PostGIS, and transforms via 45 dbt models into analytics-ready mart tables. The webapp (`personal-portfolio`) consumes the marts read-only.
 
 **Scope boundary:**
 - **This repo**: raw data → database → dbt marts
@@ -28,6 +28,7 @@ This is a **data-only ETL/ELT pipeline**. No frontend code lives here. The pipel
 | Sprint 12 | Toronto Phase 1: Raw Layer | Feb 11, 2026 | `fact_census_extended`, 22 profile categories, label fixes, constraint fixes |
 | Sprint 13 | Toronto Phase 2: dbt Layer | Feb 18, 2026 | `int_neighbourhood__foundation`, `stg_toronto__census_extended`, denominator bug fix |
 | Sprint 14 | Toronto Phase 3: Mart Layer | Feb 23, 2026 | 3 new marts, 2 expanded marts, 50+ new columns; football pipeline integrated |
+| Sprint 15 | Geometry Mart Extraction | Feb 24, 2026 | `mart_neighbourhood_geometry` extracted; geometry/name removed from 8 analytical marts; webapp service layer updated |
 
 ---
 
@@ -41,7 +42,7 @@ This is a **data-only ETL/ELT pipeline**. No frontend code lives here. The pipel
 | `raw_toronto` | 11 tables | Dimensions, facts, bridge table |
 | `stg_toronto` | 8 models | 1:1 source cleaning |
 | `int_toronto` | 11 models | Business logic, profile pivots, extended census joins |
-| `mart_toronto` | 9 tables | Analytics-ready output |
+| `mart_toronto` | 8 tables | Analytics-ready output |
 
 **Data sources**: City of Toronto Open Data, Toronto Police API, CMHC Rental Survey, Statistics Canada XLSX
 **Coverage**: 158 neighbourhoods, 2016 + 2021 census years
@@ -157,6 +158,8 @@ Transfermarkt club season data often has NULL `league_id`. `int_football__club_l
 
 ### XLSX Label Matching
 Statistics Canada XLSX files use Unicode smart quotes (U+2019 `'` → ASCII `'`). The `_normalize_key()` helper in parsers handles normalization before label comparison. Always run `scripts/data/xlsx_diagnostic.py` before writing a new XLSX field mapping.
+
+**Age band labels**: Never use consolidated labels like `"0 to 14 years"` or `"65 years and over"` — these appear multiple times in the XLSX and the parser picks up the wrong occurrence. Always sum the individual 5-year bands instead (e.g., `["0 to 4 years", "5 to 9 years", "10 to 14 years"]`). See `docs/project-lessons-learned/xlsx-consolidated-labels.md`.
 
 ---
 
