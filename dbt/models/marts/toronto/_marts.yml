@@ -217,10 +217,10 @@ models:
               arguments:
                 values: [1, 2, 3, 4, 5]
 
-  - name: mart_neighbourhood_demographics
-    description: "Demographics and income metrics by neighbourhood"
+  - name: mart_neighbourhood_people
+    description: "Unified neighbourhood profile combining demographics, amenities, and geometry. One row per neighbourhood, latest data year. Replaces mart_neighbourhood_demographics and mart_neighbourhood_amenities."
     meta:
-      dashboard_tab: Demographics
+      dashboard_tab: People
     columns:
       - name: neighbourhood_id
         description: "Neighbourhood identifier"
@@ -229,8 +229,14 @@ models:
           - relationships:
               to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: population
-        description: "Total population"
+      - name: neighbourhood_name
+        description: "Official neighbourhood name"
+        data_tests:
+          - not_null
+      - name: pop
+        description: "Total population (latest 2021 census)"
+      - name: pop_density
+        description: "Population per square km"
       - name: pop_0_to_14
         description: "Population aged 0–14 (children)"
       - name: pop_15_to_24
@@ -239,85 +245,116 @@ models:
         description: "Population aged 25–64 (working age)"
       - name: pop_65_plus
         description: "Population aged 65+ (seniors)"
-      - name: median_household_income
-        description: "Median household income"
+      - name: age_md
+        description: "Median age"
+      - name: age_city_avg
+        description: "City-wide average median age"
+      - name: age_index
+        description: "100 = city average age"
+      - name: edu_bachelors_pct
+        description: "% of population with bachelor's degree or higher"
+      - name: edu_nonbachelors_pct
+        description: "Complement of edu_bachelors_pct. Formula: 100 - edu_bachelors_pct"
+      - name: income_household_md
+        description: "Median household income (CPI-adjusted to 2021 dollars)"
+      - name: income_household_avg
+        description: "Average household income (CPI-adjusted to 2021 dollars)"
+      - name: income_quintile
+        description: "City-wide income quintile (1=lowest, 5=highest)"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+      - name: income_city_avg
+        description: "City-wide average median household income"
       - name: income_index
         description: "100 = city average income"
-      - name: income_quintile
-        description: "Income quintile (1-5)"
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: [1, 2, 3, 4, 5]
-
-  - name: mart_neighbourhood_amenities
-    description: "Amenity access metrics by neighbourhood. Expanded with commute mode, duration, destination pivots and car dependency composite."
-    meta:
-      dashboard_tab: Amenities
-    columns:
-      - name: neighbourhood_id
-        description: "Neighbourhood identifier"
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('mart_neighbourhood_geometry')
-              field: neighbourhood_id
-      - name: year
-        description: "Amenity data year"
-      - name: census_year
-        description: "Census year matched to this amenity year"
-      - name: total_amenities_per_1000
+      - name: unemployment_rate
+        description: "Neighbourhood unemployment rate"
+      - name: unemployment_city_rate
+        description: "City-wide average unemployment rate"
+      - name: unemployment_index
+        description: "100 = city average unemployment. Formula: unemployment_rate / unemployment_city_rate * 100"
+      - name: housing_occupied_owner
+        description: "% of dwellings owner-occupied"
+      - name: housing_occupied_renter
+        description: "% of dwellings renter-occupied"
+      - name: housing_dwelling_value_avg
+        description: "Average dwelling value"
+      - name: housing_tenure_diversity_index
+        description: "Herfindahl complement on owner/renter split. 0 = single tenure, ~50 = perfectly mixed"
+      - name: amenities_parks
+        description: "Raw park count"
+      - name: amenities_parks_1k
+        description: "Parks per 1000 population"
+      - name: amenities_parks_city_1k
+        description: "City-wide average parks per 1000 population"
+      - name: amenities_parks_index
+        description: "100 = city average parks access"
+      - name: amenities_schools
+        description: "Raw school count"
+      - name: amenities_schools_1k
+        description: "Schools per 1000 population"
+      - name: amenities_schools_city_1k
+        description: "City-wide average schools per 1000 population"
+      - name: amenities_schools_index
+        description: "100 = city average schools access"
+      - name: amenities_libraries
+        description: "Raw library count"
+      - name: amenities_libraries_1k
+        description: "Libraries per 1000 population (computed)"
+      - name: amenities_libraries_city_1k
+        description: "City-wide average libraries per 1000 population"
+      - name: amenities_libraries_index
+        description: "100 = city average libraries access"
+      - name: amenities_childcare
+        description: "Raw childcare facility count"
+      - name: amenities_childcare_1k
+        description: "Childcare facilities per 1000 population (computed)"
+      - name: amenities_childcare_city_1k
+        description: "City-wide average childcare per 1000 population"
+      - name: amenities_childcare_index
+        description: "100 = city average childcare access"
+      - name: amenities_commcentres
+        description: "Raw community centre count"
+      - name: amenities_commcentres_1k
+        description: "Community centres per 1000 population (computed)"
+      - name: amenities_commcentres_city_1k
+        description: "City-wide average community centres per 1000 population"
+      - name: amenities_commcentres_index
+        description: "100 = city average community centre access"
+      - name: amenities
+        description: "Total raw amenity count"
+      - name: amenities_1k
         description: "Total amenities per 1000 population"
-      - name: amenity_index
-        description: "100 = city average amenities"
-      - name: amenity_tier
-        description: "Amenity tier (1=best, 5=lowest)"
+      - name: amenities_city_1k
+        description: "City-wide average total amenities per 1000 population"
+      - name: amenities_index
+        description: "100 = city average total amenities access"
+      - name: amenities_tier
+        description: "Amenity tier (1=best, 5=lowest) by ntile(5) on amenities_1k"
         data_tests:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
-      - name: commute_car
-        description: "Count of car commuters (driver + passenger combined)"
-      - name: commute_car_driver
-        description: "Count of car commuters who drove"
-      - name: commute_car_passenger
-        description: "Count of car commuters who were passengers"
-      - name: commute_transit
-        description: "Count of public transit commuters"
-      - name: commute_walk
-        description: "Count of commuters who walked"
-      - name: commute_bicycle
-        description: "Count of bicycle commuters"
-      - name: commute_other
-        description: "Count of commuters using other methods"
-      - name: commute_under_15min
-        description: "Count of commuters with less than 15 minute commute"
-      - name: commute_15_29min
-        description: "Count of commuters with 15-29 minute commute"
-      - name: commute_30_44min
-        description: "Count of commuters with 30-44 minute commute"
-      - name: commute_45_59min
-        description: "Count of commuters with 45-59 minute commute"
-      - name: commute_60min_plus
-        description: "Count of commuters with 60+ minute commute"
-      - name: commute_usual_workplace
-        description: "Count of commuters who go to a usual place of work"
-      - name: commute_work_from_home
-        description: "Count of commuters who worked at home"
-      - name: commute_no_fixed_address
-        description: "Count of commuters with no fixed workplace address"
-      - name: commute_outside_canada
-        description: "Count of commuters who worked outside Canada"
+      - name: transit_count
+        description: "Raw transit stop count"
+      - name: transit_1k
+        description: "Transit stops per 1000 population"
+      - name: transit_city_1k
+        description: "City-wide average transit stops per 1000 population"
+      - name: transit_index
+        description: "100 = city average transit access"
       - name: car_dependency_pct
-        description: "Percentage of commuters who use a car (driver or passenger)"
+        description: "% of commuters using car (driver or passenger)"
       - name: commute_car_pct
-        description: "Percentage of commuters using car (matches car_dependency_pct)"
+        description: "% of commuters using car (same as car_dependency_pct)"
       - name: commute_transit_pct
-        description: "Percentage of commuters using public transit"
+        description: "% of commuters using public transit"
       - name: commute_active_pct
-        description: "Percentage of commuters walking or cycling"
+        description: "% of commuters walking or cycling"
       - name: commute_long_pct
-        description: "Percentage of commuters with 45+ minute commute"
+        description: "% of commuters with 45+ minute commute"
 
   - name: mart_neighbourhood_profile
     description: "Neighbourhood community profile analytical table with all demographics breakdown"
