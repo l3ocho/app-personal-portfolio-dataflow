@@ -123,6 +123,10 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
+      - name: safety_score
+        description: "Crime rate percentile inversion (0–100, higher = safer). Formula: (1 - percent_rank() OVER (PARTITION BY year ORDER BY crime_rate_per_100k)) * 100."
+      - name: livability_score
+        description: "Composite score. Weights: safety_score (30%) + housing_affordability_index (40%) + amenities_index/2.5 (30%). NULL when any component is missing — no fallback imputation."
 
   - name: mart_neighbourhood_people
     description: "Unified neighbourhood profile combining demographics, amenities, and geometry. One row per neighbourhood per census year (316 rows: 158 × 2). Replaces mart_neighbourhood_demographics and mart_neighbourhood_amenities. BREAKING CHANGE (Sprint 16): grain changed from 158 to 316 rows."
