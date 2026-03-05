@@ -49,19 +49,19 @@ imm as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Immigrants' then count end)
+        max(case when subcategory = 'immigrants' then count end)
                                                                 as profile_imm_immigrant,
-        max(case when subcategory = 'Immigrants'
+        max(case when subcategory = 'immigrants'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_imm_immigrant_pct,
-        max(case when subcategory = 'Non-immigrants' then count end)
+        max(case when subcategory = 'non-immigrants' then count end)
                                                                 as profile_imm_nonimmigrant,
-        max(case when subcategory = 'Non-immigrants'
+        max(case when subcategory = 'non-immigrants'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_imm_nonimmigrant_pct,
-        max(case when subcategory = 'Non-permanent residents' then count end)
+        max(case when subcategory = 'non-permanent residents' then count end)
                                                                 as profile_imm_nonperm,
-        max(case when subcategory = 'Non-permanent residents'
+        max(case when subcategory = 'non-permanent residents'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_imm_nonperm_pct
     from profiles
@@ -70,19 +70,19 @@ imm as (
 ),
 
 -- ── language_at_home → lang_home ─────────────────────────────────────────
--- Use indent_level = 4 aggregates (Official languages, Non-official languages)
+-- Use indent_level = 4 aggregates (official languages, non-official languages)
 lang_home as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Official languages' and indent_level = 4
+        max(case when subcategory = 'official languages' and indent_level = 4
             then count end)                                     as profile_lang_home_official,
-        max(case when subcategory = 'Official languages' and indent_level = 4
+        max(case when subcategory = 'official languages' and indent_level = 4
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_lang_home_official_pct,
-        max(case when subcategory = 'Non-official languages' and indent_level = 4
+        max(case when subcategory = 'non-official languages' and indent_level = 4
             then count end)                                     as profile_lang_home_nonofficial,
-        max(case when subcategory = 'Non-official languages' and indent_level = 4
+        max(case when subcategory = 'non-official languages' and indent_level = 4
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_lang_home_nonofficial_pct
     from profiles
@@ -95,24 +95,24 @@ offlang as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'English only' then count end)
+        max(case when subcategory = 'english only' then count end)
                                                                 as profile_offlang_english_only,
-        max(case when subcategory = 'English only'
+        max(case when subcategory = 'english only'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_offlang_english_only_pct,
-        max(case when subcategory = 'French only' then count end)
+        max(case when subcategory = 'french only' then count end)
                                                                 as profile_offlang_french_only,
-        max(case when subcategory = 'French only'
+        max(case when subcategory = 'french only'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_offlang_french_only_pct,
-        max(case when subcategory = 'English and French' then count end)
+        max(case when subcategory = 'english and french' then count end)
                                                                 as profile_offlang_both,
-        max(case when subcategory = 'English and French'
+        max(case when subcategory = 'english and french'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_offlang_both_pct,
-        max(case when subcategory = 'Neither English nor French' then count end)
+        max(case when subcategory = 'neither english nor french' then count end)
                                                                 as profile_offlang_neither,
-        max(case when subcategory = 'Neither English nor French'
+        max(case when subcategory = 'neither english nor french'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_offlang_neither_pct
     from profiles
@@ -125,14 +125,14 @@ citizen as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Canadian citizens' then count end)
+        max(case when subcategory = 'canadian citizens' then count end)
                                                                 as profile_citizen_canadian,
-        max(case when subcategory = 'Canadian citizens'
+        max(case when subcategory = 'canadian citizens'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_citizen_canadian_pct,
-        max(case when subcategory = 'Not Canadian citizens' then count end)
+        max(case when subcategory = 'not canadian citizens' then count end)
                                                                 as profile_citizen_not,
-        max(case when subcategory = 'Not Canadian citizens'
+        max(case when subcategory = 'not canadian citizens'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_citizen_not_pct
     from profiles
@@ -145,19 +145,19 @@ gen as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'First generation' then count end)
+        max(case when subcategory = 'first generation' then count end)
                                                                 as profile_gen_1st,
-        max(case when subcategory = 'First generation'
+        max(case when subcategory = 'first generation'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_gen_1st_pct,
-        max(case when subcategory = 'Second generation' then count end)
+        max(case when subcategory = 'second generation' then count end)
                                                                 as profile_gen_2nd,
-        max(case when subcategory = 'Second generation'
+        max(case when subcategory = 'second generation'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_gen_2nd_pct,
-        max(case when subcategory = 'Third generation or more' then count end)
+        max(case when subcategory = 'third generation or more' then count end)
                                                                 as profile_gen_3rd_plus,
-        max(case when subcategory = 'Third generation or more'
+        max(case when subcategory = 'third generation or more'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_gen_3rd_plus_pct
     from profiles
@@ -170,24 +170,24 @@ admission as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Economic immigrants' then count end)
+        max(case when subcategory = 'economic immigrants' then count end)
                                                                 as profile_admission_economic,
-        max(case when subcategory = 'Economic immigrants'
+        max(case when subcategory = 'economic immigrants'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_admission_economic_pct,
-        max(case when subcategory = 'Immigrants sponsored by family' then count end)
+        max(case when subcategory = 'immigrants sponsored by family' then count end)
                                                                 as profile_admission_family,
-        max(case when subcategory = 'Immigrants sponsored by family'
+        max(case when subcategory = 'immigrants sponsored by family'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_admission_family_pct,
-        max(case when subcategory = 'Refugees' then count end)
+        max(case when subcategory = 'refugees' then count end)
                                                                 as profile_admission_refugee,
-        max(case when subcategory = 'Refugees'
+        max(case when subcategory = 'refugees'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_admission_refugee_pct,
-        max(case when subcategory = 'Other immigrants' then count end)
+        max(case when subcategory = 'other immigrants' then count end)
                                                                 as profile_admission_other,
-        max(case when subcategory = 'Other immigrants'
+        max(case when subcategory = 'other immigrants'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_admission_other_pct
     from profiles
@@ -201,34 +201,34 @@ pob as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Canada' and indent_level = 2
+        max(case when subcategory = 'canada' and indent_level = 2
             then count end)                                     as profile_pob_canada,
-        max(case when subcategory = 'Canada' and indent_level = 2
+        max(case when subcategory = 'canada' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_canada_pct,
-        max(case when subcategory = 'Africa' and level = 'continent'
+        max(case when subcategory = 'africa' and level = 'continent'
             then count end)                                     as profile_pob_africa,
-        max(case when subcategory = 'Africa' and level = 'continent'
+        max(case when subcategory = 'africa' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_africa_pct,
-        max(case when subcategory = 'Americas' and level = 'continent'
+        max(case when subcategory = 'americas' and level = 'continent'
             then count end)                                     as profile_pob_americas,
-        max(case when subcategory = 'Americas' and level = 'continent'
+        max(case when subcategory = 'americas' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_americas_pct,
-        max(case when subcategory = 'Asia' and level = 'continent'
+        max(case when subcategory = 'asia' and level = 'continent'
             then count end)                                     as profile_pob_asia,
-        max(case when subcategory = 'Asia' and level = 'continent'
+        max(case when subcategory = 'asia' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_asia_pct,
-        max(case when subcategory = 'Europe' and level = 'continent'
+        max(case when subcategory = 'europe' and level = 'continent'
             then count end)                                     as profile_pob_europe,
-        max(case when subcategory = 'Europe' and level = 'continent'
+        max(case when subcategory = 'europe' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_europe_pct,
-        max(case when subcategory = 'Oceania and other places of birth'
+        max(case when subcategory = 'oceania and other places of birth'
             then count end)                                     as profile_pob_oceania,
-        max(case when subcategory = 'Oceania and other places of birth'
+        max(case when subcategory = 'oceania and other places of birth'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_oceania_pct
     from profiles
@@ -242,34 +242,34 @@ pob_recent as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Canada' and indent_level = 2
+        max(case when subcategory = 'canada' and indent_level = 2
             then count end)                                     as profile_pob_recent_canada,
-        max(case when subcategory = 'Canada' and indent_level = 2
+        max(case when subcategory = 'canada' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_recent_canada_pct,
-        max(case when subcategory = 'Africa' and level = 'continent'
+        max(case when subcategory = 'africa' and level = 'continent'
             then count end)                                     as profile_pob_recent_africa,
-        max(case when subcategory = 'Africa' and level = 'continent'
+        max(case when subcategory = 'africa' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_recent_africa_pct,
-        max(case when subcategory = 'Americas' and level = 'continent'
+        max(case when subcategory = 'americas' and level = 'continent'
             then count end)                                     as profile_pob_recent_americas,
-        max(case when subcategory = 'Americas' and level = 'continent'
+        max(case when subcategory = 'americas' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_recent_americas_pct,
-        max(case when subcategory = 'Asia' and level = 'continent'
+        max(case when subcategory = 'asia' and level = 'continent'
             then count end)                                     as profile_pob_recent_asia,
-        max(case when subcategory = 'Asia' and level = 'continent'
+        max(case when subcategory = 'asia' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_recent_asia_pct,
-        max(case when subcategory = 'Europe' and level = 'continent'
+        max(case when subcategory = 'europe' and level = 'continent'
             then count end)                                     as profile_pob_recent_europe,
-        max(case when subcategory = 'Europe' and level = 'continent'
+        max(case when subcategory = 'europe' and level = 'continent'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_recent_europe_pct,
-        max(case when subcategory = 'Oceania and other'
+        max(case when subcategory = 'oceania and other'
             then count end)                                     as profile_pob_recent_oceania,
-        max(case when subcategory = 'Oceania and other'
+        max(case when subcategory = 'oceania and other'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_pob_recent_oceania_pct
     from profiles
@@ -282,14 +282,14 @@ indigenous as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Indigenous identity' and indent_level = 2
+        max(case when subcategory = 'indigenous identity' and indent_level = 2
             then count end)                                     as profile_indigenous_yes,
-        max(case when subcategory = 'Indigenous identity' and indent_level = 2
+        max(case when subcategory = 'indigenous identity' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_indigenous_yes_pct,
-        max(case when subcategory = 'Non-Indigenous identity' and indent_level = 2
+        max(case when subcategory = 'non-indigenous identity' and indent_level = 2
             then count end)                                     as profile_indigenous_no,
-        max(case when subcategory = 'Non-Indigenous identity' and indent_level = 2
+        max(case when subcategory = 'non-indigenous identity' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_indigenous_no_pct
     from profiles
@@ -303,19 +303,19 @@ edu_lvl as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'No certificate, diploma or degree' and indent_level = 2
+        max(case when subcategory = 'no certificate, diploma or degree' and indent_level = 2
             then count end)                                     as profile_edu_lvl_nocert,
-        max(case when subcategory = 'No certificate, diploma or degree' and indent_level = 2
+        max(case when subcategory = 'no certificate, diploma or degree' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_edu_lvl_nocert_pct,
-        max(case when subcategory = 'High (secondary) school diploma or equivalency certificate'
+        max(case when subcategory = 'high (secondary) school diploma or equivalency certificate'
             then count end)                                     as profile_edu_lvl_highschool,
-        max(case when subcategory = 'High (secondary) school diploma or equivalency certificate'
+        max(case when subcategory = 'high (secondary) school diploma or equivalency certificate'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_edu_lvl_highschool_pct,
-        max(case when subcategory = 'Postsecondary certificate, diploma or degree' and indent_level = 2
+        max(case when subcategory = 'postsecondary certificate, diploma or degree' and indent_level = 2
             then count end)                                     as profile_edu_lvl_postsec,
-        max(case when subcategory = 'Postsecondary certificate, diploma or degree' and indent_level = 2
+        max(case when subcategory = 'postsecondary certificate, diploma or degree' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_edu_lvl_postsec_pct
     from profiles
@@ -329,29 +329,29 @@ fos as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Business, management and public administration' and indent_level = 2
+        max(case when subcategory = 'business, management and public administration' and indent_level = 2
             then count end)                                     as profile_fos_business,
-        max(case when subcategory = 'Business, management and public administration' and indent_level = 2
+        max(case when subcategory = 'business, management and public administration' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_fos_business_pct,
-        max(case when subcategory = 'Social and behavioural sciences and law' and indent_level = 2
+        max(case when subcategory = 'social and behavioural sciences and law' and indent_level = 2
             then count end)                                     as profile_fos_social_science,
-        max(case when subcategory = 'Social and behavioural sciences and law' and indent_level = 2
+        max(case when subcategory = 'social and behavioural sciences and law' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_fos_social_science_pct,
-        max(case when subcategory = 'Architecture, engineering, and related trades' and indent_level = 2
+        max(case when subcategory = 'architecture, engineering, and related trades' and indent_level = 2
             then count end)                                     as profile_fos_engineering,
-        max(case when subcategory = 'Architecture, engineering, and related trades' and indent_level = 2
+        max(case when subcategory = 'architecture, engineering, and related trades' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_fos_engineering_pct,
-        max(case when subcategory = 'Health and related fields' and indent_level = 2
+        max(case when subcategory = 'health and related fields' and indent_level = 2
             then count end)                                     as profile_fos_health,
-        max(case when subcategory = 'Health and related fields' and indent_level = 2
+        max(case when subcategory = 'health and related fields' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_fos_health_pct,
-        max(case when subcategory = 'Humanities' and indent_level = 2
+        max(case when subcategory = 'humanities' and indent_level = 2
             then count end)                                     as profile_fos_humanities,
-        max(case when subcategory = 'Humanities' and indent_level = 2
+        max(case when subcategory = 'humanities' and indent_level = 2
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_fos_humanities_pct
     from profiles
@@ -399,14 +399,14 @@ suit as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'Suitable' then count end)
+        max(case when subcategory = 'suitable' then count end)
                                                                 as profile_suit_suitable,
-        max(case when subcategory = 'Suitable'
+        max(case when subcategory = 'suitable'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_suit_suitable_pct,
-        max(case when subcategory = 'Not suitable' then count end)
+        max(case when subcategory = 'not suitable' then count end)
                                                                 as profile_suit_not_suitable,
-        max(case when subcategory = 'Not suitable'
+        max(case when subcategory = 'not suitable'
             then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
                                                                 as profile_suit_not_suitable_pct
     from profiles
