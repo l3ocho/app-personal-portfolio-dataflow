@@ -536,6 +536,7 @@ class DataPipeline:
             logger.info(
                 f"  [DRY RUN] Would run: dbt test --select {' '.join(toronto_select)}"
             )
+            logger.info("  [DRY RUN] Would cleanup deprecated mart tables")
             return True
 
         try:
@@ -598,6 +599,10 @@ class DataPipeline:
             else:
                 logger.info("  dbt test completed successfully")
 
+            # Clean up deprecated tables
+            logger.info("  Cleaning up deprecated mart tables...")
+            self._cleanup_deprecated_tables()
+
             return True
 
         except FileNotFoundError:
@@ -608,6 +613,43 @@ class DataPipeline:
         except Exception as e:
             logger.error(f"dbt execution failed: {e}")
             return False
+
+    def _cleanup_deprecated_tables(self) -> None:
+        """Drop deprecated mart tables from previous consolidations.
+
+        Historical consolidations removed these tables:
+        - mart_neighbourhood_foundation: Consolidated into demographics (removed 2026-03-03)
+        - mart_neighbourhood_demographics: Consolidated into mart_neighbourhood_people (removed 2026-03-04)
+        - mart_neighbourhood_amenities: Consolidated into mart_neighbourhood_people (removed 2026-03-04)
+        - mart_toronto_rentals: Consolidated into housing-related tables (removed 2026-02-23)
+        - mart_neighbourhood_housing_rentals: Consolidated into mart_neighbourhood_housing (removed 2026-03-04)
+        """
+        from sqlalchemy import text
+
+        deprecated_tables = [
+            "mart_neighbourhood_foundation",
+            "mart_neighbourhood_demographics",
+            "mart_neighbourhood_amenities",
+            "mart_toronto_rentals",
+            "mart_neighbourhood_housing_rentals",
+        ]
+
+        try:
+            with get_session() as session:
+                for table_name in deprecated_tables:
+                    try:
+                        session.execute(
+                            text(f"DROP TABLE IF EXISTS mart_toronto.{table_name} CASCADE")
+                        )
+                        session.commit()
+                        logger.info(f"  Dropped deprecated table: {table_name}")
+                    except Exception as e:
+                        logger.warning(
+                            f"  Could not drop {table_name} (may not exist): {e}"
+                        )
+                        session.rollback()
+        except Exception as e:
+            logger.warning(f"  Cleanup encountered error: {e}")
 
     def _print_stats(self) -> None:
         """Print loading statistics."""

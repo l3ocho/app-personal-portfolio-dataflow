@@ -64,7 +64,7 @@ housing as (
     select
         neighbourhood_id,
         year,
-        affordability_index
+        housing_affordability_index
     from {{ ref('mart_neighbourhood_housing') }}
 ),
 
@@ -113,8 +113,8 @@ scored as (
             else null
         end as safety_score,
 
-        -- Affordability score: use neighbourhood-level affordability_index from housing mart
-        h.affordability_index as affordability_score,
+        -- Affordability score: use neighbourhood-level housing_affordability_index from housing mart
+        h.housing_affordability_index as affordability_score,
 
         -- Amenity score: use neighbourhood-level amenity_score from amenities mart
         a.amenity_score,
