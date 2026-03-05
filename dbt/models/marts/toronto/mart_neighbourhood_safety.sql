@@ -8,6 +8,7 @@
 
 with crime as (
     select * from {{ ref('int_neighbourhood__crime_summary') }}
+    where year >= 2016
 ),
 
 -- Housing affordability index (neighbourhood × year)
