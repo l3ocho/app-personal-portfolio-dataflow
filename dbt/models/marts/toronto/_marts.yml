@@ -100,9 +100,20 @@ models:
         description: "Composite affordability pressure score (0–100). Weights: 2-bed rent-to-income burden (50%) + renter share (30%) + low vacancy penalty (20%)."
       - name: housing_turnover_rate
         description: "Turnover rate scalar reference — 2-bed value. For callers expecting a single turnover_rate column."
+      - name: livability_score
+        description: >
+          Composite livability score (0–100). Weights: safety_score (30%) +
+          housing_affordability_index (40%) + amenities_index/2.5 (30%).
+          NULL when any component is missing. Available from 2019 onward
+          (first year all three components have real data).
 
   - name: mart_neighbourhood_safety
-    description: "Crime rates and safety metrics by neighbourhood"
+    description: >
+      Crime counts and rates by neighbourhood × year. Grain: one row per
+      neighbourhood per year (2016–2025). Raw incident counts only — derived
+      metrics (per-100k rates by type, crime index, safety tier) are computed
+      at query time by joining mart_neighbourhood_people for population.
+      safety_score is the only computed column stored here.
     meta:
       dashboard_tab: Safety
     columns:
@@ -113,16 +124,30 @@ models:
           - relationships:
               to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: crime_rate_per_100k
-        description: "Total crime rate per 100K population"
-      - name: crime_index
-        description: "100 = city average crime rate"
-      - name: safety_tier
-        description: "Safety tier (1=safest, 5=highest crime)"
+      - name: year
+        description: "Crime data year"
         data_tests:
-          - accepted_values:
-              arguments:
-                values: [1, 2, 3, 4, 5]
+          - not_null
+      - name: total_incidents
+        description: "Total crime incidents"
+      - name: crime_rate_per_100k
+        description: "Total crime rate per 100,000 population"
+      - name: crime_yoy_change_pct
+        description: "Year-over-year change in crime rate (%)"
+      - name: assault_count
+        description: "Assault incidents"
+      - name: auto_theft_count
+        description: "Auto theft incidents"
+      - name: break_enter_count
+        description: "Break and enter incidents"
+      - name: robbery_count
+        description: "Robbery incidents"
+      - name: theft_over_count
+        description: "Theft over $5,000 incidents"
+      - name: homicide_count
+        description: "Homicide incidents"
+      - name: safety_score
+        description: "Crime rate percentile inversion (0–100, higher = safer). Formula: (1 - percent_rank() OVER (PARTITION BY year ORDER BY crime_rate_per_100k)) * 100."
 
   - name: mart_neighbourhood_people
     description: "Unified neighbourhood profile combining demographics, amenities, and geometry. One row per neighbourhood per census year (316 rows: 158 × 2). Replaces mart_neighbourhood_demographics and mart_neighbourhood_amenities. BREAKING CHANGE (Sprint 16): grain changed from 158 to 316 rows."
