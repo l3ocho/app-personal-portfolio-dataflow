@@ -621,8 +621,9 @@ class DataPipeline:
         in the schema that don't match. This automatically cleans up tables
         from previous consolidations without hardcoding table names.
         """
-        from sqlalchemy import text
         import json
+
+        from sqlalchemy import text
 
         try:
             # Read dbt manifest to get current expected mart models
@@ -639,7 +640,7 @@ class DataPipeline:
 
             # Extract all mart_toronto model names from manifest
             expected_tables = set()
-            for node_id, node in manifest.get("nodes", {}).items():
+            for _node_id, node in manifest.get("nodes", {}).items():
                 # Only look at materialized models in marts/toronto/
                 if (
                     node.get("resource_type") == "model"
