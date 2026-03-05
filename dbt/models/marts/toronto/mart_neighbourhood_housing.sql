@@ -9,6 +9,10 @@
 -- Columns duplicated in mart_neighbourhood_people are excluded:
 --   median_household_income, average_dwelling_value, income_quintile,
 --   shelter costs, dwelling/bedroom/construction pivots, fit scores.
+--
+-- ⚠️  mart_neighbourhood_overview reads `affordability_index` from this mart.
+--     That column is now `housing_affordability_index`. Follow-up prompt required
+--     to update mart_neighbourhood_overview.
 
 {{ config(materialized='table') }}
 

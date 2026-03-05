@@ -18,8 +18,8 @@ models:
         data_tests:
           - not_null
 
-  - name: mart_neighbourhood_livability
-    description: "Composite livability scores (safety 30%, affordability 40%, amenity 30%). Grain: one row per neighbourhood per year (2014-2025). Replaces mart_neighbourhood_overview (Sprint 16)."
+  - name: mart_neighbourhood_overview
+    description: "Neighbourhood overview with composite livability score"
     meta:
       dashboard_tab: Overview
     columns:
@@ -30,8 +30,6 @@ models:
           - relationships:
               to: ref('mart_neighbourhood_geometry')
               field: neighbourhood_id
-      - name: year
-        description: "Analysis year (2014-2025)"
       - name: livability_score
         description: "Composite score: safety (30%), affordability (40%), amenities (30%)"
       - name: safety_score
@@ -118,7 +116,7 @@ models:
       - name: housing_affordable
         description: "Boolean affordability flag. Formula: 2bed annual rent ≤ 30% of median household income."
       - name: housing_affordability_index
-        description: "Affordability index. Formula: neighbourhood rent2income_pct / city_avg_rent2income_pct × 100. 100 = city average for the year."
+        description: "Affordability index. Formula: neighbourhood rent2income_pct / city_avg_rent2income_pct × 100. 100 = city average for the year. ⚠️ mart_neighbourhood_overview reads this as `affordability_index` — follow-up rename required there."
       - name: housing_affordability_pressure_score
         description: "Composite affordability pressure score (0–100). Weights: 2-bed rent-to-income burden (50%) + renter share (30%) + low vacancy penalty (20%)."
       - name: housing_turnover_rate
