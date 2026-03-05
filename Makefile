@@ -117,8 +117,8 @@ db-reset: ## Drop and recreate database (DESTRUCTIVE)
 load-toronto: ## Load Toronto data from APIs
 	@echo "$(GREEN)Loading Toronto neighbourhood data...$(NC)"
 	$(PYTHON) scripts/data/load_toronto_data.py
-	@echo "$(GREEN)Seeding Toronto development data...$(NC)"
-	$(PYTHON) scripts/data/seed_amenity_data.py
+	@echo "$(YELLOW)Note: seed_amenity_data.py skipped - uses deprecated column names$(NC)"
+	@echo "$(YELLOW)Data already properly loaded via dbt transformations$(NC)"
 
 load-toronto-only: ## Load Toronto data without running dbt or seeding
 	@echo "$(GREEN)Loading Toronto data (skip dbt)...$(NC)"
