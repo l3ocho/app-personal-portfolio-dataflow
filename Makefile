@@ -163,9 +163,14 @@ test-cov: ## Run pytest with coverage
 # dbt
 # =============================================================================
 
-dbt-run: ## Run dbt models
+dbt-run: ## Run dbt models (includes cleanup of deprecated tables)
 	@echo "$(GREEN)Running dbt models...$(NC)"
 	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt run --profiles-dir .
+	@echo "$(GREEN)Cleaning up deprecated mart tables...$(NC)"
+	@$(PYTHON) scripts/data/cleanup_mart_tables.py
+
+cleanup-deprecated-marts: ## Clean up deprecated mart_toronto tables
+	$(PYTHON) scripts/data/cleanup_mart_tables.py
 
 dbt-test: ## Run dbt tests
 	@echo "$(GREEN)Running dbt tests...$(NC)"
