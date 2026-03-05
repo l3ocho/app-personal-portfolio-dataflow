@@ -222,3 +222,69 @@ models:
         description: "Rank within neighbourhood and category"
       - name: diversity_index
         description: "Shannon diversity index (visible_minority only)"
+
+  - name: int_neighbourhood__profile_wide
+    description: >
+      Wide-format pivot of neighbourhood profile. 13 selected categories
+      pivoted to named scalar columns (count + pct pairs). One row per
+      neighbourhood per census_year. Source: stg_toronto__profiles (direct).
+      Excluded categories: household_size, marital_status, household_type
+      (not in raw data), visible_minority, religion, dwelling_type, bedrooms,
+      ethnic_origin, mother_tongue, commute_*, occupation, income_bracket,
+      family_type, industry_sector, income_source.
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_toronto__neighbourhoods')
+              field: neighbourhood_id
+      - name: census_year
+        description: "Census year"
+        data_tests:
+          - not_null
+      - name: profile_imm_immigrant
+        description: "Count: immigrants"
+      - name: profile_imm_immigrant_pct
+        description: "Percentage: immigrants"
+      - name: profile_offlang_english_only
+        description: "Count: english only speakers"
+      - name: profile_offlang_english_only_pct
+        description: "Percentage: english only speakers"
+      - name: profile_citizen_canadian
+        description: "Count: canadian citizens"
+      - name: profile_citizen_canadian_pct
+        description: "Percentage: canadian citizens"
+      - name: profile_gen_1st
+        description: "Count: first generation"
+      - name: profile_gen_1st_pct
+        description: "Percentage: first generation"
+      - name: profile_admission_economic
+        description: "Count: economic immigrants"
+      - name: profile_admission_economic_pct
+        description: "Percentage: economic immigrants"
+      - name: profile_pob_canada
+        description: "Count: place of birth is canada"
+      - name: profile_pob_canada_pct
+        description: "Percentage: place of birth is canada"
+      - name: profile_indigenous_yes
+        description: "Count: indigenous identity"
+      - name: profile_indigenous_yes_pct
+        description: "Percentage: indigenous identity"
+      - name: profile_edu_lvl_nocert
+        description: "Count: no certificate, diploma or degree"
+      - name: profile_edu_lvl_nocert_pct
+        description: "Percentage: no certificate, diploma or degree"
+      - name: profile_fos_business
+        description: "Count: business, management and public administration field of study"
+      - name: profile_fos_business_pct
+        description: "Percentage: business, management and public administration field of study"
+      - name: profile_const_pre1960
+        description: "Count: construction period 1960 or before"
+      - name: profile_const_pre1960_pct
+        description: "Percentage: construction period 1960 or before"
+      - name: profile_suit_suitable
+        description: "Count: suitable housing"
+      - name: profile_suit_suitable_pct
+        description: "Percentage: suitable housing"

@@ -362,3 +362,208 @@ models:
         description: "True when indent_level > 0 (row is a subcategory, not a section header)"
       - name: diversity_index
         description: "Shannon diversity index (visible_minority rows only)"
+
+  - name: mart_neighbourhood_profile_wide
+    description: "Wide-format neighbourhood profile. Additive to mart_neighbourhood_profile (long-format kept for dynamic queries). 13 categories pivoted to named scalar columns. Grain: one row per neighbourhood per census_year (~158 rows, 2021 only). Source: int_neighbourhood__profile_wide."
+    meta:
+      dashboard_tab: People
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('mart_neighbourhood_geometry')
+              field: neighbourhood_id
+      - name: census_year
+        description: "Census year (2021)"
+        data_tests:
+          - not_null
+      - name: profile_imm_immigrant
+        description: "Count of immigrants"
+      - name: profile_imm_immigrant_pct
+        description: "Percentage of immigrants (of total immigration_status category). Formula: count / MAX(category_total) * 100"
+      - name: profile_imm_nonimmigrant
+        description: "Count of non-immigrants"
+      - name: profile_imm_nonimmigrant_pct
+        description: "Percentage of non-immigrants"
+      - name: profile_imm_nonperm
+        description: "Count of non-permanent residents"
+      - name: profile_imm_nonperm_pct
+        description: "Percentage of non-permanent residents"
+      - name: profile_lang_home_official
+        description: "Count of people with official language at home"
+      - name: profile_lang_home_official_pct
+        description: "Percentage with official language at home"
+      - name: profile_lang_home_nonofficial
+        description: "Count of people with non-official language at home"
+      - name: profile_lang_home_nonofficial_pct
+        description: "Percentage with non-official language at home"
+      - name: profile_offlang_english_only
+        description: "Count with English as official language only"
+      - name: profile_offlang_english_only_pct
+        description: "Percentage: English only"
+      - name: profile_offlang_french_only
+        description: "Count with French as official language only"
+      - name: profile_offlang_french_only_pct
+        description: "Percentage: French only"
+      - name: profile_offlang_both
+        description: "Count with both English and French"
+      - name: profile_offlang_both_pct
+        description: "Percentage: English and French"
+      - name: profile_offlang_neither
+        description: "Count with neither English nor French"
+      - name: profile_offlang_neither_pct
+        description: "Percentage: Neither English nor French"
+      - name: profile_citizen_canadian
+        description: "Count of Canadian citizens"
+      - name: profile_citizen_canadian_pct
+        description: "Percentage: Canadian citizens"
+      - name: profile_citizen_not
+        description: "Count of non-Canadian citizens"
+      - name: profile_citizen_not_pct
+        description: "Percentage: Non-Canadian citizens"
+      - name: profile_gen_1st
+        description: "Count: first generation"
+      - name: profile_gen_1st_pct
+        description: "Percentage: first generation"
+      - name: profile_gen_2nd
+        description: "Count: second generation"
+      - name: profile_gen_2nd_pct
+        description: "Percentage: second generation"
+      - name: profile_gen_3rd_plus
+        description: "Count: third generation or more"
+      - name: profile_gen_3rd_plus_pct
+        description: "Percentage: third generation or more"
+      - name: profile_admission_economic
+        description: "Count: economic immigrants"
+      - name: profile_admission_economic_pct
+        description: "Percentage: economic immigrants"
+      - name: profile_admission_family
+        description: "Count: immigrants sponsored by family"
+      - name: profile_admission_family_pct
+        description: "Percentage: immigrants sponsored by family"
+      - name: profile_admission_refugee
+        description: "Count: refugees"
+      - name: profile_admission_refugee_pct
+        description: "Percentage: refugees"
+      - name: profile_admission_other
+        description: "Count: other immigrants"
+      - name: profile_admission_other_pct
+        description: "Percentage: other immigrants"
+      - name: profile_pob_canada
+        description: "Count: born in Canada"
+      - name: profile_pob_canada_pct
+        description: "Percentage: born in Canada"
+      - name: profile_pob_africa
+        description: "Count: born in Africa"
+      - name: profile_pob_africa_pct
+        description: "Percentage: born in Africa"
+      - name: profile_pob_americas
+        description: "Count: born in Americas"
+      - name: profile_pob_americas_pct
+        description: "Percentage: born in Americas"
+      - name: profile_pob_asia
+        description: "Count: born in Asia"
+      - name: profile_pob_asia_pct
+        description: "Percentage: born in Asia"
+      - name: profile_pob_europe
+        description: "Count: born in Europe"
+      - name: profile_pob_europe_pct
+        description: "Percentage: born in Europe"
+      - name: profile_pob_oceania
+        description: "Count: born in Oceania or other places"
+      - name: profile_pob_oceania_pct
+        description: "Percentage: born in Oceania or other places"
+      - name: profile_pob_recent_canada
+        description: "Count: recent immigrants born in Canada"
+      - name: profile_pob_recent_canada_pct
+        description: "Percentage: recent immigrants born in Canada"
+      - name: profile_pob_recent_africa
+        description: "Count: recent immigrants born in Africa"
+      - name: profile_pob_recent_africa_pct
+        description: "Percentage: recent immigrants born in Africa"
+      - name: profile_pob_recent_americas
+        description: "Count: recent immigrants born in Americas"
+      - name: profile_pob_recent_americas_pct
+        description: "Percentage: recent immigrants born in Americas"
+      - name: profile_pob_recent_asia
+        description: "Count: recent immigrants born in Asia"
+      - name: profile_pob_recent_asia_pct
+        description: "Percentage: recent immigrants born in Asia"
+      - name: profile_pob_recent_europe
+        description: "Count: recent immigrants born in Europe"
+      - name: profile_pob_recent_europe_pct
+        description: "Percentage: recent immigrants born in Europe"
+      - name: profile_pob_recent_oceania
+        description: "Count: recent immigrants born in Oceania"
+      - name: profile_pob_recent_oceania_pct
+        description: "Percentage: recent immigrants born in Oceania"
+      - name: profile_indigenous_yes
+        description: "Count with indigenous identity"
+      - name: profile_indigenous_yes_pct
+        description: "Percentage with indigenous identity"
+      - name: profile_indigenous_no
+        description: "Count with non-indigenous identity"
+      - name: profile_indigenous_no_pct
+        description: "Percentage with non-indigenous identity"
+      - name: profile_edu_lvl_nocert
+        description: "Count: no certificate, diploma or degree"
+      - name: profile_edu_lvl_nocert_pct
+        description: "Percentage: no certificate, diploma or degree"
+      - name: profile_edu_lvl_highschool
+        description: "Count: high school diploma"
+      - name: profile_edu_lvl_highschool_pct
+        description: "Percentage: high school diploma"
+      - name: profile_edu_lvl_postsec
+        description: "Count: postsecondary certificate or diploma"
+      - name: profile_edu_lvl_postsec_pct
+        description: "Percentage: postsecondary certificate or diploma"
+      - name: profile_fos_business
+        description: "Count: business, management and public administration"
+      - name: profile_fos_business_pct
+        description: "Percentage: business, management and public administration"
+      - name: profile_fos_social_science
+        description: "Count: social and behavioural sciences and law"
+      - name: profile_fos_social_science_pct
+        description: "Percentage: social and behavioural sciences and law"
+      - name: profile_fos_engineering
+        description: "Count: architecture, engineering, and related trades"
+      - name: profile_fos_engineering_pct
+        description: "Percentage: architecture, engineering, and related trades"
+      - name: profile_fos_health
+        description: "Count: health and related fields"
+      - name: profile_fos_health_pct
+        description: "Percentage: health and related fields"
+      - name: profile_fos_humanities
+        description: "Count: humanities"
+      - name: profile_fos_humanities_pct
+        description: "Percentage: humanities"
+      - name: profile_const_pre1960
+        description: "Count: construction 1960 or before"
+      - name: profile_const_pre1960_pct
+        description: "Percentage: construction 1960 or before"
+      - name: profile_const_1961_1980
+        description: "Count: construction 1961 to 1980"
+      - name: profile_const_1961_1980_pct
+        description: "Percentage: construction 1961 to 1980"
+      - name: profile_const_1981_1990
+        description: "Count: construction 1981 to 1990"
+      - name: profile_const_1981_1990_pct
+        description: "Percentage: construction 1981 to 1990"
+      - name: profile_const_1991_2000
+        description: "Count: construction 1991 to 2000"
+      - name: profile_const_1991_2000_pct
+        description: "Percentage: construction 1991 to 2000"
+      - name: profile_const_post2000
+        description: "Count: construction 2001 or later"
+      - name: profile_const_post2000_pct
+        description: "Percentage: construction 2001 or later"
+      - name: profile_suit_suitable
+        description: "Count: suitable housing"
+      - name: profile_suit_suitable_pct
+        description: "Percentage: suitable housing"
+      - name: profile_suit_not_suitable
+        description: "Count: not suitable housing"
+      - name: profile_suit_not_suitable_pct
+        description: "Percentage: not suitable housing"
