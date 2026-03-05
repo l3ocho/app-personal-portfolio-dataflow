@@ -18,27 +18,6 @@ models:
         data_tests:
           - not_null
 
-  - name: mart_neighbourhood_overview
-    description: "Neighbourhood overview with composite livability score"
-    meta:
-      dashboard_tab: Overview
-    columns:
-      - name: neighbourhood_id
-        description: "Neighbourhood identifier"
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('mart_neighbourhood_geometry')
-              field: neighbourhood_id
-      - name: livability_score
-        description: "Composite score: safety (30%), affordability (40%), amenities (30%)"
-      - name: safety_score
-        description: "Safety component score (0-100)"
-      - name: affordability_score
-        description: "Affordability component score (0-100)"
-      - name: amenity_score
-        description: "Amenity component score (0-100)"
-
   - name: mart_neighbourhood_housing
     description: "Unified housing analysis by neighbourhood. Grain: one row per neighbourhood per rental year. Replaces former mart_neighbourhood_housing (scalar census-only) and mart_neighbourhood_housing_rentals (long format). Bedroom-type metrics pivoted to wide (4 columns per metric). Income-based columns (median_household_income, average_dwelling_value, shelter costs, dwelling/bedroom/construction pivots) are available in mart_neighbourhood_people and intentionally excluded here."
     meta:
