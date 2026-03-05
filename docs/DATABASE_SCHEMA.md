@@ -467,10 +467,28 @@ Canonical neighbourhood boundaries for map rendering.
 **Grain:** 158 rows (one per neighbourhood)
 **FK target for:** All analytical Toronto marts via `neighbourhood_id`
 
-#### `mart_neighbourhood_overview`
-Grain: neighbourhood × year. Composite livability score and top-level summary metrics.
+#### `mart_neighbourhood_livability`
+Grain: neighbourhood × year (2014-2025). Composite livability score and top-level summary metrics.
 
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
+| `year` | INTEGER | Analysis year (2014-2025) |
+| `population` | INTEGER | Census population (most recent available) |
+| `median_household_income` | NUMERIC | CPI-adjusted to 2021 dollars |
+| `safety_score` | NUMERIC | Crime rate percentile (0-100, higher = safer) |
+| `affordability_score` | NUMERIC | Housing affordability index |
+| `amenity_score` | NUMERIC | Amenity accessibility normalized score |
+| `livability_score` | NUMERIC | Composite (30% safety + 40% affordability + 30% amenity) |
+| `crime_rate_per_100k` | NUMERIC | Raw crime rate per 100,000 |
+| `rent_to_income_pct` | NUMERIC | Rental affordability ratio (%) |
+| `avg_rent_2bed` | NUMERIC | Average 2-bedroom rent (CAD) |
+| `vacancy_rate` | NUMERIC | Rental vacancy percentage |
+| `total_amenities_per_1000` | NUMERIC | Density of parks, schools, transit |
+
+**Expected rows:** ~1,738 (158 neighbourhoods × 12 years)
 
 #### `mart_neighbourhood_housing`
 Grain: neighbourhood × rental year. Unified housing analysis mart.
@@ -520,8 +538,6 @@ Grain: neighbourhood × rental year. Unified housing analysis mart.
 | `housing_affordability_index` | NUMERIC | 100 = city average affordability for the year |
 | `housing_affordability_pressure_score` | NUMERIC | Composite 0–100: rent burden (50%) + renter share (30%) + low vacancy (20%) |
 | `housing_turnover_rate` | NUMERIC | Turnover rate scalar — 2-bed value (backward-compat single-value reference) |
-
-⚠️ **Follow-up required**: `mart_neighbourhood_overview` reads `affordability_index` from this mart. Column is now `housing_affordability_index`. Overview mart must be updated separately.
 
 #### `mart_neighbourhood_people`
 Grain: one row per neighbourhood per census year (316 rows: 158 × 2). Unified people profile combining demographics, amenities, commute patterns, and geometry. Replaces deprecated `mart_neighbourhood_demographics` and `mart_neighbourhood_amenities`.

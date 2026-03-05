@@ -1,7 +1,10 @@
--- Mart: Neighbourhood Overview with Composite Livability Score
--- Dashboard Tab: Overview
+-- Mart: Neighbourhood Livability Scores (Consolidated from Overview)
+-- Dashboard Tab: Livability
 -- Grain: One row per neighbourhood per year
 -- Time spine: Years 2014-2025 (driven by crime/rental data availability)
+--
+-- Composite livability score = safety (30%) + affordability (40%) + amenities (30%)
+-- Replaces: mart_neighbourhood_overview (Sprint 16)
 
 with years as (
     select * from {{ ref('int_year_spine') }}
@@ -69,7 +72,6 @@ housing as (
 ),
 
 -- Amenities (use latest year since infrastructure changes slowly)
--- Computed inline from int_neighbourhood__amenity_scores (mart_neighbourhood_amenities deleted)
 amenity_raw as (
     select *
     from {{ ref('int_neighbourhood__amenity_scores') }}
