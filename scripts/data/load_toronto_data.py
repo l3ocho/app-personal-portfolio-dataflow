@@ -615,39 +615,78 @@ class DataPipeline:
             return False
 
     def _cleanup_deprecated_tables(self) -> None:
-        """Drop deprecated mart tables from previous consolidations.
+        """Drop any mart_toronto tables not in current dbt schema.
 
-        Historical consolidations removed these tables:
-        - mart_neighbourhood_foundation: Consolidated into demographics (removed 2026-03-03)
-        - mart_neighbourhood_demographics: Consolidated into mart_neighbourhood_people (removed 2026-03-04)
-        - mart_neighbourhood_amenities: Consolidated into mart_neighbourhood_people (removed 2026-03-04)
-        - mart_toronto_rentals: Consolidated into housing-related tables (removed 2026-02-23)
-        - mart_neighbourhood_housing_rentals: Consolidated into mart_neighbourhood_housing (removed 2026-03-04)
+        After dbt runs, this method queries the dbt manifest to identify
+        which mart_toronto tables SHOULD exist, then drops any actual tables
+        in the schema that don't match. This automatically cleans up tables
+        from previous consolidations without hardcoding table names.
         """
         from sqlalchemy import text
-
-        deprecated_tables = [
-            "mart_neighbourhood_foundation",
-            "mart_neighbourhood_demographics",
-            "mart_neighbourhood_amenities",
-            "mart_toronto_rentals",
-            "mart_neighbourhood_housing_rentals",
-        ]
+        import json
 
         try:
+            # Read dbt manifest to get current expected mart models
+            manifest_path = PROJECT_ROOT / "dbt" / "target" / "manifest.json"
+            if not manifest_path.exists():
+                logger.warning(
+                    "  dbt manifest not found; skipping cleanup "
+                    "(run 'dbt parse' first)"
+                )
+                return
+
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+
+            # Extract all mart_toronto model names from manifest
+            expected_tables = set()
+            for node_id, node in manifest.get("nodes", {}).items():
+                # Only look at materialized models in marts/toronto/
+                if (
+                    node.get("resource_type") == "model"
+                    and "marts" in node.get("fqn", [])
+                    and "toronto" in node.get("fqn", [])
+                ):
+                    table_name = node.get("name", "")
+                    if table_name:
+                        expected_tables.add(table_name)
+
+            # Query actual tables in mart_toronto schema
             with get_session() as session:
-                for table_name in deprecated_tables:
-                    try:
-                        session.execute(
-                            text(f"DROP TABLE IF EXISTS mart_toronto.{table_name} CASCADE")
-                        )
-                        session.commit()
-                        logger.info(f"  Dropped deprecated table: {table_name}")
-                    except Exception as e:
-                        logger.warning(
-                            f"  Could not drop {table_name} (may not exist): {e}"
-                        )
-                        session.rollback()
+                result = session.execute(
+                    text(
+                        """
+                        SELECT table_name
+                        FROM information_schema.tables
+                        WHERE table_schema = 'mart_toronto'
+                        AND table_type = 'BASE TABLE'
+                    """
+                    )
+                )
+                actual_tables = {row[0] for row in result}
+
+            # Drop tables that exist but aren't in current dbt schema
+            orphaned_tables = actual_tables - expected_tables
+            if orphaned_tables:
+                logger.info(f"  Found {len(orphaned_tables)} orphaned table(s)")
+                with get_session() as session:
+                    for table_name in sorted(orphaned_tables):
+                        try:
+                            session.execute(
+                                text(
+                                    f"DROP TABLE IF EXISTS mart_toronto.{table_name} CASCADE"
+                                )
+                            )
+                            session.commit()
+                            logger.info(f"    Dropped orphaned table: {table_name}")
+                        except Exception as e:
+                            logger.warning(f"    Could not drop {table_name}: {e}")
+                            session.rollback()
+            else:
+                logger.info("  No orphaned tables found")
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"  Could not parse dbt manifest: {e}")
         except Exception as e:
             logger.warning(f"  Cleanup encountered error: {e}")
 
