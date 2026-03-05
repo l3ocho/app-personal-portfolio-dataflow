@@ -646,36 +646,6 @@ Grain: neighbourhood × census year × category × subcategory. Full community p
 
 ---
 
-#### `mart_neighbourhood_profile_wide`
-Grain: neighbourhood × census_year. Wide-format pivot of `mart_neighbourhood_profile`. 13 categories pivoted to named scalar columns (count + pct pairs). **Additive** — the long-format `mart_neighbourhood_profile` is preserved unchanged for dynamic profile queries.
-
-**Categories included (13 total):**
-- immigration_status (3 statuses: immigrant, non-immigrant, non-permanent resident)
-- language_at_home (2 aggregates: official languages, non-official languages)
-- official_language (4 combinations: English only, French only, both, neither)
-- citizenship (2 statuses: Canadian, not Canadian)
-- generation_status (3 tiers: 1st, 2nd, 3rd+)
-- admission_category (4 categories: economic, family, refugee, other)
-- place_of_birth (6 regions: Canada, Africa, Americas, Asia, Europe, Oceania)
-- place_of_birth_recent (6 regions for recent immigrants)
-- indigenous_identity (2 statuses: indigenous, non-indigenous)
-- education_level (3 tiers: no cert, high school, postsecondary)
-- field_of_study (5 top groupings: business, social science, engineering, health, humanities)
-- construction_period (5 periods: pre-1960, 1961–1980, 1981–1990, 1991–2000, post-2000)
-- housing_suitability (2 statuses: suitable, not suitable)
-
-**Column naming:** `profile_{category_abbrev}_{subcategory}` (count) and `profile_{category_abbrev}_{subcategory}_pct` (percentage).
-
-| Column Pattern | Type | Description |
-|--------|------|-------------|
-| `profile_*` | INTEGER | Count value |
-| `profile_*_pct` | NUMERIC(5,2) | Percentage within category. Formula: count / MAX(category_total) × 100 |
-
-**Note on percentages:** `_pct` columns are recomputed from `stg_toronto__profiles` `category_total` values during dbt transformation. They are **not pre-calculated in the database**; they represent `count / MAX(category_total) OVER (PARTITION BY neighbourhood_id, census_year, category) * 100`.
-
-**Expected rows:** ~158 (2021 only; profile source data is Census 2021 only)
-
----
 
 ### Football Marts (`mart_football`)
 

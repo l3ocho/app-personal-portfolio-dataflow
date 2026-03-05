@@ -223,15 +223,12 @@ models:
       - name: diversity_index
         description: "Shannon diversity index (visible_minority only)"
 
-  - name: int_neighbourhood__profile_wide
+  - name: int_neighbourhood__profile_flat
     description: >
-      Wide-format pivot of neighbourhood profile. 13 selected categories
+      Flat (wide-format) pivot of the profile source data. 13 categories
       pivoted to named scalar columns (count + pct pairs). One row per
-      neighbourhood per census_year. Source: stg_toronto__profiles (direct).
-      Excluded categories: household_size, marital_status, household_type
-      (not in raw data), visible_minority, religion, dwelling_type, bedrooms,
-      ethnic_origin, mother_tongue, commute_*, occupation, income_bracket,
-      family_type, industry_sector, income_source.
+      neighbourhood per census_year. Replaces the former long-format
+      mart_neighbourhood_profile. Source: stg_toronto__profiles (direct).
     columns:
       - name: neighbourhood_id
         description: "Neighbourhood identifier"

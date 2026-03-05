@@ -1,7 +1,8 @@
--- Intermediate: Wide-format neighbourhood profile pivot
+-- Intermediate: Flat (wide-format) neighbourhood profile
 -- Grain: one row per neighbourhood per census_year
 -- Source: stg_toronto__profiles (direct — bypasses long-format intermediates)
 -- 13 categories pivoted to named scalar columns (count + pct pairs)
+-- This replaces the former long-format mart_neighbourhood_profile.
 -- Excluded: household_size, marital_status, household_type (not in raw data)
 --           visible_minority, religion, dwelling_type, bedrooms,
 --           ethnic_origin, mother_tongue, commute_*, occupation,
