@@ -599,9 +599,10 @@ class DataPipeline:
             else:
                 logger.info("  dbt test completed successfully")
 
-            # Clean up deprecated tables
-            logger.info("  Cleaning up deprecated mart tables...")
-            self._cleanup_deprecated_tables()
+            # NOTE: Deprecated table cleanup disabled (Sprint 16)
+            # Old mart_toronto tables were consolidated/removed in prior sprints.
+            # Current dbt models define only the active marts. No cleanup needed.
+            # If orphaned tables appear in future, re-enable _cleanup_deprecated_tables().
 
             return True
 
