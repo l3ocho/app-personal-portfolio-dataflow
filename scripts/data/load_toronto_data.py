@@ -536,6 +536,7 @@ class DataPipeline:
             logger.info(
                 f"  [DRY RUN] Would run: dbt test --select {' '.join(toronto_select)}"
             )
+            logger.info("  [DRY RUN] Would cleanup deprecated mart tables")
             return True
 
         try:
@@ -598,6 +599,9 @@ class DataPipeline:
             else:
                 logger.info("  dbt test completed successfully")
 
+            # Cleanup any orphaned deprecated tables
+            self._cleanup_deprecated_tables()
+
             return True
 
         except FileNotFoundError:
@@ -608,6 +612,81 @@ class DataPipeline:
         except Exception as e:
             logger.error(f"dbt execution failed: {e}")
             return False
+
+    def _cleanup_deprecated_tables(self) -> None:
+        """Drop any mart_toronto tables not in current dbt schema.
+
+        After dbt runs, this method queries the dbt manifest to identify
+        which mart_toronto tables SHOULD exist, then drops any actual tables
+        in the schema that don't match. This automatically cleans up tables
+        from previous consolidations without hardcoding table names.
+        """
+        import json
+
+        from sqlalchemy import text
+
+        try:
+            # Read dbt manifest to get current expected mart models
+            manifest_path = PROJECT_ROOT / "dbt" / "target" / "manifest.json"
+            if not manifest_path.exists():
+                logger.warning(
+                    "  dbt manifest not found; skipping cleanup "
+                    "(run 'dbt parse' first)"
+                )
+                return
+
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+
+            # Extract all mart_toronto model names from manifest
+            expected_tables = set()
+            for _node_id, node in manifest.get("nodes", {}).items():
+                # Only look at materialized models in marts/toronto/
+                if (
+                    node.get("resource_type") == "model"
+                    and "marts" in node.get("fqn", [])
+                    and "toronto" in node.get("fqn", [])
+                ):
+                    table_name = node.get("name", "")
+                    if table_name:
+                        expected_tables.add(table_name)
+
+            # Query actual tables in mart_toronto schema
+            with get_session() as session:
+                result = session.execute(
+                    text(
+                        """
+                        SELECT table_name
+                        FROM information_schema.tables
+                        WHERE table_schema = 'mart_toronto'
+                        AND table_type = 'BASE TABLE'
+                    """
+                    )
+                )
+                actual_tables = {row[0] for row in result}
+
+            # Drop tables that exist but aren't in current dbt schema
+            orphaned_tables = actual_tables - expected_tables
+            if orphaned_tables:
+                logger.info(f"  Found {len(orphaned_tables)} orphaned table(s)")
+                with get_session() as session:
+                    for table_name in sorted(orphaned_tables):
+                        try:
+                            session.execute(
+                                text(
+                                    f"DROP TABLE IF EXISTS mart_toronto.{table_name} CASCADE"
+                                )
+                            )
+                            session.commit()
+                            logger.info(f"    Dropped orphaned table: {table_name}")
+                        except Exception as e:
+                            logger.warning(f"    Could not drop {table_name}: {e}")
+                            session.rollback()
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"  Could not parse dbt manifest: {e}")
+        except Exception as e:
+            logger.warning(f"  Cleanup encountered error: {e}")
 
     def _print_stats(self) -> None:
         """Print loading statistics."""

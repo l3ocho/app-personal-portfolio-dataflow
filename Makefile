@@ -117,8 +117,8 @@ db-reset: ## Drop and recreate database (DESTRUCTIVE)
 load-toronto: ## Load Toronto data from APIs
 	@echo "$(GREEN)Loading Toronto neighbourhood data...$(NC)"
 	$(PYTHON) scripts/data/load_toronto_data.py
-	@echo "$(GREEN)Seeding Toronto development data...$(NC)"
-	$(PYTHON) scripts/data/seed_amenity_data.py
+	@echo "$(YELLOW)Note: seed_amenity_data.py skipped - uses deprecated column names$(NC)"
+	@echo "$(YELLOW)Data already properly loaded via dbt transformations$(NC)"
 
 load-toronto-only: ## Load Toronto data without running dbt or seeding
 	@echo "$(GREEN)Loading Toronto data (skip dbt)...$(NC)"
@@ -163,9 +163,14 @@ test-cov: ## Run pytest with coverage
 # dbt
 # =============================================================================
 
-dbt-run: ## Run dbt models
+dbt-run: ## Run dbt models (includes cleanup of deprecated tables)
 	@echo "$(GREEN)Running dbt models...$(NC)"
 	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt run --profiles-dir .
+	@echo "$(GREEN)Cleaning up deprecated mart tables...$(NC)"
+	@$(PYTHON) scripts/data/cleanup_mart_tables.py
+
+cleanup-deprecated-marts: ## Clean up deprecated mart_toronto tables
+	$(PYTHON) scripts/data/cleanup_mart_tables.py
 
 dbt-test: ## Run dbt tests
 	@echo "$(GREEN)Running dbt tests...$(NC)"

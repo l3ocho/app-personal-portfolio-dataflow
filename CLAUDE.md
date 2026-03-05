@@ -106,9 +106,9 @@ Branch naming, commit conventions, workflow steps, and release procedures are do
 
 ### Workflow
 
-1. **Identify the file you want to change** (e.g., `dbt/models/marts/toronto/mart_neighbourhood_overview.sql`)
+1. **Identify the file you want to change** (e.g., `dbt/models/marts/toronto/mart_neighbourhood_livability.sql`)
 2. **Run the appropriate search** from the table above
-3. **For mart changes, always check webapp**: `grep -r "mart_neighbourhood_overview" /home/leomiranda/repositories/personal/app-personal-portfolio/`
+3. **For mart changes, always check webapp**: `grep -r "mart_neighbourhood_livability" /home/leomiranda/repositories/personal/app-personal-portfolio/`
 4. **List all downstream references** to the user before editing
 5. **If changing mart schema**: Flag that webapp repo must be notified; schedule coordination
 6. **Run `dbt parse` before any dbt edit** to validate syntax early

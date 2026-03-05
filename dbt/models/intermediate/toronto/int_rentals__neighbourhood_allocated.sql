@@ -28,6 +28,13 @@ allocated as (
         -- Weighted vacancy rate
         sum(r.vacancy_rate * c.area_weight) / nullif(sum(c.area_weight), 0) as vacancy_rate,
 
+        -- Weighted turnover rate
+        sum(r.turnover_rate * c.area_weight) / nullif(sum(c.area_weight), 0) as turnover_rate,
+
+        -- Weighted year-over-year rent change
+        sum(r.year_over_year_rent_change * c.area_weight)
+            / nullif(sum(c.area_weight), 0) as year_over_year_rent_change,
+
         -- Weighted rental universe
         sum(r.rental_universe * c.area_weight) as rental_units_estimate
 
@@ -46,6 +53,8 @@ pivoted as (
         max(case when bedroom_type = 'bachelor' then weighted_avg_rent / nullif(total_weight, 0) end) as avg_rent_bachelor,
         max(case when bedroom_type = '3bed' then weighted_avg_rent / nullif(total_weight, 0) end) as avg_rent_3bed,
         avg(vacancy_rate) as vacancy_rate,
+        avg(turnover_rate) as turnover_rate,
+        avg(year_over_year_rent_change) as year_over_year_rent_change,
         sum(rental_units_estimate) as total_rental_units
     from allocated
     group by neighbourhood_id, year
@@ -62,8 +71,14 @@ final as (
         round(p.avg_rent_1bed::numeric, 2) as avg_rent_1bed,
         round(p.avg_rent_2bed::numeric, 2) as avg_rent_2bed,
         round(p.avg_rent_3bed::numeric, 2) as avg_rent_3bed,
-        round(p.vacancy_rate::numeric, 2) as vacancy_rate,
-        round(p.total_rental_units::numeric, 0) as total_rental_units
+        round(p.vacancy_rate::numeric, 4) as vacancy_rate,
+        round(p.total_rental_units::numeric, 0) as total_rental_units,
+
+        -- Previously missing CMHC fields — area-weighted from zone level
+        round(p.turnover_rate::numeric, 4) as turnover_rate,
+        round(p.total_rental_units::numeric, 0) as rental_universe_estimate,
+        round(p.year_over_year_rent_change::numeric, 4) as year_over_year_rent_change,
+        true as is_estimated
 
     from neighbourhoods n
     inner join pivoted p on n.neighbourhood_id = p.neighbourhood_id

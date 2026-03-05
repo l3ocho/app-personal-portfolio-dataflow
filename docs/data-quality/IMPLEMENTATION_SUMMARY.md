@@ -42,11 +42,11 @@ END
 
 ### 2. Mart Model Update
 
-**File**: `dbt/models/marts/toronto/mart_neighbourhood_demographics.sql`
+**File**: `dbt/models/intermediate/toronto/int_neighbourhood__foundation.sql`
 
 **Changes**:
-- Added `is_income_imputed` column to final output
-- Enables downstream consumers to identify estimated vs actual values
+- CPI imputation logic lives here (foundation feeds `mart_neighbourhood_people` + `mart_neighbourhood_housing`)
+- `is_income_imputed` flag available on year-grain consumers
 
 ### 3. Documentation Created
 
@@ -110,16 +110,17 @@ END
 
 3. Intermediate (dbt) ⭐ IMPUTATION HAPPENS HERE
    ↓
-   int_neighbourhood__demographics
+   int_neighbourhood__foundation
    - Join 2021 baseline income
    - Apply CPI adjustment for 2016-2020
    - Set is_income_imputed = TRUE for estimates
 
 4. Mart (dbt)
    ↓
-   mart_neighbourhood_demographics
-   - Include is_income_imputed flag
-   - Calculate income_index, quintiles using imputed values
+   mart_neighbourhood_people (latest year, 158 rows)
+   mart_neighbourhood_housing (year-grain, includes imputed years)
+   - is_income_imputed flag available on year-grain mart
+   - Income indices and quintiles computed from imputed values
 ```
 
 ### Example Calculation
@@ -161,11 +162,11 @@ END
 Check a specific neighbourhood:
 ```sql
 SELECT
-    neighbourhood_name,
+    neighbourhood_id,
     census_year,
-    median_household_income,
+    income_household_md,
     is_income_imputed
-FROM int_toronto.int_neighbourhood__demographics
+FROM int_toronto.int_neighbourhood__foundation
 WHERE neighbourhood_id = 95  -- Annex
 ORDER BY census_year;
 ```
@@ -173,9 +174,9 @@ ORDER BY census_year;
 ## Files Modified/Created
 
 ### Modified
-1. `dbt/models/intermediate/toronto/int_neighbourhood__demographics.sql` - Core imputation logic
-2. `dbt/models/marts/toronto/mart_neighbourhood_demographics.sql` - Added flag to output
-3. `docs/DATABASE_SCHEMA.md` - Added data quality note
+1. `dbt/models/intermediate/toronto/int_neighbourhood__foundation.sql` - Core imputation logic
+2. `docs/DATABASE_SCHEMA.md` - Added data quality note
+Note: `mart_neighbourhood_demographics` was deprecated and replaced by `mart_neighbourhood_people` (Sprint 16).
 
 ### Created
 1. `docs/data-quality/DATA_SOURCES.md` - Complete data quality documentation
@@ -186,15 +187,14 @@ ORDER BY census_year;
 ## Impact on Existing Data
 
 ### Before Implementation
-- `mart_neighbourhood_demographics` years 2016-2020: Income columns = NULL
-- 290 total rows (158 × 2021 + 132 × 2016)
-- Only 158 rows (54.5%) had income data
+- `int_neighbourhood__foundation` years 2016-2020: Income columns = NULL
+- `mart_neighbourhood_housing` only 158 rows (2021 only)
 
 ### After Implementation
-- `mart_neighbourhood_demographics` years 2016-2020: Income columns = CPI-adjusted estimates
-- 290 total rows (unchanged)
-- All 290 rows (100%) have income data
+- `int_neighbourhood__foundation` years 2016-2020: Income columns = CPI-adjusted estimates
+- `mart_neighbourhood_housing` has 290 rows (158 × 2021 + 132 × 2016)
 - 132 rows flagged with `is_income_imputed = TRUE`
+- `mart_neighbourhood_people` is latest-year only (158 rows, 2021 actual census values)
 
 ### Downstream Effects
 - Income quintile now calculated for all years (not just 2021)

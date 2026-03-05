@@ -1,25 +1,9 @@
--- Mart: Neighbourhood community profile analytical table
--- Grain: One row per (neighbourhood_id, census_year, category, subcategory, level)
--- Final consumption table for dashboard with populated metrics only (removed 3 NULL-only columns)
+-- Mart: Neighbourhood Profile (wide format)
+-- Grain: one row per neighbourhood per census_year (~158 rows, 2021 only)
+-- Source: int_neighbourhood__profile_flat
+-- 13 categories pivoted to profile_{abbrev}_{subcategory} / _pct named columns.
+-- Replaces former long-format mart (neighbourhood × category × subcategory).
 
-with profile as (
-    select * from {{ ref('int_toronto__neighbourhood_profile') }}
-),
+{{ config(materialized='table') }}
 
-final as (
-    select
-        p.neighbourhood_id,
-        p.census_year,
-        p.category,
-        p.subcategory,
-        p.count,
-        p.city_total,
-        p.pct_of_city,
-        p.rank_in_neighbourhood,
-        p.level,
-        p.indent_level,
-        case when p.indent_level > 0 then true else false end as is_subtotal
-    from profile p
-)
-
-select * from final
+select * from {{ ref('int_neighbourhood__profile_flat') }}

@@ -1,7 +1,10 @@
--- Mart: Neighbourhood Overview with Composite Livability Score
--- Dashboard Tab: Overview
+-- Mart: Neighbourhood Livability Scores (Consolidated from Overview)
+-- Dashboard Tab: Livability
 -- Grain: One row per neighbourhood per year
 -- Time spine: Years 2014-2025 (driven by crime/rental data availability)
+--
+-- Composite livability score = safety (30%) + affordability (40%) + amenities (30%)
+-- Replaces: mart_neighbourhood_overview (Sprint 16)
 
 with years as (
     select * from {{ ref('int_year_spine') }}
@@ -64,18 +67,33 @@ housing as (
     select
         neighbourhood_id,
         year,
-        affordability_index
+        housing_affordability_index
     from {{ ref('mart_neighbourhood_housing') }}
 ),
 
 -- Amenities (use latest year since infrastructure changes slowly)
+amenity_raw as (
+    select *
+    from {{ ref('int_neighbourhood__amenity_scores') }}
+    where year = (select max(year) from {{ ref('int_neighbourhood__amenity_scores') }})
+),
+
+amenity_city_avg as (
+    select avg(total_amenities_per_1000) as city_avg_total_amenities
+    from amenity_raw
+),
+
 amenities as (
     select
-        neighbourhood_id,
-        amenity_index as amenity_score,
-        total_amenities_per_1000
-    from {{ ref('mart_neighbourhood_amenities') }}
-    where year = (select max(year) from {{ ref('mart_neighbourhood_amenities') }})
+        ar.neighbourhood_id,
+        case
+            when ca.city_avg_total_amenities > 0
+            then round(ar.total_amenities_per_1000 / ca.city_avg_total_amenities * 100, 1)
+            else null
+        end as amenity_score,
+        ar.total_amenities_per_1000
+    from amenity_raw ar
+    cross join amenity_city_avg ca
 ),
 
 -- Compute scores
@@ -97,8 +115,8 @@ scored as (
             else null
         end as safety_score,
 
-        -- Affordability score: use neighbourhood-level affordability_index from housing mart
-        h.affordability_index as affordability_score,
+        -- Affordability score: use neighbourhood-level housing_affordability_index from housing mart
+        h.housing_affordability_index as affordability_score,
 
         -- Amenity score: use neighbourhood-level amenity_score from amenities mart
         a.amenity_score,

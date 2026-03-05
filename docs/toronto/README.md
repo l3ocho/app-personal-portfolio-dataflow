@@ -82,6 +82,7 @@ flowchart TD
         I4[int_neighbourhood__crime_summary]
         I5[int_rentals__neighbourhood_allocated]
         I6[int_toronto__neighbourhood_profile]
+        I7[int_neighbourhood__people]
     end
 
     subgraph Marts["mart_toronto (dbt tables — webapp reads here)"]
@@ -89,9 +90,8 @@ flowchart TD
         M2[mart_neighbourhood_overview]
         M3[mart_neighbourhood_housing]
         M4[mart_neighbourhood_housing_rentals]
-        M5[mart_neighbourhood_demographics]
+        M5[mart_neighbourhood_people]
         M6[mart_neighbourhood_safety]
-        M7[mart_neighbourhood_amenities]
         M8[mart_neighbourhood_profile]
     end
 
@@ -108,16 +108,18 @@ flowchart TD
     R6 & R7 --> ST6
 
     ST1 & ST2 & ST3 & ST4 & ST5 & ST6 --> I1
-    I1 --> I2 & I3 & I4 & I5
+    I1 --> I2 & I3 & I4 & I5 & I7
+    I3 --> I7
     ST3 --> I6
 
     I1 --> M3 & M6
     I2 --> M4
-    I3 --> M8
-    I4 --> M7
-    I5 --> M5
-    I6 --> M9
+    I5 --> M4
+    I4 --> M6
+    I6 --> M8
+    I7 --> M5
     ST1 --> M1 & M2
+    I3 --> M2
 ```
 
 ---
@@ -170,7 +172,8 @@ flowchart TD
 |-------|---------|---------------|
 | `int_neighbourhood__foundation` | **Central hub** — CPI imputation + 50+ extended scalars via INNER JOIN to census_extended (filters to 2021 only). Base for all analytical marts. | housing, amenities, demographics marts |
 | `int_neighbourhood__housing` | Housing metrics with dwelling / bedroom / construction period pivot CTEs | `mart_neighbourhood_housing` |
-| `int_neighbourhood__amenity_scores` | Amenity accessibility scores + commute pivot CTEs + `car_dependency_index` | `mart_neighbourhood_amenities` |
+| `int_neighbourhood__amenity_scores` | Amenity accessibility scores + commute pivot CTEs + `car_dependency_index` | `int_neighbourhood__people`, `mart_neighbourhood_overview` |
+| `int_neighbourhood__people` | **Unified people view** — joins foundation + amenity_scores; computes city averages, indices, amenity tier, tenure diversity, commute pcts | `mart_neighbourhood_people` |
 | `int_neighbourhood__crime_summary` | Crime rate calculations aggregated by year | `mart_neighbourhood_safety` |
 | `int_neighbourhood__demographics` | ⚠️ Soft-deprecated — reads from foundation; kept for backward compat | (deprecated, do not reference) |
 | `int_rentals__annual` | Annual CMHC rental aggregations at zone grain | `int_rentals__neighbourhood_allocated` |
@@ -191,9 +194,8 @@ flowchart TD
 | `mart_neighbourhood_overview` | neighbourhood | Composite livability scores, summary indicators |
 | `mart_neighbourhood_housing` | neighbourhood × year | 75+ housing columns: dwelling pivots, bedroom pivots, construction period pivots, shelter costs, fit scores |
 | `mart_neighbourhood_housing_rentals` | neighbourhood × bedroom × year | CMHC rentals disaggregated to neighbourhood grain (4,424 rows) |
-| `mart_neighbourhood_demographics` | neighbourhood × year | Population, income, age, education, diversity indices, profile summary |
+| `mart_neighbourhood_people` | neighbourhood | **Unified people mart** — demographics, amenities, commute patterns. 158 rows, latest year only. Replaces deprecated `mart_neighbourhood_demographics` + `mart_neighbourhood_amenities`. |
 | `mart_neighbourhood_safety` | neighbourhood × year | Crime counts and rates by type |
-| `mart_neighbourhood_amenities` | neighbourhood | Amenity scores, commute pivots (6 modes, 5 durations, 4 destinations), `car_dependency_index` |
 | `mart_neighbourhood_profile` | neighbourhood × category × subcategory | Full 22-category community profile with `indent_level`, `category_total`, `is_subtotal` |
 
 </details>

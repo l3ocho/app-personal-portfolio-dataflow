@@ -467,72 +467,167 @@ Canonical neighbourhood boundaries for map rendering.
 **Grain:** 158 rows (one per neighbourhood)
 **FK target for:** All analytical Toronto marts via `neighbourhood_id`
 
-#### `mart_neighbourhood_overview`
-Grain: neighbourhood × year. Composite livability score and top-level summary metrics.
+#### `mart_neighbourhood_livability`
+Grain: neighbourhood × year (2014-2025). Composite livability score and top-level summary metrics.
 
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
+| `year` | INTEGER | Analysis year (2014-2025) |
+| `population` | INTEGER | Census population (most recent available) |
+| `median_household_income` | NUMERIC | CPI-adjusted to 2021 dollars |
+| `safety_score` | NUMERIC | Crime rate percentile (0-100, higher = safer) |
+| `affordability_score` | NUMERIC | Housing affordability index |
+| `amenity_score` | NUMERIC | Amenity accessibility normalized score |
+| `livability_score` | NUMERIC | Composite (30% safety + 40% affordability + 30% amenity) |
+| `crime_rate_per_100k` | NUMERIC | Raw crime rate per 100,000 |
+| `rent_to_income_pct` | NUMERIC | Rental affordability ratio (%) |
+| `avg_rent_2bed` | NUMERIC | Average 2-bedroom rent (CAD) |
+| `vacancy_rate` | NUMERIC | Rental vacancy percentage |
+| `total_amenities_per_1000` | NUMERIC | Density of parks, schools, transit |
+
+**Expected rows:** ~1,738 (158 neighbourhoods × 12 years)
 
 #### `mart_neighbourhood_housing`
-Grain: neighbourhood × census year. Comprehensive housing analysis (75+ columns).
+Grain: neighbourhood × rental year. Unified housing analysis mart.
 
-Includes: dwelling type pivots (7 types), bedroom count pivots (5 sizes), construction period pivots (8 buckets), shelter cost scalars, affordability rates, composite fit scores (`family_housing_fit`, `couple_housing_fit`, `singles_housing_fit`).
+**Replaces:** former `mart_neighbourhood_housing` (scalar census-only) + deleted `mart_neighbourhood_housing_rentals` (long format bedroom × year). Bedroom-type metrics are now pivoted to wide format (4 columns per metric).
+
+**Excluded columns** (available in `mart_neighbourhood_people` to avoid duplication): `median_household_income`, `average_dwelling_value`, `income_quintile`, shelter costs, dwelling/bedroom/construction period pivots.
 
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
-**Expected rows:** ~316
-
-#### `mart_neighbourhood_housing_rentals`
-Grain: neighbourhood × bedroom type × year. CMHC rental data disaggregated from CMHC zones to neighbourhood grain via area-weighted crosswalk.
-
-Replaces the deprecated `mart_toronto_rentals` (zone grain).
+**Expected rows:** ~(rental years × 158)
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
-| `bedroom_type` | VARCHAR | bachelor / 1-bed / 2-bed / 3+bed / total |
-| `year` | INTEGER | Survey year |
-| `avg_rent` | NUMERIC | Area-weighted average rent |
-| `vacancy_rate` | NUMERIC | Area-weighted vacancy rate |
-| `universe` | INTEGER | Estimated unit count |
+| `year` | INTEGER | Rental year |
+| `census_year` | INTEGER | Most recent census year ≤ rental year |
+| `housing_occupied_owner_pct` | NUMERIC | % dwellings owner-occupied |
+| `housing_occupied_renter_pct` | NUMERIC | % dwellings renter-occupied |
+| `housing_rent_bachelor_avg` | NUMERIC | Area-weighted avg rent — bachelor units |
+| `housing_rent_1bed_avg` | NUMERIC | Area-weighted avg rent — 1-bedroom units |
+| `housing_rent_2bed_avg` | NUMERIC | Area-weighted avg rent — 2-bedroom units (primary affordability reference) |
+| `housing_rent_3bed_avg` | NUMERIC | Area-weighted avg rent — 3-bedroom units |
+| `housing_rent_yoy_bachelor` | NUMERIC | YoY rent change (absolute) — bachelor, from CMHC source |
+| `housing_rent_yoy_1bed` | NUMERIC | YoY rent change (absolute) — 1-bed, from CMHC source |
+| `housing_rent_yoy_2bed` | NUMERIC | YoY rent change (absolute) — 2-bed, from CMHC source |
+| `housing_rent_yoy_3bed` | NUMERIC | YoY rent change (absolute) — 3-bed, from CMHC source |
+| `housing_rent_yoy_pct_bachelor` | NUMERIC | YoY rent change % — bachelor (computed from allocated rents) |
+| `housing_rent_yoy_pct_1bed` | NUMERIC | YoY rent change % — 1-bed (computed from allocated rents) |
+| `housing_rent_yoy_pct_2bed` | NUMERIC | YoY rent change % — 2-bed (computed from allocated rents) |
+| `housing_rent_yoy_pct_3bed` | NUMERIC | YoY rent change % — 3-bed (computed from allocated rents) |
+| `housing_vacancy_rate_bachelor` | NUMERIC | Area-weighted vacancy rate — bachelor |
+| `housing_vacancy_rate_1bed` | NUMERIC | Area-weighted vacancy rate — 1-bed |
+| `housing_vacancy_rate_2bed` | NUMERIC | Area-weighted vacancy rate — 2-bed |
+| `housing_vacancy_rate_3bed` | NUMERIC | Area-weighted vacancy rate — 3-bed |
+| `housing_turnover_rate_bachelor` | NUMERIC | Area-weighted turnover rate — bachelor |
+| `housing_turnover_rate_1bed` | NUMERIC | Area-weighted turnover rate — 1-bed |
+| `housing_turnover_rate_2bed` | NUMERIC | Area-weighted turnover rate — 2-bed |
+| `housing_turnover_rate_3bed` | NUMERIC | Area-weighted turnover rate — 3-bed |
+| `housing_rental_universe_est_bachelor` | NUMERIC | Rental universe estimate (area-weighted) — bachelor |
+| `housing_rental_universe_est_1bed` | NUMERIC | Rental universe estimate (area-weighted) — 1-bed |
+| `housing_rental_universe_est_2bed` | NUMERIC | Rental universe estimate (area-weighted) — 2-bed |
+| `housing_rental_universe_est_3bed` | NUMERIC | Rental universe estimate (area-weighted) — 3-bed |
+| `housing_rental_units` | NUMERIC | Total rental units (sum across all bedroom types) |
+| `housing_rent2income_pct` | NUMERIC | Rent-to-income ratio. Formula: (2bed_avg_rent × 12) / median_income × 100 |
+| `housing_affordable` | BOOLEAN | TRUE when 2-bed annual rent ≤ 30% of median household income |
+| `housing_affordability_index` | NUMERIC | 100 = city average affordability for the year |
+| `housing_affordability_pressure_score` | NUMERIC | Composite 0–100: rent burden (50%) + renter share (30%) + low vacancy (20%) |
+| `housing_turnover_rate` | NUMERIC | Turnover rate scalar — 2-bed value (backward-compat single-value reference) |
 
-> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
+#### `mart_neighbourhood_people`
+Grain: one row per neighbourhood per census year (316 rows: 158 × 2). Unified people profile combining demographics, amenities, commute patterns, and geometry. Replaces deprecated `mart_neighbourhood_demographics` and `mart_neighbourhood_amenities`.
 
-**Expected rows:** ~4,424
-
-#### `mart_neighbourhood_demographics`
-Grain: neighbourhood × census year. Income, age, population, and housing tenure metrics (25 columns).
+**BREAKING CHANGE (Sprint 16):** grain changed from 158 to 316 rows; `census_year` column added. Webapp queries must filter by `census_year` or aggregate across years.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `neighbourhood_id` | INTEGER | FK → mart_neighbourhood_geometry |
-| `year` | INTEGER | Census year |
-| `population` | INTEGER | |
-| `land_area_sqkm` | NUMERIC | |
-| `population_density` | NUMERIC | |
-| `pop_0_to_14` | INTEGER | Population aged 0–14 (children) |
-| `pop_15_to_24` | INTEGER | Population aged 15–24 (youth) |
-| `pop_25_to_64` | INTEGER | Population aged 25–64 (working age) |
-| `pop_65_plus` | INTEGER | Population aged 65+ (seniors) |
-| `median_household_income` | NUMERIC | CPI-adjusted to 2021 dollars |
-| `average_household_income` | NUMERIC | CPI-adjusted to 2021 dollars |
-| `income_quintile` | INTEGER | 1–5 (1 = lowest) |
-| `is_imputed` | BOOLEAN | TRUE for 2016–2020 income values |
-| `income_index` | NUMERIC | 100 = city average |
-| `median_age` | NUMERIC | |
-| `unemployment_rate` | NUMERIC | |
-| `education_bachelors_pct` | NUMERIC | |
-| `age_index` | NUMERIC | 100 = city average |
-| `pct_owner_occupied` | NUMERIC | |
-| `pct_renter_occupied` | NUMERIC | |
-| `average_dwelling_value` | NUMERIC | |
-| `tenure_diversity_index` | NUMERIC | Shannon entropy on owner/renter split |
-| `city_avg_income` | NUMERIC | City-wide average for comparison |
-| `city_avg_age` | NUMERIC | City-wide average for comparison |
-| `city_avg_unemployment` | NUMERIC | City-wide average for comparison |
+| `neighbourhood_id` | INTEGER | Composite PK with census_year / FK → mart_neighbourhood_geometry |
+| `census_year` | INTEGER | Census year (2016 or 2021). Grain key. |
+| `neighbourhood_name` | VARCHAR | Official neighbourhood name |
+| `geometry` | GEOMETRY | Neighbourhood boundary polygon |
+| `land_area_sqkm` | NUMERIC | Land area in square km |
+| `pop` | INTEGER | Total population (census year) |
+| `pop_density` | NUMERIC | Population per square km |
+| `pop_0_to_14` | INTEGER | Population aged 0–14 |
+| `pop_15_to_24` | INTEGER | Population aged 15–24 |
+| `pop_25_to_64` | INTEGER | Population aged 25–64 |
+| `pop_65_plus` | INTEGER | Population aged 65+ |
+| `age_md` | NUMERIC | Median age |
+| `age_city_avg` | NUMERIC | City-wide average median age |
+| `age_index` | NUMERIC | 100 = city average age |
+| `edu_bachelors_pct` | NUMERIC | % with bachelor's degree or higher |
+| `edu_nonbachelors_pct` | NUMERIC | 100 − edu_bachelors_pct |
+| `income_household_md` | NUMERIC | Median household income (CPI-adjusted) |
+| `income_household_avg` | NUMERIC | Average household income (CPI-adjusted) |
+| `income_quintile` | INTEGER | City-wide quintile (1=lowest, 5=highest) |
+| `is_imputed` | BOOLEAN | TRUE for CPI-adjusted 2016–2020 values |
+| `income_city_avg` | NUMERIC | City-wide average median income |
+| `income_index` | NUMERIC | 100 = city average income |
+| `unemployment_rate` | NUMERIC | Neighbourhood unemployment rate |
+| `unemployment_city_rate` | NUMERIC | City-wide average unemployment rate |
+| `unemployment_index` | NUMERIC | 100 = city average unemployment |
+| `housing_occupied_owner` | NUMERIC | % owner-occupied dwellings |
+| `housing_occupied_renter` | NUMERIC | % renter-occupied dwellings |
+| `housing_dwelling_value_avg` | NUMERIC | Average dwelling value |
+| `housing_tenure_diversity_index` | NUMERIC | Herfindahl complement (0=single tenure, ~50=mixed) |
+| `amenities_parks` | INTEGER | Raw park count |
+| `amenities_parks_1k` | NUMERIC | Parks per 1000 pop |
+| `amenities_parks_city_1k` | NUMERIC | City avg parks per 1000 pop |
+| `amenities_parks_index` | NUMERIC | 100 = city average |
+| `amenities_schools` | INTEGER | Raw school count |
+| `amenities_schools_1k` | NUMERIC | Schools per 1000 pop |
+| `amenities_schools_city_1k` | NUMERIC | City avg schools per 1000 pop |
+| `amenities_schools_index` | NUMERIC | 100 = city average |
+| `amenities_libraries` | INTEGER | Raw library count |
+| `amenities_libraries_1k` | NUMERIC | Libraries per 1000 pop (computed) |
+| `amenities_libraries_city_1k` | NUMERIC | City avg libraries per 1000 pop |
+| `amenities_libraries_index` | NUMERIC | 100 = city average |
+| `amenities_childcare` | INTEGER | Raw childcare count |
+| `amenities_childcare_1k` | NUMERIC | Childcare per 1000 pop (computed) |
+| `amenities_childcare_city_1k` | NUMERIC | City avg childcare per 1000 pop |
+| `amenities_childcare_index` | NUMERIC | 100 = city average |
+| `amenities_commcentres` | INTEGER | Raw community centre count |
+| `amenities_commcentres_1k` | NUMERIC | Community centres per 1000 pop (computed) |
+| `amenities_commcentres_city_1k` | NUMERIC | City avg community centres per 1000 pop |
+| `amenities_commcentres_index` | NUMERIC | 100 = city average |
+| `amenities` | INTEGER | Total raw amenity count |
+| `amenities_1k` | NUMERIC | Total amenities per 1000 pop |
+| `amenities_city_1k` | NUMERIC | City avg total amenities per 1000 pop |
+| `amenities_index` | NUMERIC | 100 = city average total amenities |
+| `amenities_tier` | INTEGER | Amenity tier 1–5 (1=best) by ntile(5) |
+| `amenities_per_sqkm` | NUMERIC | Total amenities per square km |
+| `transit_count` | INTEGER | Raw transit stop count |
+| `transit_1k` | NUMERIC | Transit stops per 1000 pop |
+| `transit_city_1k` | NUMERIC | City avg transit stops per 1000 pop |
+| `transit_index` | NUMERIC | 100 = city average transit access |
+| `commute_car` | INTEGER | Car commuters (raw count) |
+| `commute_car_driver` | INTEGER | Car driver commuters |
+| `commute_car_passenger` | INTEGER | Car passenger commuters |
+| `commute_transit` | INTEGER | Public transit commuters |
+| `commute_walk` | INTEGER | Walking commuters |
+| `commute_bicycle` | INTEGER | Bicycle commuters |
+| `commute_other` | INTEGER | Other mode commuters |
+| `commute_outside_canada` | INTEGER | Worked outside Canada |
+| `commute_usual_workplace` | INTEGER | Usual place of work |
+| `commute_work_from_home` | INTEGER | Worked at home |
+| `commute_no_fixed_address` | INTEGER | No fixed workplace |
+| `car_dependency_pct` | NUMERIC | % commuters using car |
+| `commute_car_pct` | NUMERIC | % commuters using car |
+| `commute_transit_pct` | NUMERIC | % commuters using public transit |
+| `commute_active_pct` | NUMERIC | % commuters walking or cycling |
+| `commute_under_15min` | INTEGER | < 15 min commuters |
+| `commute_15_29min` | INTEGER | 15–29 min commuters |
+| `commute_30_44min` | INTEGER | 30–44 min commuters |
+| `commute_45_59min` | INTEGER | 45–59 min commuters |
+| `commute_above_60min` | INTEGER | 60+ min commuters |
+| `commute_long_pct` | NUMERIC | % commuters with 45+ min commute |
 
-> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
-
-**Expected rows:** ~316
+**Expected rows:** 316 (158 neighbourhoods × 2 census years)
 
 #### `mart_neighbourhood_safety`
 Grain: neighbourhood × year. Crime rate calculations by type.
@@ -540,13 +635,6 @@ Grain: neighbourhood × year. Crime rate calculations by type.
 > Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 **Expected rows:** varies by available crime years
-
-#### `mart_neighbourhood_amenities`
-Grain: neighbourhood × year. Amenity accessibility scores, commute mode/duration/destination pivots, car dependency index (35+ columns).
-
-Commute pivots sourced from `fact_neighbourhood_profile` profile categories: commute_mode (6 modes), commute_duration (5 buckets), commute_destination (4 destinations). `car_dependency_index` is a composite score.
-
-> Join to `mart_neighbourhood_geometry` via `neighbourhood_id` for name and geometry.
 
 #### `mart_neighbourhood_profile`
 Grain: neighbourhood × census year × category × subcategory. Full community profile breakdown.
@@ -574,6 +662,7 @@ Grain: neighbourhood × census year × category × subcategory. Full community p
 
 ---
 
+
 ### Football Marts (`mart_football`)
 
 #### `mart_football_club_rankings`
@@ -599,4 +688,4 @@ All geometry columns use **SRID 4326 (WGS84)** for compatibility with web mappin
 
 ---
 
-*Last Updated: 2026-02-24*
+*Last Updated: 2026-03-04*
