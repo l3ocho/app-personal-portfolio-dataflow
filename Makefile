@@ -9,6 +9,10 @@ PYTHON := $(VENV)/bin/python3
 PIP := $(VENV)/bin/pip
 DOCKER_COMPOSE := docker compose
 
+# Logging
+LOG_DIR := logs
+LOG_TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
+
 # Architecture detection for Docker images
 ARCH := $(shell uname -m)
 ifeq ($(ARCH),aarch64)
@@ -116,21 +120,25 @@ db-reset: ## Drop and recreate database (DESTRUCTIVE)
 # Domain-specific data loading
 load-toronto: ## Load Toronto data from APIs
 	@echo "$(GREEN)Loading Toronto neighbourhood data...$(NC)"
-	$(PYTHON) scripts/data/load_toronto_data.py
+	@mkdir -p $(LOG_DIR)
+	$(PYTHON) scripts/data/load_toronto_data.py 2>&1 | tee $(LOG_DIR)/etl_toronto_$(LOG_TIMESTAMP).log
 	@echo "$(YELLOW)Note: seed_amenity_data.py skipped - uses deprecated column names$(NC)"
 	@echo "$(YELLOW)Data already properly loaded via dbt transformations$(NC)"
 
 load-toronto-only: ## Load Toronto data without running dbt or seeding
 	@echo "$(GREEN)Loading Toronto data (skip dbt)...$(NC)"
-	$(PYTHON) scripts/data/load_toronto_data.py --skip-dbt
+	@mkdir -p $(LOG_DIR)
+	$(PYTHON) scripts/data/load_toronto_data.py --skip-dbt 2>&1 | tee $(LOG_DIR)/etl_toronto_$(LOG_TIMESTAMP).log
 
 load-football: ## Load football data from salimt and MLSPA sources (includes dbt)
 	@echo "$(GREEN)Loading football data...$(NC)"
-	$(PYTHON) scripts/data/load_football_data.py
+	@mkdir -p $(LOG_DIR)
+	$(PYTHON) scripts/data/load_football_data.py 2>&1 | tee $(LOG_DIR)/etl_football_$(LOG_TIMESTAMP).log
 
 load-football-only: ## Load football data without running dbt
 	@echo "$(GREEN)Loading football data (skip dbt)...$(NC)"
-	$(PYTHON) scripts/data/load_football_data.py --skip-dbt
+	@mkdir -p $(LOG_DIR)
+	$(PYTHON) scripts/data/load_football_data.py --skip-dbt 2>&1 | tee $(LOG_DIR)/etl_football_$(LOG_TIMESTAMP).log
 
 # Aggregate data loading
 load-data: load-toronto load-football ## Load all project data (Toronto + Football)
