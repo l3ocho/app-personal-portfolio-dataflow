@@ -261,10 +261,6 @@ models:
         description: "Count: economic immigrants"
       - name: profile_admission_economic_pct
         description: "Percentage: economic immigrants"
-      - name: profile_pob_canada
-        description: "Count: place of birth is canada"
-      - name: profile_pob_canada_pct
-        description: "Percentage: place of birth is canada"
       - name: profile_indigenous_yes
         description: "Count: indigenous identity"
       - name: profile_indigenous_yes_pct

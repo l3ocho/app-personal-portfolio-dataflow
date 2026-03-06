@@ -331,10 +331,6 @@ models:
         description: "Count: economic immigrants (of admission_category)"
       - name: profile_admission_economic_pct
         description: "Percentage: economic immigrants"
-      - name: profile_pob_canada
-        description: "Count: place of birth is Canada (of place_of_birth category)"
-      - name: profile_pob_canada_pct
-        description: "Percentage: born in Canada"
       - name: profile_indigenous_yes
         description: "Count: indigenous identity (of indigenous_identity category)"
       - name: profile_indigenous_yes_pct
@@ -355,4 +351,3 @@ models:
         description: "Count: suitable housing (of housing_suitability category)"
       - name: profile_suit_suitable_pct
         description: "Percentage: suitable housing"
-

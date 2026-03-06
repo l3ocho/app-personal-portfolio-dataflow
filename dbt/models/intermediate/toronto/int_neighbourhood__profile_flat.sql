@@ -201,11 +201,6 @@ pob as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'canada' and indent_level = 2
-            then count end)                                     as profile_pob_canada,
-        max(case when subcategory = 'canada' and indent_level = 2
-            then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
-                                                                as profile_pob_canada_pct,
         max(case when subcategory = 'africa' and level = 'continent'
             then count end)                                     as profile_pob_africa,
         max(case when subcategory = 'africa' and level = 'continent'
@@ -242,11 +237,6 @@ pob_recent as (
     select
         neighbourhood_id,
         census_year,
-        max(case when subcategory = 'canada' and indent_level = 2
-            then count end)                                     as profile_pob_recent_canada,
-        max(case when subcategory = 'canada' and indent_level = 2
-            then round(count::numeric / nullif(cat_total, 0) * 100, 2) end)
-                                                                as profile_pob_recent_canada_pct,
         max(case when subcategory = 'africa' and level = 'continent'
             then count end)                                     as profile_pob_recent_africa,
         max(case when subcategory = 'africa' and level = 'continent'
@@ -449,14 +439,12 @@ final as (
         ad.profile_admission_refugee,       ad.profile_admission_refugee_pct,
         ad.profile_admission_other,         ad.profile_admission_other_pct,
         -- place_of_birth
-        pb.profile_pob_canada,              pb.profile_pob_canada_pct,
         pb.profile_pob_africa,              pb.profile_pob_africa_pct,
         pb.profile_pob_americas,            pb.profile_pob_americas_pct,
         pb.profile_pob_asia,                pb.profile_pob_asia_pct,
         pb.profile_pob_europe,              pb.profile_pob_europe_pct,
         pb.profile_pob_oceania,             pb.profile_pob_oceania_pct,
         -- place_of_birth_recent
-        pr.profile_pob_recent_canada,       pr.profile_pob_recent_canada_pct,
         pr.profile_pob_recent_africa,       pr.profile_pob_recent_africa_pct,
         pr.profile_pob_recent_americas,     pr.profile_pob_recent_americas_pct,
         pr.profile_pob_recent_asia,         pr.profile_pob_recent_asia_pct,
