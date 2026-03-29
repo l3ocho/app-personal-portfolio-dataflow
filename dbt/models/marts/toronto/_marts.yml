@@ -100,12 +100,46 @@ models:
         description: "Composite affordability pressure score (0–100). Weights: 2-bed rent-to-income burden (50%) + renter share (30%) + low vacancy penalty (20%)."
       - name: housing_turnover_rate
         description: "Turnover rate scalar reference — 2-bed value. For callers expecting a single turnover_rate column."
+
+  - name: mart_neighbourhood_livability
+    description: >
+      Composite livability scores by neighbourhood × year. Grain: one row per
+      neighbourhood per rental year (same spine as mart_neighbourhood_housing).
+      Stores only derived scores — raw metrics (crime_rate_per_100k, rents,
+      amenity counts) live in their domain marts.
+      livability_score is NULL when any component is missing (no imputation).
+      Expected NULLs: years before 2019 have no safety data, leaving
+      livability_score NULL for 2010–2018.
+    meta:
+      dashboard_tab: Livability
+    columns:
+      - name: neighbourhood_id
+        description: "Neighbourhood identifier"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('mart_neighbourhood_geometry')
+              field: neighbourhood_id
+      - name: year
+        description: "Year (rental year spine, same as mart_neighbourhood_housing)"
+        data_tests:
+          - not_null
+      - name: affordability_score
+        description: >
+          Housing affordability index (100 = city average for year).
+          Sourced from mart_neighbourhood_housing.housing_affordability_index.
+          NULL before CMHC rental data begins (before 2010).
+      - name: amenity_score
+        description: >
+          Amenities normalised to 0–100 operational range.
+          Formula: amenities_index / 2.5. Static (latest census year).
+          NULL if no amenity data for the neighbourhood.
       - name: livability_score
         description: >
           Composite livability score (0–100). Weights: safety_score (30%) +
-          housing_affordability_index (40%) + amenities_index/2.5 (30%).
-          NULL when any component is missing. Available from 2019 onward
-          (first year all three components have real data).
+          affordability_score (40%) + amenity_score (30%).
+          NULL when any component is missing.
+          Available from 2019 onward (first year all three components overlap).
 
   - name: mart_neighbourhood_safety
     description: >
@@ -168,10 +202,6 @@ models:
           - accepted_values:
               arguments:
                 values: [2016, 2021]
-      - name: neighbourhood_name
-        description: "Official neighbourhood name"
-        data_tests:
-          - not_null
       - name: pop
         description: "Total population (census year)"
       - name: pop_density
