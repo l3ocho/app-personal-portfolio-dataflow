@@ -1,0 +1,237 @@
+mart_table|column_name|column_data_type|column_description|dim_measure|measure_origin_column|calculation_formula
+mart_neighbourhood_geometry|neighbourhood_id|int|City-assigned neighbourhood identifier (PK)|dimension|stg_toronto__neighbourhoods.neighbourhood_id|direct
+mart_neighbourhood_geometry|neighbourhood_name|string|Neighbourhood display name|dimension|stg_toronto__neighbourhoods.neighbourhood_name|direct
+mart_neighbourhood_geometry|geometry|geometry|PostGIS polygon boundary in WGS84 (EPSG:4326)|dimension|stg_toronto__neighbourhoods.geometry|direct
+mart_neighbourhood_safety|neighbourhood_id|int|Neighbourhood identifier (FK)|dimension|int_neighbourhood__crime_summary.neighbourhood_id|direct
+mart_neighbourhood_safety|year|int|Year of crime data (2016-2025)|dimension|int_neighbourhood__crime_summary.year|direct
+mart_neighbourhood_safety|total_incidents|int|Total reported crime incidents in the year|measure|int_neighbourhood__crime_summary.total_incidents|direct
+mart_neighbourhood_safety|crime_rate_per_100k|float|Crime incidents per 100k population|measure|int_neighbourhood__crime_summary.crime_rate_per_100k|direct
+mart_neighbourhood_safety|crime_yoy_change_pct|float|Year-over-year % change in crime rate|measure|int_neighbourhood__crime_summary.yoy_change_pct|direct
+mart_neighbourhood_safety|assault_count|int|Number of assault incidents|measure|int_neighbourhood__crime_summary.assault_count|direct
+mart_neighbourhood_safety|auto_theft_count|int|Number of auto theft incidents|measure|int_neighbourhood__crime_summary.auto_theft_count|direct
+mart_neighbourhood_safety|break_enter_count|int|Number of break-and-enter incidents|measure|int_neighbourhood__crime_summary.break_enter_count|direct
+mart_neighbourhood_safety|robbery_count|int|Number of robbery incidents|measure|int_neighbourhood__crime_summary.robbery_count|direct
+mart_neighbourhood_safety|theft_over_count|int|Number of theft over $5000 incidents|measure|int_neighbourhood__crime_summary.theft_over_count|direct
+mart_neighbourhood_safety|homicide_count|int|Number of homicide incidents|measure|int_neighbourhood__crime_summary.homicide_count|direct
+mart_neighbourhood_safety|safety_score|float|Safety percentile score (0-100; higher = safer) inverted from crime rate ranking|measure|int_neighbourhood__crime_summary.crime_rate_per_100k|ROUND((1 - PERCENT_RANK() OVER (PARTITION BY year ORDER BY crime_rate_per_100k)) * 100, 1)
+mart_neighbourhood_livability|neighbourhood_id|int|Neighbourhood identifier (FK)|dimension|stg_toronto__neighbourhoods.neighbourhood_id|direct
+mart_neighbourhood_livability|year|int|Analysis year (2014-2025)|dimension|int_year_spine.year|direct
+mart_neighbourhood_livability|population|int|Neighbourhood population — most recent census year <= analysis year|measure|stg_toronto__census.population|COALESCE(latest census_year <= year)
+mart_neighbourhood_livability|median_household_income|float|Median household income — neighbourhood-level where available then CMA fallback|measure|stg_toronto__census.median_household_income / int_census__toronto_cma.median_household_income|COALESCE(neighbourhood_level_income, cma_level_income)
+mart_neighbourhood_livability|safety_score|float|Safety score (0-100; higher = safer) inverted percentile of crime rate within year|measure|int_neighbourhood__crime_summary.crime_rate_per_100k|ROUND(100 - PERCENT_RANK() OVER (PARTITION BY year ORDER BY crime_rate_per_100k) * 100, 1)
+mart_neighbourhood_livability|affordability_score|float|Housing affordability index score (100 = city average for that year)|measure|mart_neighbourhood_housing.housing_affordability_index|direct from mart_neighbourhood_housing
+mart_neighbourhood_livability|amenity_score|float|Amenity score relative to city average (100 = city avg) — based on amenities per 1000 residents|measure|int_neighbourhood__amenity_scores.total_amenities_per_1000|ROUND(total_amenities_per_1000 / city_avg_total_amenities * 100, 1)
+mart_neighbourhood_livability|livability_score|float|Composite livability score (0-100) — weighted composite of safety + affordability + amenities|measure|safety_score + affordability_score + amenity_score|ROUND(COALESCE(safety_score, 50)*0.30 + COALESCE(affordability_score, 50)*0.40 + COALESCE(amenity_score/2.5, 50)*0.30, 1)
+mart_neighbourhood_livability|crime_rate_per_100k|float|Crime incidents per 100k population (raw metric)|measure|int_neighbourhood__crime_summary.crime_rate_per_100k|direct
+mart_neighbourhood_livability|rent_to_income_pct|float|Annual 2-bed rent as % of CMA median household income|measure|int_rentals__toronto_cma.avg_rent_standard + int_census__toronto_cma.median_household_income|ROUND(avg_rent_standard * 12 / median_household_income * 100, 2)
+mart_neighbourhood_livability|avg_rent_2bed|float|Average 2-bedroom rent at CMA level (standard unit)|measure|int_rentals__toronto_cma.avg_rent_standard|direct
+mart_neighbourhood_livability|vacancy_rate|float|CMA-level rental vacancy rate|measure|int_rentals__toronto_cma.vacancy_rate|direct
+mart_neighbourhood_livability|total_amenities_per_1000|float|Total amenities (parks + schools + libraries + childcare + community centres) per 1000 residents|measure|int_neighbourhood__amenity_scores.total_amenities_per_1000|direct
+mart_neighbourhood_housing|neighbourhood_id|int|Neighbourhood identifier (FK)|dimension|int_neighbourhood__housing.neighbourhood_id|direct
+mart_neighbourhood_housing|year|int|Rental data year|dimension|int_rentals__annual.year|direct
+mart_neighbourhood_housing|census_year|int|Most recent census year used for this row (2016 or 2021)|dimension|int_neighbourhood__housing.census_year|direct
+mart_neighbourhood_housing|housing_occupied_owner_pct|float|% of occupied dwellings that are owner-occupied|measure|stg_toronto__census.pct_owner_occupied|direct from int_neighbourhood__housing
+mart_neighbourhood_housing|housing_occupied_renter_pct|float|% of occupied dwellings that are renter-occupied|measure|stg_toronto__census.pct_renter_occupied|direct from int_neighbourhood__housing
+mart_neighbourhood_housing|housing_rent_bachelor_avg|float|Average bachelor unit rent (area-weighted from CMHC zones)|measure|int_rentals__annual.avg_rent — bedroom_type='bachelor'|SUM(avg_rent * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_1bed_avg|float|Average 1-bedroom rent (area-weighted from CMHC zones)|measure|int_rentals__annual.avg_rent — bedroom_type='1bed'|SUM(avg_rent * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_2bed_avg|float|Average 2-bedroom rent (area-weighted from CMHC zones)|measure|int_rentals__annual.avg_rent — bedroom_type='2bed'|SUM(avg_rent * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_3bed_avg|float|Average 3-bedroom rent (area-weighted from CMHC zones)|measure|int_rentals__annual.avg_rent — bedroom_type='3bed'|SUM(avg_rent * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_yoy_bachelor|float|Absolute year-over-year rent change for bachelor units (from CMHC source)|measure|int_rentals__annual.year_over_year_rent_change — bedroom_type='bachelor'|SUM(year_over_year_rent_change * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_yoy_1bed|float|Absolute year-over-year rent change for 1-bed units|measure|int_rentals__annual.year_over_year_rent_change — bedroom_type='1bed'|SUM(year_over_year_rent_change * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_yoy_2bed|float|Absolute year-over-year rent change for 2-bed units|measure|int_rentals__annual.year_over_year_rent_change — bedroom_type='2bed'|SUM(year_over_year_rent_change * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_yoy_3bed|float|Absolute year-over-year rent change for 3-bed units|measure|int_rentals__annual.year_over_year_rent_change — bedroom_type='3bed'|SUM(year_over_year_rent_change * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rent_yoy_pct_bachelor|float|% year-over-year rent change for bachelor units (neighbourhood-level calculation)|measure|rentals_allocated.avg_rent — bedroom_type='bachelor'|ROUND((avg_rent - LAG(avg_rent) OVER (PARTITION BY neighbourhood_id ORDER BY year)) / LAG(avg_rent) * 100, 2)
+mart_neighbourhood_housing|housing_rent_yoy_pct_1bed|float|% year-over-year rent change for 1-bed units|measure|rentals_allocated.avg_rent — bedroom_type='1bed'|ROUND((avg_rent - LAG(avg_rent) OVER (PARTITION BY neighbourhood_id ORDER BY year)) / LAG(avg_rent) * 100, 2)
+mart_neighbourhood_housing|housing_rent_yoy_pct_2bed|float|% year-over-year rent change for 2-bed units|measure|rentals_allocated.avg_rent — bedroom_type='2bed'|ROUND((avg_rent - LAG(avg_rent) OVER (PARTITION BY neighbourhood_id ORDER BY year)) / LAG(avg_rent) * 100, 2)
+mart_neighbourhood_housing|housing_rent_yoy_pct_3bed|float|% year-over-year rent change for 3-bed units|measure|rentals_allocated.avg_rent — bedroom_type='3bed'|ROUND((avg_rent - LAG(avg_rent) OVER (PARTITION BY neighbourhood_id ORDER BY year)) / LAG(avg_rent) * 100, 2)
+mart_neighbourhood_housing|housing_vacancy_rate_bachelor|float|Rental vacancy rate for bachelor units (area-weighted from CMHC zones)|measure|int_rentals__annual.vacancy_rate — bedroom_type='bachelor'|SUM(vacancy_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_vacancy_rate_1bed|float|Rental vacancy rate for 1-bed units|measure|int_rentals__annual.vacancy_rate — bedroom_type='1bed'|SUM(vacancy_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_vacancy_rate_2bed|float|Rental vacancy rate for 2-bed units|measure|int_rentals__annual.vacancy_rate — bedroom_type='2bed'|SUM(vacancy_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_vacancy_rate_3bed|float|Rental vacancy rate for 3-bed units|measure|int_rentals__annual.vacancy_rate — bedroom_type='3bed'|SUM(vacancy_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_turnover_rate_bachelor|float|Rental unit turnover rate for bachelor units (area-weighted)|measure|int_rentals__annual.turnover_rate — bedroom_type='bachelor'|SUM(turnover_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_turnover_rate_1bed|float|Rental unit turnover rate for 1-bed units|measure|int_rentals__annual.turnover_rate — bedroom_type='1bed'|SUM(turnover_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_turnover_rate_2bed|float|Rental unit turnover rate for 2-bed units|measure|int_rentals__annual.turnover_rate — bedroom_type='2bed'|SUM(turnover_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_turnover_rate_3bed|float|Rental unit turnover rate for 3-bed units|measure|int_rentals__annual.turnover_rate — bedroom_type='3bed'|SUM(turnover_rate * area_weight) / NULLIF(SUM(area_weight), 0)
+mart_neighbourhood_housing|housing_rental_universe_est_bachelor|float|Estimated total rental units for bachelor type (sum of weighted estimates)|measure|int_rentals__annual.rental_universe — bedroom_type='bachelor'|SUM(rental_universe * area_weight)
+mart_neighbourhood_housing|housing_rental_universe_est_1bed|float|Estimated total rental units for 1-bed type|measure|int_rentals__annual.rental_universe — bedroom_type='1bed'|SUM(rental_universe * area_weight)
+mart_neighbourhood_housing|housing_rental_universe_est_2bed|float|Estimated total rental units for 2-bed type|measure|int_rentals__annual.rental_universe — bedroom_type='2bed'|SUM(rental_universe * area_weight)
+mart_neighbourhood_housing|housing_rental_universe_est_3bed|float|Estimated total rental units for 3-bed type|measure|int_rentals__annual.rental_universe — bedroom_type='3bed'|SUM(rental_universe * area_weight)
+mart_neighbourhood_housing|housing_rental_units|float|Total estimated rental units across all bedroom types|measure|int_rentals__annual.rental_universe|ROUND(SUM(rental_universe_estimate) across all bedroom types, 0)
+mart_neighbourhood_housing|housing_rent2income_pct|float|Annual 2-bed rent as % of neighbourhood median income (affordability burden)|measure|int_neighbourhood__housing.median_household_income + housing_rent_2bed_avg|ROUND(housing_rent_2bed_avg * 12 / median_household_income * 100, 2)
+mart_neighbourhood_housing|housing_affordable|bool|True if annual 2-bed rent <= 30% of median household income|measure|housing_rent_2bed_avg + int_neighbourhood__housing.median_household_income|housing_rent_2bed_avg * 12 <= median_household_income * 0.30
+mart_neighbourhood_housing|housing_affordability_index|float|Affordability index (100 = city average for year) — higher = more expensive relative to city|measure|housing_rent_2bed_avg + int_neighbourhood__housing.median_household_income|ROUND((rent2income_pct / AVG(rent2income_pct) OVER (PARTITION BY year)) * 100, 1)
+mart_neighbourhood_housing|housing_affordability_pressure_score|float|Affordability pressure score (0-100) — weighted composite of rent burden + renter share + low vacancy|measure|housing_rent2income_pct + housing_occupied_renter_pct + housing_vacancy_rate_2bed|ROUND(LEAST(100, GREATEST(0, COALESCE(rent2income_pct, 0)*0.5 + COALESCE(pct_renter_occupied, 0)*0.3 + GREATEST(0, 10 - COALESCE(vacancy_rate_2bed*100, 10))*2)), 1)
+mart_neighbourhood_housing|housing_turnover_rate|float|Turnover rate scalar — 2-bed as primary proxy for callers needing single value|measure|housing_turnover_rate_2bed|= housing_turnover_rate_2bed
+mart_neighbourhood_housing|livability_score|float|Composite livability score (0-100) — safety 30% + affordability 40% + amenity 30%|measure|mart_neighbourhood_safety.safety_score + housing_affordability_index + mart_neighbourhood_people.amenities_index|ROUND(safety_score*0.30 + housing_affordability_index*0.40 + (amenities_index/2.5)*0.30, 1)
+mart_neighbourhood_people|neighbourhood_id|int|Neighbourhood identifier (FK)|dimension|stg_toronto__neighbourhoods.neighbourhood_id|direct
+mart_neighbourhood_people|neighbourhood_name|string|Neighbourhood display name|dimension|stg_toronto__neighbourhoods.neighbourhood_name|direct
+mart_neighbourhood_people|geometry|geometry|PostGIS polygon boundary in WGS84|dimension|stg_toronto__neighbourhoods.geometry|direct
+mart_neighbourhood_people|land_area_sqkm|float|Neighbourhood land area in km²|dimension|stg_toronto__neighbourhoods.land_area_sqkm|direct
+mart_neighbourhood_people|census_year|int|Census reference year (2016 or 2021)|dimension|int_neighbourhood__foundation.census_year|direct
+mart_neighbourhood_people|pop|int|Total population|measure|int_neighbourhood__foundation.population|direct
+mart_neighbourhood_people|pop_density|float|Population per km²|measure|int_neighbourhood__foundation.population / stg_toronto__neighbourhoods.land_area_sqkm|ROUND(population / NULLIF(land_area_sqkm, 0), 2)
+mart_neighbourhood_people|pop_0_to_14|int|Population aged 0-14 (from census extended — NULL for 2016)|measure|int_neighbourhood__foundation.pop_0_to_14|direct
+mart_neighbourhood_people|pop_15_to_24|int|Population aged 15-24|measure|int_neighbourhood__foundation.pop_15_to_24|direct
+mart_neighbourhood_people|pop_25_to_64|int|Population aged 25-64|measure|int_neighbourhood__foundation.pop_25_to_64|direct
+mart_neighbourhood_people|pop_65_plus|int|Population aged 65+|measure|int_neighbourhood__foundation.pop_65_plus|direct
+mart_neighbourhood_people|age_md|float|Median age of residents|measure|int_neighbourhood__foundation.median_age|direct
+mart_neighbourhood_people|age_city_avg|float|City-wide average median age (partitioned by census_year)|measure|int_neighbourhood__foundation.median_age|ROUND(AVG(median_age) OVER (PARTITION BY census_year), 2)
+mart_neighbourhood_people|age_index|float|Neighbourhood median age as index vs city average (100 = city avg)|measure|int_neighbourhood__foundation.median_age + age_city_avg|ROUND(median_age / city_avg_age * 100, 1)
+mart_neighbourhood_people|edu_bachelors_pct|float|% of population with bachelor's degree or higher|measure|int_neighbourhood__foundation.education_bachelors_pct|direct
+mart_neighbourhood_people|edu_nonbachelors_pct|float|% of population without bachelor's degree|measure|int_neighbourhood__foundation.education_bachelors_pct|ROUND(100 - education_bachelors_pct, 2)
+mart_neighbourhood_people|income_household_md|float|Median household income|measure|int_neighbourhood__foundation.median_household_income|direct
+mart_neighbourhood_people|income_household_avg|float|Average household income|measure|int_neighbourhood__foundation.average_household_income|direct
+mart_neighbourhood_people|income_quintile|int|Income quintile rank (1=lowest 20% to 5=highest 20%) within census year|measure|int_neighbourhood__foundation.income_quintile|direct
+mart_neighbourhood_people|is_imputed|bool|True if income was CPI-adjusted from 2021 (2016 data had no neighbourhood income)|measure|int_neighbourhood__foundation.is_imputed|direct
+mart_neighbourhood_people|income_city_avg|float|City-wide average of median household income (partitioned by census_year)|measure|int_neighbourhood__foundation.median_household_income|ROUND(AVG(median_household_income) OVER (PARTITION BY census_year), 2)
+mart_neighbourhood_people|income_index|float|Neighbourhood median income as index vs city average (100 = city avg)|measure|income_household_md + income_city_avg|ROUND(median_household_income / city_avg_income_md * 100, 1)
+mart_neighbourhood_people|unemployment_rate|float|Unemployment rate (%)|measure|int_neighbourhood__foundation.unemployment_rate|direct
+mart_neighbourhood_people|unemployment_city_rate|float|City-wide average unemployment rate (partitioned by census_year)|measure|int_neighbourhood__foundation.unemployment_rate|ROUND(AVG(unemployment_rate) OVER (PARTITION BY census_year), 4)
+mart_neighbourhood_people|unemployment_index|float|Neighbourhood unemployment rate as index vs city average (100 = city avg)|measure|unemployment_rate + unemployment_city_rate|ROUND(unemployment_rate / city_avg_unemployment * 100, 1)
+mart_neighbourhood_people|housing_occupied_owner|float|% of dwellings that are owner-occupied|measure|int_neighbourhood__foundation.pct_owner_occupied|direct
+mart_neighbourhood_people|housing_occupied_renter|float|% of dwellings that are renter-occupied|measure|int_neighbourhood__foundation.pct_renter_occupied|direct
+mart_neighbourhood_people|housing_dwelling_value_avg|float|Average dwelling value ($)|measure|int_neighbourhood__foundation.average_dwelling_value|direct
+mart_neighbourhood_people|housing_tenure_diversity_index|float|Herfindahl complement for tenure mix (0=uniform to ~50=perfectly mixed owner/renter)|measure|housing_occupied_owner + housing_occupied_renter|ROUND((1 - (POW(owner_pct/100, 2) + POW(renter_pct/100, 2))) * 100, 3)
+mart_neighbourhood_people|amenities_parks|int|Count of parks in the neighbourhood|measure|int_neighbourhood__amenity_scores.parks_count|direct
+mart_neighbourhood_people|amenities_parks_1k|float|Parks per 1000 residents|measure|int_neighbourhood__amenity_scores.parks_per_1000|direct
+mart_neighbourhood_people|amenities_parks_city_1k|float|City-wide average parks per 1000 residents|measure|int_neighbourhood__amenity_scores.parks_per_1000|ROUND(AVG(parks_per_1000) OVER (PARTITION BY census_year), 3)
+mart_neighbourhood_people|amenities_parks_index|float|Neighbourhood parks rate as index vs city average (100 = city avg)|measure|amenities_parks_1k + amenities_parks_city_1k|ROUND(parks_per_1000 / city_avg_parks_1k * 100, 1)
+mart_neighbourhood_people|amenities_schools|int|Count of schools in the neighbourhood|measure|int_neighbourhood__amenity_scores.schools_count|direct
+mart_neighbourhood_people|amenities_schools_1k|float|Schools per 1000 residents|measure|int_neighbourhood__amenity_scores.schools_per_1000|direct
+mart_neighbourhood_people|amenities_schools_city_1k|float|City-wide average schools per 1000 residents|measure|int_neighbourhood__amenity_scores.schools_per_1000|ROUND(AVG(schools_per_1000) OVER (PARTITION BY census_year), 3)
+mart_neighbourhood_people|amenities_schools_index|float|Neighbourhood schools rate as index vs city average (100 = city avg)|measure|amenities_schools_1k + amenities_schools_city_1k|ROUND(schools_per_1000 / city_avg_schools_1k * 100, 1)
+mart_neighbourhood_people|amenities_libraries|int|Count of libraries in the neighbourhood|measure|int_neighbourhood__amenity_scores.libraries_count|direct
+mart_neighbourhood_people|amenities_libraries_1k|float|Libraries per 1000 residents|measure|int_neighbourhood__amenity_scores.libraries_count + population|ROUND(libraries_count / NULLIF(population, 0) * 1000, 3)
+mart_neighbourhood_people|amenities_libraries_city_1k|float|City-wide average libraries per 1000 residents|measure|int_neighbourhood__amenity_scores.libraries_count|ROUND(AVG(libraries_count / NULLIF(population, 0) * 1000) OVER (PARTITION BY census_year), 3)
+mart_neighbourhood_people|amenities_libraries_index|float|Neighbourhood libraries rate as index vs city average (100 = city avg)|measure|amenities_libraries_1k + amenities_libraries_city_1k|ROUND(libraries_1k / city_avg_libraries_1k * 100, 1)
+mart_neighbourhood_people|amenities_childcare|int|Count of childcare facilities in the neighbourhood|measure|int_neighbourhood__amenity_scores.childcare_count|direct
+mart_neighbourhood_people|amenities_childcare_1k|float|Childcare facilities per 1000 residents|measure|int_neighbourhood__amenity_scores.childcare_count + population|ROUND(childcare_count / NULLIF(population, 0) * 1000, 3)
+mart_neighbourhood_people|amenities_childcare_city_1k|float|City-wide average childcare facilities per 1000 residents|measure|int_neighbourhood__amenity_scores.childcare_count|ROUND(AVG(childcare_count / NULLIF(population, 0) * 1000) OVER (PARTITION BY census_year), 3)
+mart_neighbourhood_people|amenities_childcare_index|float|Neighbourhood childcare rate as index vs city average (100 = city avg)|measure|amenities_childcare_1k + amenities_childcare_city_1k|ROUND(childcare_1k / city_avg_childcare_1k * 100, 1)
+mart_neighbourhood_people|amenities_commcentres|int|Count of community centres in the neighbourhood|measure|int_neighbourhood__amenity_scores.community_centres_count|direct
+mart_neighbourhood_people|amenities_commcentres_1k|float|Community centres per 1000 residents|measure|int_neighbourhood__amenity_scores.community_centres_count + population|ROUND(community_centres_count / NULLIF(population, 0) * 1000, 3)
+mart_neighbourhood_people|amenities_commcentres_city_1k|float|City-wide average community centres per 1000 residents|measure|int_neighbourhood__amenity_scores.community_centres_count|ROUND(AVG(community_centres_count / NULLIF(population, 0) * 1000) OVER (PARTITION BY census_year), 3)
+mart_neighbourhood_people|amenities_commcentres_index|float|Neighbourhood community centres rate as index vs city average (100 = city avg)|measure|amenities_commcentres_1k + amenities_commcentres_city_1k|ROUND(commcentres_1k / city_avg_commcentres_1k * 100, 1)
+mart_neighbourhood_people|amenities|int|Total amenity count (parks + schools + libraries + childcare + community centres)|measure|int_neighbourhood__amenity_scores.total_amenities|direct
+mart_neighbourhood_people|amenities_1k|float|Total amenities per 1000 residents|measure|int_neighbourhood__amenity_scores.total_amenities_per_1000|direct
+mart_neighbourhood_people|amenities_city_1k|float|City-wide average total amenities per 1000 residents|measure|int_neighbourhood__amenity_scores.total_amenities_per_1000|ROUND(AVG(total_amenities_per_1000) OVER (PARTITION BY census_year), 3)
+mart_neighbourhood_people|amenities_index|float|Neighbourhood total amenity rate as index vs city average (100 = city avg)|measure|amenities_1k + amenities_city_1k|ROUND(total_amenities_per_1000 / city_avg_amenities_1k * 100, 1)
+mart_neighbourhood_people|amenities_per_sqkm|float|Total amenities per km² of land area|measure|int_neighbourhood__amenity_scores.amenities_per_sqkm|direct
+mart_neighbourhood_people|amenities_tier|int|Amenity tier (1=best to 5=lowest) via NTILE(5) over total_amenities_per_1000 descending|measure|int_neighbourhood__amenity_scores.total_amenities_per_1000|NTILE(5) OVER (ORDER BY total_amenities_per_1000 DESC)
+mart_neighbourhood_people|transit_count|int|Count of transit stops/stations in the neighbourhood|measure|int_neighbourhood__amenity_scores.transit_count|direct
+mart_neighbourhood_people|transit_1k|float|Transit stops per 1000 residents|measure|int_neighbourhood__amenity_scores.transit_per_1000|direct
+mart_neighbourhood_people|transit_city_1k|float|City-wide average transit stops per 1000 residents|measure|int_neighbourhood__amenity_scores.transit_per_1000|ROUND(AVG(transit_per_1000) OVER (PARTITION BY census_year), 3)
+mart_neighbourhood_people|transit_index|float|Neighbourhood transit rate as index vs city average (100 = city avg)|measure|transit_1k + transit_city_1k|ROUND(transit_per_1000 / city_avg_transit_1k * 100, 1)
+mart_neighbourhood_people|commute_car|int|Number of workers commuting by car (driver + passenger)|measure|int_neighbourhood__amenity_scores.commute_car|direct
+mart_neighbourhood_people|commute_car_driver|int|Number of workers commuting as car drivers|measure|int_neighbourhood__amenity_scores.commute_car_driver|direct
+mart_neighbourhood_people|commute_car_passenger|int|Number of workers commuting as car passengers|measure|int_neighbourhood__amenity_scores.commute_car_passenger|direct
+mart_neighbourhood_people|commute_transit|int|Number of workers commuting by public transit|measure|int_neighbourhood__amenity_scores.commute_transit|direct
+mart_neighbourhood_people|commute_walk|int|Number of workers commuting on foot|measure|int_neighbourhood__amenity_scores.commute_walk|direct
+mart_neighbourhood_people|commute_bicycle|int|Number of workers commuting by bicycle|measure|int_neighbourhood__amenity_scores.commute_bicycle|direct
+mart_neighbourhood_people|commute_outside_canada|int|Number of workers with workplace outside Canada|measure|int_neighbourhood__amenity_scores.commute_outside_canada|direct
+mart_neighbourhood_people|commute_usual_workplace|int|Number of workers with a usual fixed workplace|measure|int_neighbourhood__amenity_scores.commute_usual_workplace|direct
+mart_neighbourhood_people|commute_work_from_home|int|Number of workers who work from home|measure|int_neighbourhood__amenity_scores.commute_work_from_home|direct
+mart_neighbourhood_people|commute_no_fixed_address|int|Number of workers with no fixed work address|measure|int_neighbourhood__amenity_scores.commute_no_fixed_address|direct
+mart_neighbourhood_people|commute_other|int|Number of workers using other commute modes|measure|int_neighbourhood__amenity_scores.commute_other|direct
+mart_neighbourhood_people|car_dependency_pct|float|% of workers who depend on a car as primary mode|measure|int_neighbourhood__amenity_scores.car_dependency_pct|direct
+mart_neighbourhood_people|commute_car_pct|float|% of workers commuting by car|measure|int_neighbourhood__amenity_scores.commute_car|ROUND(commute_car / NULLIF(car+transit+walk+bicycle+other, 0) * 100, 2)
+mart_neighbourhood_people|commute_transit_pct|float|% of workers commuting by transit|measure|int_neighbourhood__amenity_scores.commute_transit|ROUND(commute_transit / NULLIF(car+transit+walk+bicycle+other, 0) * 100, 2)
+mart_neighbourhood_people|commute_active_pct|float|% of workers commuting by active modes (walk + bicycle)|measure|int_neighbourhood__amenity_scores.commute_walk + commute_bicycle|ROUND((commute_walk + commute_bicycle) / NULLIF(car+transit+walk+bicycle+other, 0) * 100, 2)
+mart_neighbourhood_people|commute_under_15min|int|Number of workers with commute under 15 minutes|measure|int_neighbourhood__amenity_scores.commute_under_15min|direct
+mart_neighbourhood_people|commute_15_29min|int|Number of workers with commute 15-29 minutes|measure|int_neighbourhood__amenity_scores.commute_15_29min|direct
+mart_neighbourhood_people|commute_30_44min|int|Number of workers with commute 30-44 minutes|measure|int_neighbourhood__amenity_scores.commute_30_44min|direct
+mart_neighbourhood_people|commute_45_59min|int|Number of workers with commute 45-59 minutes|measure|int_neighbourhood__amenity_scores.commute_45_59min|direct
+mart_neighbourhood_people|commute_above_60min|int|Number of workers with commute 60+ minutes|measure|int_neighbourhood__amenity_scores.commute_60min_plus|direct
+mart_neighbourhood_people|commute_long_pct|float|% of workers with commute >= 45 minutes (long commute)|measure|commute_45_59min + commute_above_60min|ROUND((commute_45_59min + commute_60min_plus) / NULLIF(total_workers, 0) * 100, 2)
+mart_neighbourhood_profile|neighbourhood_id|int|Neighbourhood identifier (FK)|dimension|int_neighbourhood__profile_flat.neighbourhood_id|direct
+mart_neighbourhood_profile|census_year|int|Census reference year (2021 only for current data)|dimension|int_neighbourhood__profile_flat.census_year|direct
+mart_neighbourhood_profile|profile_imm_immigrant|int|Count of immigrants in the neighbourhood|measure|raw_toronto.fact_census_extended (immigration category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_imm_immigrant_pct|float|% of population who are immigrants|measure|profile_imm_immigrant / neighbourhood_total|profile_imm_immigrant / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_imm_nonimmigrant|int|Count of non-immigrants|measure|raw_toronto.fact_census_extended (immigration category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_imm_nonimmigrant_pct|float|% of population who are non-immigrants|measure|profile_imm_nonimmigrant / neighbourhood_total|profile_imm_nonimmigrant / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_imm_nonperm|int|Count of non-permanent residents|measure|raw_toronto.fact_census_extended (immigration category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_imm_nonperm_pct|float|% of population who are non-permanent residents|measure|profile_imm_nonperm / neighbourhood_total|profile_imm_nonperm / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_lang_home_official|int|Count using official language (English or French) at home|measure|raw_toronto.fact_census_extended (language category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_lang_home_official_pct|float|% using official language at home|measure|profile_lang_home_official / neighbourhood_total|profile_lang_home_official / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_lang_home_nonofficial|int|Count using non-official language at home|measure|raw_toronto.fact_census_extended (language category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_lang_home_nonofficial_pct|float|% using non-official language at home|measure|profile_lang_home_nonofficial / neighbourhood_total|profile_lang_home_nonofficial / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_offlang_english_only|int|Count with English as only official language|measure|raw_toronto.fact_census_extended (official language category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_offlang_english_only_pct|float|% with English as only official language|measure|profile_offlang_english_only / neighbourhood_total|profile_offlang_english_only / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_offlang_french_only|int|Count with French as only official language|measure|raw_toronto.fact_census_extended (official language category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_offlang_french_only_pct|float|% with French as only official language|measure|profile_offlang_french_only / neighbourhood_total|profile_offlang_french_only / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_offlang_both|int|Count with both English and French as official languages|measure|raw_toronto.fact_census_extended (official language category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_offlang_both_pct|float|% with both official languages|measure|profile_offlang_both / neighbourhood_total|profile_offlang_both / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_offlang_neither|int|Count with neither English nor French as official language|measure|raw_toronto.fact_census_extended (official language category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_offlang_neither_pct|float|% with neither official language|measure|profile_offlang_neither / neighbourhood_total|profile_offlang_neither / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_citizen_canadian|int|Count of Canadian citizens|measure|raw_toronto.fact_census_extended (citizenship category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_citizen_canadian_pct|float|% who are Canadian citizens|measure|profile_citizen_canadian / neighbourhood_total|profile_citizen_canadian / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_citizen_not|int|Count of non-citizens|measure|raw_toronto.fact_census_extended (citizenship category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_citizen_not_pct|float|% who are non-citizens|measure|profile_citizen_not / neighbourhood_total|profile_citizen_not / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_gen_1st|int|Count of 1st generation residents (born outside Canada)|measure|raw_toronto.fact_census_extended (generation status)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_gen_1st_pct|float|% who are 1st generation|measure|profile_gen_1st / neighbourhood_total|profile_gen_1st / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_gen_2nd|int|Count of 2nd generation residents (Canadian-born with at least one immigrant parent)|measure|raw_toronto.fact_census_extended (generation status)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_gen_2nd_pct|float|% who are 2nd generation|measure|profile_gen_2nd / neighbourhood_total|profile_gen_2nd / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_gen_3rd_plus|int|Count of 3rd generation or higher residents|measure|raw_toronto.fact_census_extended (generation status)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_gen_3rd_plus_pct|float|% who are 3rd generation or higher|measure|profile_gen_3rd_plus / neighbourhood_total|profile_gen_3rd_plus / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_admission_economic|int|Count of immigrants admitted under economic class|measure|raw_toronto.fact_census_extended (admission category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_admission_economic_pct|float|% of immigrants admitted under economic class|measure|profile_admission_economic / profile_imm_immigrant|profile_admission_economic / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_admission_family|int|Count of immigrants admitted under family reunification|measure|raw_toronto.fact_census_extended (admission category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_admission_family_pct|float|% of immigrants admitted under family reunification|measure|profile_admission_family / profile_imm_immigrant|profile_admission_family / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_admission_refugee|int|Count of immigrants admitted as refugees|measure|raw_toronto.fact_census_extended (admission category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_admission_refugee_pct|float|% of immigrants admitted as refugees|measure|profile_admission_refugee / profile_imm_immigrant|profile_admission_refugee / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_admission_other|int|Count of immigrants admitted under other categories|measure|raw_toronto.fact_census_extended (admission category)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_admission_other_pct|float|% of immigrants admitted under other categories|measure|profile_admission_other / profile_imm_immigrant|profile_admission_other / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_pob_africa|int|Count of residents born in Africa|measure|raw_toronto.fact_census_extended (place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_africa_pct|float|% born in Africa|measure|profile_pob_africa / neighbourhood_total|profile_pob_africa / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_pob_americas|int|Count of residents born in the Americas (excl. Canada)|measure|raw_toronto.fact_census_extended (place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_americas_pct|float|% born in the Americas|measure|profile_pob_americas / neighbourhood_total|profile_pob_americas / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_pob_asia|int|Count of residents born in Asia|measure|raw_toronto.fact_census_extended (place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_asia_pct|float|% born in Asia|measure|profile_pob_asia / neighbourhood_total|profile_pob_asia / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_pob_europe|int|Count of residents born in Europe|measure|raw_toronto.fact_census_extended (place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_europe_pct|float|% born in Europe|measure|profile_pob_europe / neighbourhood_total|profile_pob_europe / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_pob_oceania|int|Count of residents born in Oceania|measure|raw_toronto.fact_census_extended (place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_oceania_pct|float|% born in Oceania|measure|profile_pob_oceania / neighbourhood_total|profile_pob_oceania / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_pob_recent_africa|int|Count of recent immigrants (2016-2021) born in Africa|measure|raw_toronto.fact_census_extended (recent immigrant place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_recent_africa_pct|float|% of recent immigrants born in Africa|measure|profile_pob_recent_africa / profile_imm_immigrant|profile_pob_recent_africa / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_pob_recent_americas|int|Count of recent immigrants born in the Americas|measure|raw_toronto.fact_census_extended (recent immigrant place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_recent_americas_pct|float|% of recent immigrants born in the Americas|measure|profile_pob_recent_americas / profile_imm_immigrant|profile_pob_recent_americas / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_pob_recent_asia|int|Count of recent immigrants born in Asia|measure|raw_toronto.fact_census_extended (recent immigrant place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_recent_asia_pct|float|% of recent immigrants born in Asia|measure|profile_pob_recent_asia / profile_imm_immigrant|profile_pob_recent_asia / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_pob_recent_europe|int|Count of recent immigrants born in Europe|measure|raw_toronto.fact_census_extended (recent immigrant place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_recent_europe_pct|float|% of recent immigrants born in Europe|measure|profile_pob_recent_europe / profile_imm_immigrant|profile_pob_recent_europe / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_pob_recent_oceania|int|Count of recent immigrants born in Oceania|measure|raw_toronto.fact_census_extended (recent immigrant place of birth)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_pob_recent_oceania_pct|float|% of recent immigrants born in Oceania|measure|profile_pob_recent_oceania / profile_imm_immigrant|profile_pob_recent_oceania / profile_imm_immigrant * 100
+mart_neighbourhood_profile|profile_indigenous_yes|int|Count of residents identifying as Indigenous|measure|raw_toronto.fact_census_extended (indigenous identity)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_indigenous_yes_pct|float|% identifying as Indigenous|measure|profile_indigenous_yes / neighbourhood_total|profile_indigenous_yes / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_indigenous_no|int|Count of residents not identifying as Indigenous|measure|raw_toronto.fact_census_extended (indigenous identity)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_indigenous_no_pct|float|% not identifying as Indigenous|measure|profile_indigenous_no / neighbourhood_total|profile_indigenous_no / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_edu_lvl_nocert|int|Count of population with no educational certificate or diploma|measure|raw_toronto.fact_census_extended (education level)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_edu_lvl_nocert_pct|float|% with no educational certificate|measure|profile_edu_lvl_nocert / neighbourhood_total|profile_edu_lvl_nocert / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_edu_lvl_highschool|int|Count of population with high school diploma as highest education|measure|raw_toronto.fact_census_extended (education level)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_edu_lvl_highschool_pct|float|% with high school diploma as highest education|measure|profile_edu_lvl_highschool / neighbourhood_total|profile_edu_lvl_highschool / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_edu_lvl_postsec|int|Count of population with post-secondary certificate/diploma (non-bachelor)|measure|raw_toronto.fact_census_extended (education level)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_edu_lvl_postsec_pct|float|% with post-secondary certificate (non-bachelor)|measure|profile_edu_lvl_postsec / neighbourhood_total|profile_edu_lvl_postsec / neighbourhood_total * 100
+mart_neighbourhood_profile|profile_fos_business|int|Count of post-secondary graduates in business/management/public admin fields|measure|raw_toronto.fact_census_extended (field of study)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_fos_business_pct|float|% of post-secondary graduates in business fields|measure|profile_fos_business / postsec_total|profile_fos_business / postsec_total * 100
+mart_neighbourhood_profile|profile_fos_social_science|int|Count of post-secondary graduates in social sciences/law/education|measure|raw_toronto.fact_census_extended (field of study)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_fos_social_science_pct|float|% of post-secondary graduates in social sciences|measure|profile_fos_social_science / postsec_total|profile_fos_social_science / postsec_total * 100
+mart_neighbourhood_profile|profile_fos_engineering|int|Count of post-secondary graduates in engineering/architecture/STEM|measure|raw_toronto.fact_census_extended (field of study)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_fos_engineering_pct|float|% of post-secondary graduates in engineering/STEM|measure|profile_fos_engineering / postsec_total|profile_fos_engineering / postsec_total * 100
+mart_neighbourhood_profile|profile_fos_health|int|Count of post-secondary graduates in health sciences|measure|raw_toronto.fact_census_extended (field of study)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_fos_health_pct|float|% of post-secondary graduates in health sciences|measure|profile_fos_health / postsec_total|profile_fos_health / postsec_total * 100
+mart_neighbourhood_profile|profile_fos_humanities|int|Count of post-secondary graduates in humanities/arts|measure|raw_toronto.fact_census_extended (field of study)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_fos_humanities_pct|float|% of post-secondary graduates in humanities/arts|measure|profile_fos_humanities / postsec_total|profile_fos_humanities / postsec_total * 100
+mart_neighbourhood_profile|profile_const_pre1960|int|Count of dwellings built before 1960|measure|raw_toronto.fact_census_extended (construction period)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_const_pre1960_pct|float|% of dwellings built before 1960|measure|profile_const_pre1960 / total_dwellings|profile_const_pre1960 / total_dwellings * 100
+mart_neighbourhood_profile|profile_const_1961_1980|int|Count of dwellings built 1961-1980|measure|raw_toronto.fact_census_extended (construction period)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_const_1961_1980_pct|float|% of dwellings built 1961-1980|measure|profile_const_1961_1980 / total_dwellings|profile_const_1961_1980 / total_dwellings * 100
+mart_neighbourhood_profile|profile_const_1981_1990|int|Count of dwellings built 1981-1990|measure|raw_toronto.fact_census_extended (construction period)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_const_1981_1990_pct|float|% of dwellings built 1981-1990|measure|profile_const_1981_1990 / total_dwellings|profile_const_1981_1990 / total_dwellings * 100
+mart_neighbourhood_profile|profile_const_1991_2000|int|Count of dwellings built 1991-2000|measure|raw_toronto.fact_census_extended (construction period)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_const_1991_2000_pct|float|% of dwellings built 1991-2000|measure|profile_const_1991_2000 / total_dwellings|profile_const_1991_2000 / total_dwellings * 100
+mart_neighbourhood_profile|profile_const_post2000|int|Count of dwellings built after 2000|measure|raw_toronto.fact_census_extended (construction period)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_const_post2000_pct|float|% of dwellings built after 2000|measure|profile_const_post2000 / total_dwellings|profile_const_post2000 / total_dwellings * 100
+mart_neighbourhood_profile|profile_suit_suitable|int|Count of dwellings deemed suitable (not overcrowded)|measure|raw_toronto.fact_census_extended (housing suitability)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_suit_suitable_pct|float|% of dwellings deemed suitable|measure|profile_suit_suitable / total_dwellings|profile_suit_suitable / total_dwellings * 100
+mart_neighbourhood_profile|profile_suit_not_suitable|int|Count of dwellings deemed not suitable (overcrowded)|measure|raw_toronto.fact_census_extended (housing suitability)|direct from stg_toronto__profiles
+mart_neighbourhood_profile|profile_suit_not_suitable_pct|float|% of dwellings deemed not suitable|measure|profile_suit_not_suitable / total_dwellings|profile_suit_not_suitable / total_dwellings * 100

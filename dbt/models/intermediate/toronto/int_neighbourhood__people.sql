@@ -70,8 +70,6 @@ final as (
     select
         -- ── Identity ──────────────────────────────────────────────────────
         n.neighbourhood_id,
-        n.neighbourhood_name,
-        n.geometry,
         n.land_area_sqkm,
         f.census_year,
 

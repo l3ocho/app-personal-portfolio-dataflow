@@ -29,7 +29,8 @@ This is a **data-only** repository. All visualization and frontend code lives in
 ```bash
 # Setup & Database
 make setup          # Install deps, create .env, init pre-commit
-make docker-up      # Start PostgreSQL + PostGIS (auto-detects x86/ARM)
+make local-dev      # Full dev stack: docker-up + db-init + pgweb (http://localhost:8081)
+make docker-up      # Start PostgreSQL + PostGIS only (no pgweb)
 make docker-down    # Stop containers
 make db-init        # Initialize database schema
 make db-reset       # Drop and recreate database (DESTRUCTIVE)

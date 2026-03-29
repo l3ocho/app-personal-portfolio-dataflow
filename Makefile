@@ -1,4 +1,4 @@
-.PHONY: setup docker-up docker-down db-init local-dev load-data load-all load-toronto load-toronto-only load-football seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto refresh
+.PHONY: setup docker-up docker-down db-init local-dev load-data load-all load-toronto load-toronto-only load-football seed-data run test dbt-run dbt-test lint format ci deploy clean help logs run-detached etl-toronto refresh cleanup-deprecated-marts cleanup-orphan-marts
 
 # Default target
 .DEFAULT_GOAL := help
@@ -171,14 +171,19 @@ test-cov: ## Run pytest with coverage
 # dbt
 # =============================================================================
 
-dbt-run: ## Run dbt models (includes cleanup of deprecated tables)
+dbt-run: ## Run dbt models (includes deprecated + orphan table cleanup)
 	@echo "$(GREEN)Running dbt models...$(NC)"
 	@set -a && . ./.env && set +a && cd dbt && ../.venv/bin/dbt run --profiles-dir .
 	@echo "$(GREEN)Cleaning up deprecated mart tables...$(NC)"
 	@$(PYTHON) scripts/data/cleanup_mart_tables.py
+	@echo "$(GREEN)Dropping orphaned mart tables (no matching .sql model)...$(NC)"
+	@$(PYTHON) scripts/data/cleanup_orphan_marts.py --execute
 
-cleanup-deprecated-marts: ## Clean up deprecated mart_toronto tables
+cleanup-deprecated-marts: ## Clean up hardcoded deprecated mart_toronto tables
 	$(PYTHON) scripts/data/cleanup_mart_tables.py
+
+cleanup-orphan-marts: ## Detect orphaned mart tables (no .sql model). Add ARGS=--execute to drop them
+	$(PYTHON) scripts/data/cleanup_orphan_marts.py $(ARGS)
 
 dbt-test: ## Run dbt tests
 	@echo "$(GREEN)Running dbt tests...$(NC)"

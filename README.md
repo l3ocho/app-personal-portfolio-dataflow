@@ -36,17 +36,16 @@ The mart tables are the **stable, read-only contract** consumed by the [portfoli
 git clone <repo-url> && cd app-personal-portfolio-dataflow
 make setup          # Creates .venv, installs deps, initialises pre-commit
 
-# 2. Start the database
-make docker-up      # PostgreSQL 16 + PostGIS 3.4
+# 2. Start the full dev environment (database + pgweb browser at http://localhost:8081)
+make local-dev      # docker-up + db-init + pgweb — one command for everything
 
-# 3. Initialise schema and load data
-make db-init        # Create all schemas and tables
+# 3. Load data and run transformations
 make load-data      # Run Toronto + Football ETL pipelines
-
-# 4. Run dbt transformations
 make dbt-run        # staging → intermediate → marts
 make dbt-test       # Run all 126 dbt tests
 ```
+
+> **Tip:** `make local-dev` is the recommended dev mode — it starts PostgreSQL, initialises the schema, and launches the [pgweb](http://localhost:8081) database browser in one step. Use `make docker-up` alone if you don't need pgweb.
 
 > **ARM64:** This project targets Raspberry Pi 4 (arm64). Uses `imresamu/postgis:16-3.4` for ARM64 compatibility.
 
